@@ -1,6 +1,8 @@
 "use client";
 
 import "@xyflow/react/dist/style.css";
+import { confirmAction } from "@/components/ConfirmDialog";
+import { NativeSelect } from "@/components/ui/native-select";
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -50,25 +52,26 @@ import type {
 const NODE_WIDTH = 260;
 const ROW_HEIGHT = 150;
 
+// Step colours match the Flow step labels on the landing page.
 const COMPONENT_META: Record<FlowStepComponentType, { badge: string; dot: string; label: string }> = {
   FUNCTION: {
-    badge: "bg-cyan-100 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-400",
-    dot: "bg-cyan-500",
+    badge: "bg-brand-soft text-brand",
+    dot: "bg-brand",
     label: "Function",
   },
   RESPONSE: {
-    badge: "bg-violet-100 text-violet-700 dark:bg-violet-500/10 dark:text-violet-400",
-    dot: "bg-violet-500",
+    badge: "bg-success/10 text-success",
+    dot: "bg-success",
     label: "Response",
   },
   MIDDLEWARE: {
-    badge: "bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400",
-    dot: "bg-amber-500",
+    badge: "bg-code-kw/10 text-code-kw",
+    dot: "bg-code-kw",
     label: "Middleware",
   },
   SUB_FLOW: {
-    badge: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400",
-    dot: "bg-emerald-500",
+    badge: "bg-code-num/10 text-code-num",
+    dot: "bg-code-num",
     label: "Sub-flow",
   },
 };
@@ -89,8 +92,8 @@ function StepNode({ data }: NodeProps<Node<StepNodeData>>) {
   return (
     <div
       style={{ width: NODE_WIDTH }}
-      className={`cursor-pointer rounded-xl border bg-surface px-4 py-3 shadow-sm transition-colors ${
-        selected ? "border-cyan-500 ring-2 ring-cyan-500/30" : "border-border hover:border-border-strong"
+      className={`cursor-pointer rounded-xl border bg-surface px-4 py-3 transition-colors ${
+        selected ? "border-brand ring-2 ring-brand/30" : "border-border hover:border-border-strong"
       }`}
     >
       <Handle type="target" position={Position.Top} isConnectable={false} className="!bg-border-strong" />
@@ -99,10 +102,10 @@ function StepNode({ data }: NodeProps<Node<StepNodeData>>) {
         <span className="truncate text-sm font-medium text-foreground">{step.stepKey}</span>
       </div>
       <div className="mt-2 flex items-center justify-between">
-        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${meta.badge}`}>
+        <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ${meta.badge}`}>
           {meta.label}
         </span>
-        <span className="font-mono text-[11px] text-muted">#{step.position}</span>
+        <span className="font-mono text-[11px] text-muted-foreground">#{step.position}</span>
       </div>
       <Handle type="source" position={Position.Bottom} isConnectable={false} className="!bg-border-strong" />
     </div>
@@ -250,45 +253,45 @@ function FlowVersionCanvas() {
   }
 
   if (!flow || !version) {
-    return <p className="p-6 text-sm text-muted">Loading…</p>;
+    return <p className="p-6 text-sm text-muted-foreground">Loading…</p>;
   }
 
   return (
     <div className="flex h-[calc(100vh-3.5rem)] flex-col">
-      <div className="flex items-center justify-between border-b border-border bg-surface px-6 py-3">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-surface px-4 py-3 sm:px-6">
+        <div className="flex min-w-0 items-center gap-3">
           <Link
             href={`/flows/${flowId}`}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted hover:bg-surface-hover hover:text-foreground"
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-surface-hover hover:text-foreground"
           >
             <ArrowLeftIcon className="h-4 w-4" />
           </Link>
-          <nav className="flex items-center gap-1.5 text-sm text-muted">
+          <nav className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <Link href="/flows" className="hover:text-foreground">
               Flows
             </Link>
             <ChevronRightIcon className="h-3.5 w-3.5" />
-            <Link href={`/flows/${flowId}`} className="font-medium text-foreground hover:text-cyan-600 dark:hover:text-cyan-400">
+            <Link href={`/flows/${flowId}`} className="font-medium text-foreground hover:text-muted-strong">
               {flow.name}
             </Link>
           </nav>
-          <select
+          <NativeSelect
             value={versionId}
             onChange={(e) => router.push(`/flows/${flowId}/versions/${e.target.value}`)}
-            className="h-8 rounded-lg border border-border bg-surface px-2 font-mono text-sm text-foreground outline-none"
+            size="sm" selectClassName="font-mono"
           >
             {versionList.map((v) => (
               <option key={v.id} value={v.id}>
                 v{v.version}
               </option>
             ))}
-          </select>
+          </NativeSelect>
           <StatusBadge status={version.status} />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span
             title={`${flow.httpMethod} ${flow.path} on ${flow.gatewayName}`}
-            className="hidden items-center gap-1 font-mono text-xs text-muted sm:flex"
+            className="hidden items-center gap-1 font-mono text-xs text-muted-foreground sm:flex"
           >
             <ExternalLinkIcon className="h-3.5 w-3.5" />
             {flow.httpMethod} {flow.path}
@@ -328,16 +331,16 @@ function FlowVersionCanvas() {
       </div>
 
       {error && (
-        <p role="alert" className="border-b border-rose-200 bg-rose-50 px-6 py-2 text-sm text-rose-600 dark:border-rose-900/40 dark:bg-rose-500/10 dark:text-rose-400">
+        <p role="alert" className="border-b border-danger/25 bg-danger/10 px-6 py-2 text-sm text-danger">
           {error}
         </p>
       )}
 
       <div className="flex flex-1 overflow-hidden">
-        <aside className="flex w-64 flex-col gap-4 overflow-y-auto border-r border-border bg-surface p-4">
+        <aside className="hidden w-64 shrink-0 flex-col gap-4 overflow-y-auto border-r border-border bg-surface p-4 md:flex">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted">Add node</p>
-            <p className="mt-1 text-xs text-muted">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Add node</p>
+            <p className="mt-1 text-xs text-muted-foreground">
               {isDraft ? "Drag onto the canvas to add a step." : "Only DRAFT versions can be edited."}
             </p>
           </div>
@@ -353,19 +356,19 @@ function FlowVersionCanvas() {
                   setInspector({ kind: "create", componentType: item.type });
                 }}
                 className={`rounded-lg border border-border bg-background px-3 py-2.5 transition-colors ${
-                  isDraft ? "cursor-grab hover:border-cyan-500/60 active:cursor-grabbing" : "cursor-not-allowed opacity-50"
+                  isDraft ? "cursor-grab hover:border-border-strong active:cursor-grabbing" : "cursor-not-allowed opacity-50"
                 }`}
               >
                 <div className="flex items-center gap-2">
                   <span className={`h-2 w-2 rounded-full ${COMPONENT_META[item.type].dot}`} />
                   <span className="text-sm font-medium text-foreground">{item.title}</span>
                 </div>
-                <p className="mt-0.5 text-xs text-muted">{item.description}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">{item.description}</p>
               </div>
             ))}
           </div>
           <div className="mt-auto rounded-lg border border-border bg-background p-3">
-            <div className="flex items-center gap-2 text-xs text-muted">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <WorkflowIcon className="h-3.5 w-3.5" />
               {steps.length} step{steps.length === 1 ? "" : "s"}
             </div>
@@ -375,8 +378,8 @@ function FlowVersionCanvas() {
         <div className="relative flex-1" onDragOver={onDragOver} onDrop={onDrop}>
           {steps.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
-              <WorkflowIcon className="h-8 w-8 text-muted" />
-              <p className="text-sm text-muted">
+              <WorkflowIcon className="h-8 w-8 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">
                 {isDraft ? "Drag Function or Response from the left onto the canvas." : "This version has no steps."}
               </p>
             </div>
@@ -393,7 +396,7 @@ function FlowVersionCanvas() {
               elementsSelectable
               fitView
               fitViewOptions={{ padding: 0.3 }}
-              colorMode="system"
+              colorMode="dark"
               proOptions={{ hideAttribution: true }}
             >
               <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
@@ -476,7 +479,7 @@ function StepInspector({ mode, flowId, versionId, nextPosition, isDraft, onClose
   }
 
   async function handleDelete() {
-    if (!initialStep || !window.confirm(`Remove step "${initialStep.stepKey}"?`)) return;
+    if (!initialStep || !await confirmAction(`Remove step "${initialStep.stepKey}"?`)) return;
     setBusy(true);
     try {
       await api.deleteFlowStep(flowId, versionId, initialStep.id);
@@ -489,19 +492,19 @@ function StepInspector({ mode, flowId, versionId, nextPosition, isDraft, onClose
   }
 
   return (
-    <aside className="flex w-80 flex-col border-l border-border bg-surface">
+    <aside className="flex w-full max-w-80 shrink-0 flex-col border-l border-border bg-surface">
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <div>
-          <p className="text-sm font-semibold text-foreground">
+          <p className="text-sm font-medium text-foreground">
             {isCreate ? "New step" : initialStep?.stepKey}
           </p>
-          <p className="text-xs text-muted">{isCreate ? COMPONENT_META[componentType].label : mode.kind === "view" ? "Read only" : "Edit step"}</p>
+          <p className="text-xs text-muted-foreground">{isCreate ? COMPONENT_META[componentType].label : mode.kind === "view" ? "Read only" : "Edit step"}</p>
         </div>
         <button
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-muted hover:bg-surface-hover hover:text-foreground"
+          className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-muted-foreground hover:bg-surface-hover hover:text-foreground"
         >
           <XIcon className="h-4 w-4" />
         </button>
@@ -525,17 +528,17 @@ function StepInspector({ mode, flowId, versionId, nextPosition, isDraft, onClose
         {isCreate && (
           <label className={fieldClass}>
             <span className={labelClass}>Component type</span>
-            <select
+            <NativeSelect
               value={componentType}
               onChange={(e) => setComponentType(e.target.value as FlowStepComponentType)}
-              className={inputClass}
+              className="w-full"
             >
               {PALETTE_ITEMS.map((item) => (
                 <option key={item.type} value={item.type}>
                   {item.title}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </label>
         )}
 
@@ -672,12 +675,12 @@ function ComponentPicker({ componentType, flowId, componentId, componentVersionI
     <>
       <label className={fieldClass}>
         <span className={labelClass}>{parentLabel}</span>
-        <select
+        <NativeSelect
           required
           disabled={!editable || !parentOptions}
           value={componentId}
           onChange={(e) => onChange(e.target.value, "")}
-          className={inputClass}
+          className="w-full"
         >
           <option value="" disabled>
             {parentOptions ? `Select a ${parentLabel.toLowerCase()}…` : "Loading…"}
@@ -696,17 +699,17 @@ function ComponentPicker({ componentType, flowId, componentId, componentVersionI
           {componentId && parentOptions && !parentOptions.some((item) => item.id === componentId) && (
             <option value={componentId}>{componentId} (not in your list)</option>
           )}
-        </select>
+        </NativeSelect>
       </label>
 
       <label className={fieldClass}>
         <span className={labelClass}>Version</span>
-        <select
+        <NativeSelect
           required
           disabled={!editable || !componentId || !versionOptions}
           value={componentVersionId}
           onChange={(e) => onChange(componentId, e.target.value)}
-          className={inputClass}
+          className="w-full"
         >
           <option value="" disabled>
             {!componentId
@@ -727,7 +730,7 @@ function ComponentPicker({ componentType, flowId, componentId, componentVersionI
           {componentVersionId && versionOptions && !versionOptions.some((v) => v.id === componentVersionId) && (
             <option value={componentVersionId}>{componentVersionId} (not in your list)</option>
           )}
-        </select>
+        </NativeSelect>
       </label>
     </>
   );
@@ -814,24 +817,24 @@ function TestFlowPanel({ flowId, versionId, onClose, onError }: TestFlowPanelPro
   }
 
   return (
-    <aside className="flex w-96 flex-col overflow-y-auto border-l border-border bg-surface">
+    <aside className="flex w-full max-w-96 shrink-0 flex-col overflow-y-auto border-l border-border bg-surface">
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <div className="flex items-center gap-2">
-          <ZapIcon className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-          <p className="text-sm font-semibold text-foreground">Test flow</p>
+          <ZapIcon className="h-4 w-4 text-warning" />
+          <p className="text-sm font-medium text-foreground">Test flow</p>
         </div>
         <button
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-muted hover:bg-surface-hover hover:text-foreground"
+          className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-muted-foreground hover:bg-surface-hover hover:text-foreground"
         >
           <XIcon className="h-4 w-4" />
         </button>
       </div>
 
       <div className="flex flex-1 flex-col gap-4 p-4">
-        <p className="text-xs text-muted">
+        <p className="text-xs text-muted-foreground">
           Runs this exact version&apos;s own steps directly, with no Gateway, HTTP route, or TLS involved -
           the same Dispatcher/Runtime path a real request to this route would use. Works on DRAFT versions too,
           so you can test before adopting.
@@ -850,39 +853,39 @@ function TestFlowPanel({ flowId, versionId, onClose, onError }: TestFlowPanelPro
           <div className="rounded-lg border border-border bg-background p-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-xs">
-                <CheckIcon className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                <span className="text-muted">Invocation status</span>
+                <CheckIcon className="h-3.5 w-3.5 text-success" />
+                <span className="text-muted-foreground">Invocation status</span>
                 <StatusBadge status={currentStatus} />
               </div>
               <Button variant="secondary" size="sm" disabled={inspecting} onClick={handleInspect}>
                 Inspect
               </Button>
             </div>
-            <p className="mt-1.5 break-all font-mono text-xs text-muted">{invocationId}</p>
+            <p className="mt-1.5 break-all font-mono text-xs text-muted-foreground">{invocationId}</p>
 
             {inspection && (
               <div className="mt-3 border-t border-border pt-3">
                 <dl className="grid gap-1.5 text-xs">
                   <div className="flex gap-2">
-                    <dt className="w-20 shrink-0 text-muted">Status</dt>
+                    <dt className="w-20 shrink-0 text-muted-foreground">Status</dt>
                     <dd>
                       <StatusBadge status={inspection.status} />
                     </dd>
                   </div>
                   <div className="flex gap-2">
-                    <dt className="w-20 shrink-0 text-muted">Input</dt>
+                    <dt className="w-20 shrink-0 text-muted-foreground">Input</dt>
                     <dd className="break-all font-mono text-foreground">{inspection.inputPayload}</dd>
                   </div>
                   {inspection.result && (
                     <div className="flex gap-2">
-                      <dt className="w-20 shrink-0 text-muted">Response</dt>
+                      <dt className="w-20 shrink-0 text-muted-foreground">Response</dt>
                       <dd className="break-all font-mono text-foreground">{inspection.result}</dd>
                     </div>
                   )}
                   {inspection.error && (
                     <div className="flex gap-2">
-                      <dt className="w-20 shrink-0 text-muted">Error</dt>
-                      <dd className="break-all font-mono text-rose-600 dark:text-rose-400">{inspection.error}</dd>
+                      <dt className="w-20 shrink-0 text-muted-foreground">Error</dt>
+                      <dd className="break-all font-mono text-danger">{inspection.error}</dd>
                     </div>
                   )}
                 </dl>

@@ -15,11 +15,11 @@ export function FunctionLifecycleDiagram({ status, hasSource, hasArtifact }: Fun
   ];
 
   return (
-    <div className="overflow-hidden rounded-3xl border border-border bg-[#09090b] p-5">
+    <div className="overflow-hidden rounded-2xl border border-border bg-background p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-muted">Function lifecycle</p>
-          <h2 className="mt-2 text-lg font-bold tracking-tight text-foreground">Source to runnable artifact</h2>
+          <p className="eyebrow">Function lifecycle</p>
+          <h2 className="mt-2 text-base font-medium tracking-tight text-foreground">Source to runnable artifact</h2>
         </div>
         <StatusBadge status={status} />
       </div>
@@ -29,7 +29,7 @@ export function FunctionLifecycleDiagram({ status, hasSource, hasArtifact }: Fun
           <path d="M112 78H708" stroke="rgba(255,255,255,0.12)" strokeWidth="2" strokeLinecap="round" />
           <path
             d="M112 78H708"
-            stroke="rgba(245,166,35,0.72)"
+            stroke="rgba(107,140,255,0.72)"
             strokeWidth="3"
             strokeLinecap="round"
             strokeDasharray="12 12"
@@ -39,8 +39,8 @@ export function FunctionLifecycleDiagram({ status, hasSource, hasArtifact }: Fun
             const x = 112 + index * 198;
             return (
               <g key={stage.key}>
-                <circle cx={x} cy="78" r="27" fill={stage.active ? "rgba(245,166,35,0.16)" : "rgba(255,255,255,0.04)"} stroke={stage.active ? "rgba(245,166,35,0.6)" : "rgba(255,255,255,0.12)"} strokeWidth="2" />
-                <circle cx={x} cy="78" r="7" fill={stage.active ? "#f5a623" : "rgba(255,255,255,0.22)"} />
+                <circle cx={x} cy="78" r="27" fill={stage.active ? "rgba(107,140,255,0.16)" : "rgba(255,255,255,0.04)"} stroke={stage.active ? "rgba(107,140,255,0.6)" : "rgba(255,255,255,0.12)"} strokeWidth="2" />
+                <circle cx={x} cy="78" r="7" fill={stage.active ? "#6b8cff" : "rgba(255,255,255,0.22)"} />
               </g>
             );
           })}
@@ -48,12 +48,12 @@ export function FunctionLifecycleDiagram({ status, hasSource, hasArtifact }: Fun
 
         <div className="grid gap-3 sm:grid-cols-4 sm:-mt-4">
           {stages.map((stage) => (
-            <div key={stage.key} className="rounded-2xl border border-border bg-surface/75 p-3">
+            <div key={stage.key} className="rounded-xl border border-border bg-surface/75 p-3">
               <div className="flex items-center gap-2">
-                <span className={`h-2.5 w-2.5 rounded-full ${stage.active ? "bg-accent shadow-[0_0_18px_rgba(245,166,35,0.8)]" : "bg-muted/40"}`} />
-                <p className="text-sm font-bold text-foreground">{stage.label}</p>
+                <span className={`h-2.5 w-2.5 rounded-full ${stage.active ? "bg-brand" : "bg-faint"}`} />
+                <p className="text-sm font-semibold text-foreground">{stage.label}</p>
               </div>
-              <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.14em] text-muted">{stage.detail}</p>
+              <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">{stage.detail}</p>
             </div>
           ))}
         </div>

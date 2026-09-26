@@ -1,82 +1,250 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "./tokens.css";
 
+/* The console is dark-only, like the landing page: <html> always carries
+   `.dark`, so shadcn's `dark:` variants are the ones that apply. */
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Semantic tokens. shadcn/ui components read the standard names
+ * (background, card, primary, muted, accent, ...); app code additionally uses
+ * the FuncHole names below (surface, brand, success, ...). Every value
+ * resolves to the shared palette in tokens.css.
+ *
+ * Naming note: in shadcn, `muted` and `accent` are *surfaces* (a subdued
+ * background and the hover background). Grey text is `text-muted-foreground`;
+ * the electric-blue brand colour is `brand`.
+ */
 :root {
-  --background: #0a0a0c;
-  --foreground: #f5f5f0;
-  --surface: #131316;
-  --surface-2: #1b1b1f;
-  --surface-hover: #202026;
-  --border: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.16);
-  --muted: #a3a19b;
-  --muted-strong: #d5d2c8;
-  --accent: #f5a623;
-  --accent-hover: #ffbd47;
-  --accent-soft: rgba(245, 166, 35, 0.12);
-  --accent-border: rgba(245, 166, 35, 0.35);
-  --accent-ink: #1a1206;
-  --success: #4ade80;
-  --danger: #fb7185;
-  --info: #38bdf8;
-  --violet: #a78bfa;
   color-scheme: dark;
+
+  --background: var(--fh-ink);
+  --foreground: var(--fh-fg);
+  --card: var(--fh-panel);
+  --card-foreground: var(--fh-fg);
+  --popover: var(--fh-panel-2);
+  --popover-foreground: var(--fh-fg);
+  --primary: var(--fh-fg);
+  --primary-foreground: var(--fh-ink);
+  --secondary: var(--fh-raise);
+  --secondary-foreground: var(--fh-fg);
+  --muted: var(--fh-panel-2);
+  --muted-foreground: var(--fh-muted);
+  --accent: var(--fh-raise);
+  --accent-foreground: var(--fh-fg);
+  --destructive: var(--fh-bad);
+  --border: var(--fh-line);
+  --input: var(--fh-line-strong);
+  --ring: var(--fh-accent);
+
+  --chart-1: var(--fh-accent);
+  --chart-2: var(--fh-ok);
+  --chart-3: var(--fh-warn);
+  --chart-4: var(--fh-code-kw);
+  --chart-5: var(--fh-muted);
+
+  --radius: var(--fh-radius);
+
+  --sidebar: var(--fh-ink);
+  --sidebar-foreground: var(--fh-soft);
+  --sidebar-primary: var(--fh-fg);
+  --sidebar-primary-foreground: var(--fh-ink);
+  --sidebar-accent: var(--fh-raise);
+  --sidebar-accent-foreground: var(--fh-fg);
+  --sidebar-border: var(--fh-line);
+  --sidebar-ring: var(--fh-accent);
+
+  /* FuncHole names */
+  --surface: var(--fh-panel);
+  --surface-2: var(--fh-panel-2);
+  --surface-hover: var(--fh-raise);
+  --border-strong: var(--fh-line-strong);
+  --muted-strong: var(--fh-soft);
+  --subtle: var(--fh-subtle);
+  --faint: var(--fh-faint);
+  --brand: var(--fh-accent);
+  --brand-strong: var(--fh-accent-strong);
+  --brand-soft: var(--fh-accent-soft);
+  --success: var(--fh-ok);
+  --warning: var(--fh-warn);
+  --danger: var(--fh-bad);
+  --info: var(--fh-accent);
+  --violet: var(--fh-code-kw);
 }
 
 @theme inline {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-heading: var(--font-sans);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
   --color-surface-hover: var(--surface-hover);
-  --color-border: var(--border);
   --color-border-strong: var(--border-strong);
-  --color-muted: var(--muted);
   --color-muted-strong: var(--muted-strong);
-  --color-accent: var(--accent);
-  --color-accent-hover: var(--accent-hover);
-  --color-accent-soft: var(--accent-soft);
-  --color-accent-border: var(--accent-border);
-  --color-accent-ink: var(--accent-ink);
+  --color-subtle: var(--subtle);
+  --color-faint: var(--faint);
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
+  --color-brand-soft: var(--brand-soft);
   --color-success: var(--success);
+  --color-warning: var(--warning);
   --color-danger: var(--danger);
   --color-info: var(--info);
   --color-violet: var(--violet);
-  --font-sans: var(--font-plex-sans);
-  --font-mono: var(--font-jetbrains-mono);
+  --color-code-fn: var(--fh-code-fn);
+  --color-code-str: var(--fh-code-str);
+  --color-code-kw: var(--fh-code-kw);
+  --color-code-num: var(--fh-code-num);
+
+  /* 8px buttons/inputs, 12px panels, 16px/24px large cards - as on the landing page. */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 16px);
+  --radius-4xl: calc(var(--radius) + 24px);
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-body {
-  background:
-    radial-gradient(circle at 20% -10%, rgba(245, 166, 35, 0.09), transparent 32rem),
-    radial-gradient(circle at 90% 10%, rgba(56, 189, 248, 0.06), transparent 26rem),
-    var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    scrollbar-color: var(--border-strong) transparent;
+  }
+
+  html {
+    @apply font-sans;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  ::selection {
+    background: rgb(107 140 255 / 0.4);
+    color: #fff;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
 }
 
-* {
-  scrollbar-color: var(--border-strong) transparent;
-}
-
+/* Film grain, same as the landing page. */
 body::before {
   position: fixed;
   inset: 0;
-  z-index: -1;
+  z-index: 100;
   pointer-events: none;
   content: "";
   opacity: 0.03;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
-::selection {
-  background: var(--accent-soft);
-  color: var(--foreground);
+/* React Flow canvas (workflow editor) on the same palette. */
+.react-flow {
+  --xy-background-color: var(--fh-panel);
+  --xy-background-pattern-dots-color: var(--fh-line-strong);
+  --xy-edge-stroke: var(--fh-line-strong);
+  --xy-edge-stroke-selected: var(--fh-accent);
+  --xy-handle-background-color: var(--fh-subtle);
+  --xy-handle-border-color: var(--fh-panel);
+  --xy-controls-button-background-color: var(--fh-panel-2);
+  --xy-controls-button-background-color-hover: var(--fh-raise);
+  --xy-controls-button-color: var(--fh-soft);
+  --xy-controls-button-color-hover: var(--fh-fg);
+  --xy-controls-button-border-color: var(--fh-line);
+  --xy-controls-box-shadow: 0 0 0 1px var(--fh-line);
 }
 
-:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
+/* The landing hero's stage: a deep-blue bloom behind the centre of the screen. */
+@utility hero-stage {
+  background:
+    radial-gradient(ellipse 45% 45% at 50% 50%, rgb(34 70 255 / 0.5), transparent 70%),
+    radial-gradient(ellipse 90% 80% at 50% 52%, #06123f 0%, #02061a 45%, #000 80%);
+}
+
+/* The landing hero's glowing glass card - darker inside so form fields stay
+   readable, with the same electric-blue rim, bloom and specular edge. */
+@utility neon-card {
+  position: relative;
+  background: linear-gradient(180deg, rgb(20 30 80 / 0.55), rgb(6 10 30 / 0.7));
+  border: 1.5px solid rgb(150 180 255 / 0.85);
+  box-shadow:
+    0 0 0 1px rgb(60 100 255 / 0.45),
+    0 0 22px 2px rgb(60 110 255 / 0.7),
+    0 0 90px 10px rgb(30 70 255 / 0.4),
+    inset 0 0 30px rgb(90 130 255 / 0.22);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  &::after {
+    content: "";
+    position: absolute;
+    inset: -1.5px;
+    border-radius: inherit;
+    padding: 1.5px;
+    background: linear-gradient(100deg, transparent 20%, rgb(255 255 255 / 0.9) 45%, transparent 60%);
+    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+    opacity: 0.55;
+    pointer-events: none;
+  }
+}
+
+/* Shared type styles, matching the landing page's headings and eyebrows. */
+@utility display {
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+}
+
+@utility eyebrow {
+  @apply font-mono text-[11px] font-medium tracking-[0.16em] text-subtle uppercase;
 }
 
 @keyframes fh-packet {
@@ -109,7 +277,7 @@ body::before {
 @keyframes fh-reveal {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -117,12 +285,42 @@ body::before {
   }
 }
 
+@keyframes fh-ping {
+  from {
+    transform: scale(0.6);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
 .fh-reveal {
-  animation: fh-reveal 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: fh-reveal 260ms var(--ease-out-expo) both;
 }
 
 .fh-pulse {
   animation: fh-pulse 1.6s ease-in-out infinite;
+}
+
+/* Pulsing "live" dot, as used for live states on the landing page. */
+.live-dot {
+  position: relative;
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: currentColor;
+}
+.live-dot::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  border: 1px solid currentColor;
+  animation: fh-ping 1.8s var(--ease-out-expo) infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {

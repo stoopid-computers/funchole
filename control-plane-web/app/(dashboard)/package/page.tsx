@@ -14,11 +14,11 @@ export default function PackagePage() {
       <Panel className="p-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <div className="grid h-12 w-12 place-items-center rounded-2xl border border-accent-border bg-accent-soft text-accent">
+            <div className="grid h-12 w-12 place-items-center rounded-xl border border-border bg-secondary text-muted-strong">
               <PackageIcon className="h-5 w-5" />
             </div>
-            <h2 className="mt-5 text-lg font-bold text-foreground">Developer preview</h2>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
+            <h2 className="mt-5 text-lg font-semibold text-foreground">Developer preview</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
               Package and billing APIs are not implemented yet. This page keeps the product surface ready for plan limits, usage, and upgrade paths.
             </p>
           </div>

@@ -1,4 +1,4 @@
-import { buttonClasses } from "@/components/Button";
+import { Button } from "@/components/Button";
 
 interface PaginationProps {
   page: number;
@@ -19,27 +19,17 @@ export function Pagination({
     return null;
   }
   return (
-    <div className="flex items-center justify-between pt-1 text-sm text-muted">
-      <span>
+    <div className="flex items-center justify-between gap-3 pt-1 text-sm text-muted-foreground">
+      <span className="font-mono text-xs">
         {totalElements} total &middot; page {page} of {totalPages}
       </span>
       <div className="flex gap-2">
-        <button
-          type="button"
-          disabled={page <= 1 || disabled}
-          onClick={() => onChange(page - 1)}
-          className={buttonClasses("secondary", "sm")}
-        >
+        <Button size="sm" disabled={page <= 1 || disabled} onClick={() => onChange(page - 1)}>
           Previous
-        </button>
-        <button
-          type="button"
-          disabled={page >= totalPages || disabled}
-          onClick={() => onChange(page + 1)}
-          className={buttonClasses("secondary", "sm")}
-        >
+        </Button>
+        <Button size="sm" disabled={page >= totalPages || disabled} onClick={() => onChange(page + 1)}>
           Next
-        </button>
+        </Button>
       </div>
     </div>
   );

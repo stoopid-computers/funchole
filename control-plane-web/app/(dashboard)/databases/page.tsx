@@ -3,7 +3,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Pagination } from "@/components/Pagination";
 import { Button } from "@/components/Button";
-import { CreatePanel } from "@/components/CreatePanel";
 import { Modal } from "@/components/Modal";
 import { CopyableCommand } from "@/components/CopyableCommand";
 import { inputClass, labelClass, fieldClass } from "@/components/Input";
@@ -12,6 +11,11 @@ import { ResourceList, ResourceListState } from "@/components/ResourceList";
 import { PlusIcon, TrashIcon, PencilIcon, KeyIcon } from "@/components/icons";
 import { api, ApiError } from "@/lib/api";
 import type { DatabaseResponse, PaginationResponse } from "@/lib/types";
+import { FormError } from "@/components/FormError";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { confirmAction } from "@/components/ConfirmDialog";
+import { NativeSelect } from "@/components/ui/native-select";
 
 const PAGE_SIZE = 10;
 
@@ -77,10 +81,12 @@ export default function DatabasesPage() {
   }
 
   function openCreate() {
+    setError(null);
     setForm({ ...EMPTY_FORM });
   }
 
   function openEdit(db: DatabaseResponse) {
+    setError(null);
     setForm({
       id: db.id,
       name: db.name,
@@ -95,6 +101,8 @@ export default function DatabasesPage() {
   }
 
   function closeForm() {
+    if (busy) return;
+    setError(null);
     setForm(null);
   }
 
@@ -155,7 +163,7 @@ export default function DatabasesPage() {
   }
 
   async function handleDelete(db: DatabaseResponse) {
-    if (!window.confirm(`Delete data source "${db.name}"? Anything using it will lose this connection.`)) {
+    if (!await confirmAction(`Delete data source "${db.name}"? Anything using it will lose this connection.`)) {
       return;
     }
     setError(null);
@@ -182,8 +190,24 @@ export default function DatabasesPage() {
       />
 
       {form && (
-        <CreatePanel title={form.id ? "Edit data source" : "New data source"} description="Store a reusable connection profile. Passwords are protected and can be revealed only through an explicit action.">
-          <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2">
+        <Modal
+          title={form.id ? "Edit data source" : "New data source"}
+          description="Store a reusable connection profile. Passwords are protected and can be revealed only through an explicit action."
+          onClose={closeForm}
+          dismissible={!busy}
+          widthClassName="max-w-2xl"
+          footer={
+            <>
+              <Button type="button" variant="secondary" onClick={closeForm} disabled={busy}>
+                Cancel
+              </Button>
+              <Button type="submit" form="database-form" variant="primary" disabled={busy}>
+                {form.id ? "Save changes" : "Create data source"}
+              </Button>
+            </>
+          }
+        >
+          <form id="database-form" onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2">
             <label className={fieldClass}>
               <span className={labelClass}>Name</span>
               <input
@@ -198,11 +222,11 @@ export default function DatabasesPage() {
             </label>
             <label className={fieldClass}>
               <span className={labelClass}>Engine</span>
-              <select
+              <NativeSelect
                 value={form.type}
                 disabled={form.id !== null}
                 onChange={(e) => setForm({ ...form, type: e.target.value })}
-                className={`${inputClass} disabled:opacity-50`}
+                className="w-full" selectClassName="disabled:opacity-50"
               >
                 {ENGINE_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value} disabled={option.value !== "POSTGRES"}>
@@ -210,7 +234,7 @@ export default function DatabasesPage() {
                     {option.value !== "POSTGRES" ? " (coming soon)" : ""}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </label>
             <label className={fieldClass}>
               <span className={labelClass}>Host</span>
@@ -266,48 +290,50 @@ export default function DatabasesPage() {
                 className={inputClass}
               />
             </label>
-            <label className="flex items-center gap-2 self-end pb-2">
-              <input
-                type="checkbox"
+            <div className="flex items-start gap-3 rounded-lg border border-border bg-input/30 px-3.5 py-3 sm:col-span-2">
+              <Checkbox
+                id="database-ssl"
                 checked={form.sslEnabled}
-                onChange={(e) => setForm({ ...form, sslEnabled: e.target.checked })}
-                className="h-4 w-4 rounded border-border"
+                onCheckedChange={(checked) => setForm({ ...form, sslEnabled: checked === true })}
+                className="mt-0.5"
               />
-              <span className="text-sm text-foreground/90">Require SSL</span>
-            </label>
-            <div className="flex gap-2 sm:col-span-2">
-              <Button type="submit" variant="primary" disabled={busy}>
-                {form.id ? "Save changes" : "Create data source"}
-              </Button>
-              <Button type="button" variant="secondary" onClick={closeForm}>
-                Cancel
-              </Button>
+              <div className="grid gap-0.5">
+                <Label htmlFor="database-ssl" className="cursor-pointer text-sm font-medium text-foreground">
+                  Require SSL
+                </Label>
+                <p className="text-xs text-muted-foreground">Connections to this data source must use TLS.</p>
+              </div>
             </div>
+            {error && (
+              <div className="sm:col-span-2">
+                <FormError>{error}</FormError>
+              </div>
+            )}
           </form>
-        </CreatePanel>
+        </Modal>
       )}
 
-      {error && (
-        <p role="alert" className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-600 dark:bg-rose-500/10 dark:text-rose-400">
+      {error && !form && (
+        <FormError>
           {error}
-        </p>
+        </FormError>
       )}
 
       <ResourceList title="Data source registry" description="Reusable connection profiles for actions and workflows.">
         {!databases && <ResourceListState>Loading data sources…</ResourceListState>}
         {databases?.items.length === 0 && <ResourceListState>No data sources yet. Create one before attaching data access to customer-facing work.</ResourceListState>}
         {databases?.items.map((db) => (
-          <div key={db.id} className="grid gap-4 px-5 py-4 transition-colors hover:bg-accent-soft lg:grid-cols-[1fr_auto]">
+          <div key={db.id} className="grid gap-4 px-5 py-4 transition-colors hover:bg-white/[0.03] lg:grid-cols-[1fr_auto]">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <p className="text-base font-bold text-foreground">{db.name}</p>
-                <span className="rounded-full border border-accent-border bg-accent-soft px-2.5 py-1 font-mono text-xs font-bold text-accent">{db.type}</span>
-                <span className="rounded-full border border-border bg-surface-2 px-2.5 py-1 text-xs text-muted">{db.sslEnabled ? "SSL required" : "SSL optional"}</span>
+                <p className="text-base font-semibold text-foreground">{db.name}</p>
+                <span className="rounded-md bg-secondary px-1.5 py-0.5 font-mono text-[11px] text-muted-strong">{db.type}</span>
+                <span className="rounded-md border border-border bg-surface-2 px-1.5 py-0.5 text-xs text-muted-foreground">{db.sslEnabled ? "SSL required" : "SSL optional"}</span>
               </div>
               <code className="mt-3 block truncate font-mono text-sm text-muted-strong">
                 {db.username}@{db.host}:{db.port}/{db.databaseName}
               </code>
-              <p className="mt-2 text-xs text-muted">Created {new Date(db.createdAt).toLocaleString()}</p>
+              <p className="mt-2 text-xs text-muted-foreground">Created {new Date(db.createdAt).toLocaleString()}</p>
             </div>
             <div className="flex items-center gap-2 lg:justify-end">
               <Button variant="secondary" size="icon" title="Reveal password" onClick={() => handleReveal(db)}>
@@ -336,21 +362,21 @@ export default function DatabasesPage() {
       {revealing && (
         <Modal title={`Password for "${revealing.name}"`} onClose={closeReveal}>
           <div className="flex flex-col gap-4">
-            <p className="text-sm text-muted">
+            <p className="text-sm text-muted-foreground">
               <code className="rounded bg-surface-hover px-1 py-0.5 font-mono text-xs">
                 {revealing.host}:{revealing.port}/{revealing.databaseName}
               </code>{" "}
               as <span className="font-mono">{revealing.username}</span>
             </p>
             {revealError && (
-              <p role="alert" className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-600 dark:bg-rose-500/10 dark:text-rose-400">
+              <FormError>
                 {revealError}
-              </p>
+              </FormError>
             )}
             {revealedPassword ? (
               <CopyableCommand value={revealedPassword} />
             ) : (
-              !revealError && <p className="text-sm text-muted">Loading…</p>
+              !revealError && <p className="text-sm text-muted-foreground">Loading…</p>
             )}
             <Button variant="secondary" className="self-end" onClick={closeReveal}>
               Done

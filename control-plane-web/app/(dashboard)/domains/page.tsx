@@ -11,6 +11,7 @@ import { ResourceList, ResourceListState } from "@/components/ResourceList";
 import { PlusIcon } from "@/components/icons";
 import { api, ApiError } from "@/lib/api";
 import type { DomainResponse, PaginationResponse } from "@/lib/types";
+import { FormError } from "@/components/FormError";
 
 const PAGE_SIZE = 10;
 
@@ -95,23 +96,23 @@ export default function DomainsPage() {
       </CreatePanel>
 
       {error && (
-        <p role="alert" className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-600 dark:bg-rose-500/10 dark:text-rose-400">
+        <FormError>
           {error}
-        </p>
+        </FormError>
       )}
 
       <ResourceList title="Domain registry" description="Verified domains can be used for public entry points and certificates.">
         {!domains && <ResourceListState>Loading domains…</ResourceListState>}
         {domains?.items.length === 0 && <ResourceListState>No domains yet. Add one above to begin public URL setup.</ResourceListState>}
         {domains?.items.map((domain) => (
-          <div key={domain.id} className="grid gap-4 px-5 py-4 transition-colors hover:bg-accent-soft lg:grid-cols-[1fr_auto]">
+          <div key={domain.id} className="grid gap-4 px-5 py-4 transition-colors hover:bg-white/[0.03] lg:grid-cols-[1fr_auto]">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <code className="font-mono text-base font-bold text-foreground">{domain.domainName}</code>
+                <code className="font-mono text-base font-semibold text-foreground">{domain.domainName}</code>
                 <StatusBadge status={domain.status} />
               </div>
-              <p className="mt-2 text-xs text-muted">Verification TXT</p>
-              <code className="mt-1 block break-all rounded-2xl border border-border bg-surface-2 px-3 py-2 font-mono text-xs text-muted-strong">
+              <p className="mt-2 text-xs text-muted-foreground">Verification TXT</p>
+              <code className="mt-1 block break-all rounded-xl border border-border bg-surface-2 px-3 py-2 font-mono text-xs text-muted-strong">
                 {domain.verificationCode ?? "No challenge generated yet"}
               </code>
             </div>

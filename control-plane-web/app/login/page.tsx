@@ -5,10 +5,14 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { api, ApiError } from "@/lib/api";
 import { setToken } from "@/lib/auth";
-import { Panel } from "@/components/Panel";
 import { Button } from "@/components/Button";
-import { inputClass, labelClass, fieldClass } from "@/components/Input";
 import { BrandMark } from "@/components/BrandMark";
+import { FormError } from "@/components/FormError";
+import { HeroField } from "@/components/HeroField";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
@@ -64,7 +68,7 @@ export default function LoginPage() {
       callback: handleGoogleCredential,
     });
     window.google.accounts.id.renderButton(googleButtonRef.current, {
-      theme: "outline",
+      theme: "filled_black",
       size: "large",
       width: 320,
       text: "signin_with",
@@ -72,67 +76,77 @@ export default function LoginPage() {
   }, [googleScriptLoaded, handleGoogleCredential]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-8">
-        <Panel className="fh-reveal w-full max-w-md p-6 sm:p-8">
-          <div className="mb-8">
-            <BrandMark />
-            <h2 className="mt-8 text-2xl font-bold tracking-tight text-foreground">Sign in</h2>
-            <p className="mt-2 text-sm leading-6 text-muted">Access your FuncHole workspace.</p>
-          </div>
-
-          {GOOGLE_CLIENT_ID && (
-            <>
-              <Script
-                src="https://accounts.google.com/gsi/client"
-                async
-                defer
-                onLoad={() => setGoogleScriptLoaded(true)}
-              />
-              <div className="mb-6 flex justify-center rounded-2xl border border-border bg-surface-2/60 py-3" ref={googleButtonRef} />
-              <div className="mb-6 flex items-center gap-3 text-xs text-muted">
-                <span className="h-px flex-1 bg-border" />
-                or sign in with a password
-                <span className="h-px flex-1 bg-border" />
-              </div>
-            </>
-          )}
-
-          <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-            <label className={fieldClass}>
-              <span className={labelClass}>Username</span>
-              <input
-                type="text"
-                required
-                autoComplete="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className={inputClass}
-              />
-            </label>
-
-            <label className={fieldClass}>
-              <span className={labelClass}>Password</span>
-              <input
-                type="password"
-                required
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className={inputClass}
-              />
-            </label>
-
-            {error && (
-              <p role="alert" className="rounded-xl border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger">
-                {error}
-              </p>
+    <div className="hero-stage relative isolate flex min-h-screen items-center justify-center overflow-hidden px-4 py-10">
+      {/* The landing hero: a blue bloom plus the interactive dot field. */}
+      <HeroField className="-z-10" />
+      <div className="fh-reveal w-full max-w-sm">
+        <div className="flex justify-center">
+          <BrandMark />
+        </div>
+        {/* The glow lives on a wrapper: Card's own ring is also a box-shadow and would override it. */}
+        <div className="neon-card mt-8 rounded-[1.35rem]">
+        <Card className="gap-0 rounded-[inherit] bg-transparent py-0 ring-0">
+          <CardHeader className="px-6 pt-6 pb-0 sm:px-7 sm:pt-7">
+            <CardTitle className="display text-2xl">Sign in</CardTitle>
+            <CardDescription className="mt-1 text-white/70">Access your FuncHole workspace.</CardDescription>
+          </CardHeader>
+          <CardContent className="px-6 pt-6 pb-6 sm:px-7 sm:pb-7">
+            {GOOGLE_CLIENT_ID && (
+              <>
+                <Script
+                  src="https://accounts.google.com/gsi/client"
+                  async
+                  defer
+                  onLoad={() => setGoogleScriptLoaded(true)}
+                />
+                <div className="mb-5 flex justify-center" ref={googleButtonRef} />
+                <div className="mb-5 flex items-center gap-3 text-xs text-subtle">
+                  <Separator className="flex-1" />
+                  or sign in with a password
+                  <Separator className="flex-1" />
+                </div>
+              </>
             )}
 
-            <Button type="submit" variant="primary" disabled={pending} className="mt-2 h-11 w-full">
-              {pending ? "Signing in…" : "Sign in"}
-            </Button>
-          </form>
-        </Panel>
+            <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="login-username">Username</Label>
+                <Input
+                  id="login-username"
+                  type="text"
+                  required
+                  autoComplete="username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="login-password">Password</Label>
+                <Input
+                  id="login-password"
+                  type="password"
+                  required
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+
+              {error && <FormError>{error}</FormError>}
+
+              <Button type="submit" variant="primary" disabled={pending} className="mt-2 h-10 w-full">
+                {pending ? "Signing in…" : "Sign in"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+        </div>
+        <p className="mt-8 flex items-center justify-center gap-2 font-mono text-[11px] text-white/60">
+          <span className="live-dot text-success" aria-hidden="true" />
+          Open source · Apache 2.0
+        </p>
+      </div>
     </div>
   );
 }

@@ -64,22 +64,22 @@ export default function ProfilePage() {
         description="Manage the profile fields used across your workspace."
       />
 
-      {error && <p role="alert" className="rounded-2xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">{error}</p>}
-      {message && <p className="rounded-2xl border border-success/30 bg-success/10 px-4 py-3 text-sm text-success">{message}</p>}
+      {error && <p role="alert" className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">{error}</p>}
+      {message && <p className="rounded-xl border border-success/30 bg-success/10 px-4 py-3 text-sm text-success">{message}</p>}
 
       <div className="grid gap-5 lg:grid-cols-[0.75fr_1.25fr]">
         <Panel className="p-5">
-          <div className="grid h-14 w-14 place-items-center rounded-2xl border border-accent-border bg-accent-soft text-accent">
+          <div className="grid h-14 w-14 place-items-center rounded-xl border border-border bg-secondary text-muted-strong">
             <UserIcon className="h-6 w-6" />
           </div>
-          <h2 className="mt-5 text-lg font-bold text-foreground">{profile?.fullName || profile?.username || "Loading..."}</h2>
+          <h2 className="mt-5 text-lg font-semibold text-foreground">{profile?.fullName || profile?.username || "Loading..."}</h2>
           <dl className="mt-4 grid gap-3 text-sm">
             <div>
-              <dt className="text-xs font-bold uppercase tracking-[0.14em] text-muted">Username</dt>
+              <dt className="eyebrow">Username</dt>
               <dd className="mt-1 font-mono text-muted-strong">{profile?.username ?? "..."}</dd>
             </div>
             <div>
-              <dt className="text-xs font-bold uppercase tracking-[0.14em] text-muted">Email</dt>
+              <dt className="eyebrow">Email</dt>
               <dd className="mt-1 text-muted-strong">{profile?.email ?? "..."}</dd>
             </div>
           </dl>

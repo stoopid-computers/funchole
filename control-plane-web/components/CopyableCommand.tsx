@@ -19,14 +19,21 @@ export function CopyableCommand({ value }: { value: string }) {
   }
 
   return (
-    <div className="flex items-start gap-2">
+    <div className="relative rounded-lg border border-border bg-background">
       {/* pre-wrap (not plain pre): preserves real embedded newlines (e.g. a
           multi-line command) while still wrapping an overly long single
           line instead of forcing horizontal scroll. */}
-      <pre className="flex-1 whitespace-pre-wrap break-all rounded-xl border border-border bg-[#070709] px-3 py-2 font-mono text-xs leading-5 text-muted-strong shadow-inner shadow-black/40">
+      <pre className="py-3 pr-12 pl-3.5 font-mono text-xs leading-relaxed break-all whitespace-pre-wrap text-muted-strong">
         {value}
       </pre>
-      <Button variant="secondary" size="icon" title="Copy" onClick={copy}>
+      <Button
+        variant="ghost"
+        size="icon"
+        title={copied ? "Copied" : "Copy"}
+        aria-label={copied ? "Copied" : "Copy to clipboard"}
+        onClick={copy}
+        className="absolute top-1.5 right-1.5 text-subtle hover:text-foreground"
+      >
         {copied ? <CheckIcon className="h-4 w-4 text-success" /> : <CopyIcon className="h-4 w-4" />}
       </Button>
     </div>

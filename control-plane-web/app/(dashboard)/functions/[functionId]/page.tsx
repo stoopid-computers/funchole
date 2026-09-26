@@ -10,6 +10,9 @@ import { inputClass, labelClass, fieldClass } from "@/components/Input";
 import { ArrowLeftIcon, ChevronRightIcon, PlusIcon, PencilIcon, TrashIcon, CopyIcon } from "@/components/icons";
 import { api, ApiError } from "@/lib/api";
 import type { FunctionResponse, FunctionVersionResponse } from "@/lib/types";
+import { FormError } from "@/components/FormError";
+import { confirmAction } from "@/components/ConfirmDialog";
+import { NativeSelect } from "@/components/ui/native-select";
 
 interface EditFormState {
   name: string;
@@ -80,7 +83,7 @@ export default function FunctionDetailPage() {
   }
 
   async function handleDeleteFunction() {
-    if (!fn || !window.confirm(`Delete function "${fn.name}"? This cannot be undone.`)) return;
+    if (!fn || !await confirmAction(`Delete function "${fn.name}"? This cannot be undone.`)) return;
     setError(null);
     try {
       await api.deleteFunction(functionId);
@@ -106,14 +109,14 @@ export default function FunctionDetailPage() {
   }
 
   if (!fn) {
-    return <p className="text-sm text-muted">Loading…</p>;
+    return <p className="text-sm text-muted-foreground">Loading…</p>;
   }
 
   const sortedVersions = [...versions].sort((a, b) => b.version - a.version);
 
   return (
     <div className="flex flex-col gap-6">
-      <nav className="flex items-center gap-1.5 text-sm text-muted">
+      <nav className="flex items-center gap-1.5 text-sm text-muted-foreground">
         <Link href="/functions" className="hover:text-foreground">
           Functions
         </Link>
@@ -125,18 +128,18 @@ export default function FunctionDetailPage() {
         <div className="flex items-start gap-3">
           <Link
             href="/functions"
-            className="mt-1 flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted hover:bg-surface-hover hover:text-foreground"
+            className="mt-1 flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-surface-hover hover:text-foreground"
           >
             <ArrowLeftIcon className="h-4 w-4" />
           </Link>
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground">{fn.name}</h1>
-            <p className="mt-1 flex items-center gap-2 font-mono text-xs text-muted">
+            <h1 className="text-2xl font-medium tracking-tight text-foreground">{fn.name}</h1>
+            <p className="mt-1 flex items-center gap-2 font-mono text-xs text-muted-foreground">
               {fn.functionKey}
               <span className="text-border-strong">&middot;</span>
               {fn.runtime}
             </p>
-            {fn.description && <p className="mt-1 text-sm text-muted">{fn.description}</p>}
+            {fn.description && <p className="mt-1 text-sm text-muted-foreground">{fn.description}</p>}
           </div>
         </div>
         <div className="flex gap-2">
@@ -166,13 +169,13 @@ export default function FunctionDetailPage() {
           </label>
           <label className={fieldClass}>
             <span className={labelClass}>Runtime</span>
-            <select
+            <NativeSelect
               value={editForm.runtime}
               onChange={(e) => setEditForm({ ...editForm, runtime: e.target.value })}
-              className={inputClass}
+              className="w-full"
             >
               <option value="NODE">NODE</option>
-            </select>
+            </NativeSelect>
           </label>
           <label className={`${fieldClass} sm:col-span-2`}>
             <span className={labelClass}>Description</span>
@@ -196,13 +199,13 @@ export default function FunctionDetailPage() {
       )}
 
       {error && (
-        <p role="alert" className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-600 dark:bg-rose-500/10 dark:text-rose-400">
+        <FormError>
           {error}
-        </p>
+        </FormError>
       )}
 
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-foreground">Versions</h2>
+        <h2 className="text-lg font-medium text-foreground">Versions</h2>
         <Button variant="primary" size="sm" onClick={() => handleNewDraft()} disabled={busy}>
           <PlusIcon className="h-4 w-4" />
           New draft version
@@ -212,7 +215,7 @@ export default function FunctionDetailPage() {
       <Panel className="overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-border text-left text-muted">
+            <tr className="border-b border-border text-left text-muted-foreground">
               <th className="px-4 py-3 font-medium">Version</th>
               <th className="px-4 py-3 font-medium">Status</th>
               <th className="px-4 py-3 font-medium">Artifact</th>
@@ -223,7 +226,7 @@ export default function FunctionDetailPage() {
           <tbody>
             {sortedVersions.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-muted">
+                <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
                   No versions yet. Create a draft to submit source and deploy.
                 </td>
               </tr>
@@ -233,7 +236,7 @@ export default function FunctionDetailPage() {
                 <td className="px-4 py-3">
                   <Link
                     href={`/functions/${functionId}/versions/${version.id}`}
-                    className="font-mono font-medium text-foreground hover:text-cyan-600 dark:hover:text-cyan-400"
+                    className="font-mono font-medium text-foreground hover:text-muted-strong"
                   >
                     v{version.version}
                   </Link>
@@ -241,10 +244,10 @@ export default function FunctionDetailPage() {
                 <td className="px-4 py-3">
                   <StatusBadge status={version.status} />
                 </td>
-                <td className="px-4 py-3 font-mono text-xs text-muted">
+                <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
                   {version.artifactSha256 ? `${version.artifactSha256.slice(0, 10)}…` : "—"}
                 </td>
-                <td className="px-4 py-3 text-muted">{new Date(version.createdAt).toLocaleString()}</td>
+                <td className="px-4 py-3 text-muted-foreground">{new Date(version.createdAt).toLocaleString()}</td>
                 <td className="px-4 py-3 text-right">
                   <div className="flex justify-end gap-2">
                     <Button

@@ -12,24 +12,21 @@ export function OutputLog({ steps }: OutputLogProps) {
     <div className="mt-3 border-t border-border pt-3">
       <p className="text-xs font-medium text-foreground">Output log</p>
       {totalLines === 0 ? (
-        <p className="mt-1.5 text-xs text-muted">No console output was logged.</p>
+        <p className="mt-1.5 text-xs text-muted-foreground">No console output was logged.</p>
       ) : (
         <div className="mt-1.5 space-y-2">
           {steps.map((step) => (
-            <div key={step.stepId} className="rounded-md bg-background">
+            <div key={step.stepId}>
               {multiStep && (
-                <p className="px-1 pb-1 font-mono text-[11px] text-muted">
+                <p className="px-1 pb-1 font-mono text-[11px] text-subtle">
                   #{step.position} {step.componentType}
                 </p>
               )}
               {step.logs.length > 0 && (
-                <pre className="max-h-64 overflow-auto rounded-md border border-border bg-surface-hover p-2 font-mono text-[11px] leading-relaxed">
+                <pre className="max-h-64 overflow-auto rounded-lg border border-border bg-background p-2.5 font-mono text-[11px] leading-relaxed">
                   {step.logs.map((log, index) => (
-                    <div
-                      key={index}
-                      className={log.stream === "stderr" ? "text-rose-600 dark:text-rose-400" : "text-foreground"}
-                    >
-                      <span className="select-none text-muted">{log.stream === "stderr" ? "! " : "  "}</span>
+                    <div key={index} className={log.stream === "stderr" ? "text-danger" : "text-muted-strong"}>
+                      <span className="select-none text-subtle">{log.stream === "stderr" ? "! " : "  "}</span>
                       {log.message}
                     </div>
                   ))}

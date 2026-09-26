@@ -2,7 +2,6 @@
 
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Button } from "@/components/Button";
-import { CreatePanel } from "@/components/CreatePanel";
 import { Modal } from "@/components/Modal";
 import { CopyableCommand } from "@/components/CopyableCommand";
 import { inputClass, labelClass, fieldClass } from "@/components/Input";
@@ -12,6 +11,8 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { PlusIcon, TrashIcon, AnthropicIcon, OpenAIIcon, OpencodeIcon } from "@/components/icons";
 import { api, ApiError, API_BASE_URL, APP_URL } from "@/lib/api";
 import type { ApiKeyResponse } from "@/lib/types";
+import { FormError } from "@/components/FormError";
+import { confirmAction } from "@/components/ConfirmDialog";
 
 // Prefer the Gateway's own <app-url>/mcp shortcut (see FixedHostProxy.PathOverride)
 // when this deployment has one configured; otherwise fall back to the
@@ -52,6 +53,7 @@ export default function ApiKeysPage() {
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [createError, setCreateError] = useState<string | null>(null);
   const [revealedKey, setRevealedKey] = useState<string | null>(null);
 
   useEffect(() => {
@@ -73,9 +75,19 @@ export default function ApiKeysPage() {
     setReloadKey((key) => key + 1);
   }
 
+  function openCreate() {
+    setName("");
+    setCreateError(null);
+    setCreating(true);
+  }
+
+  function closeCreate() {
+    setCreating(false);
+  }
+
   async function handleCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setError(null);
+    setCreateError(null);
     setBusy(true);
     try {
       const created = await api.createApiKey({ name: name.trim() });
@@ -84,14 +96,14 @@ export default function ApiKeysPage() {
       setCreating(false);
       refresh();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to create MCP API key");
+      setCreateError(err instanceof ApiError ? err.message : "Failed to create MCP API key");
     } finally {
       setBusy(false);
     }
   }
 
   async function handleRevoke(key: ApiKeyResponse) {
-    if (!window.confirm(`Revoke "${key.name}"? Anything using it (e.g. an MCP client) will stop working immediately.`)) {
+    if (!await confirmAction(`Revoke "${key.name}"? Anything using it (e.g. an MCP client) will stop working immediately.`)) {
       return;
     }
     setError(null);
@@ -110,7 +122,7 @@ export default function ApiKeysPage() {
         title="Agent Access"
         description="Credentials for coding agents. Create one key, copy the generated command, and keep the dashboard for manual oversight."
         actions={
-        <Button variant="primary" onClick={() => setCreating(true)}>
+        <Button variant="primary" onClick={openCreate}>
           <PlusIcon className="h-4 w-4" />
           New API key
         </Button>
@@ -148,13 +160,29 @@ export default function ApiKeysPage() {
       )}
 
       {creating && (
-        <CreatePanel title="Create agent key" description="Name the agent or environment that will use this key. The raw token is shown once.">
-          <form onSubmit={handleCreate} className="flex flex-wrap items-end gap-3">
-            <label className={`${fieldClass} min-w-64 flex-1`}>
+        <Modal
+          title="Create agent key"
+          description="Name the agent or environment that will use this key. The raw token is shown once."
+          onClose={closeCreate}
+          dismissible={!busy}
+          footer={
+            <>
+              <Button type="button" variant="secondary" onClick={closeCreate} disabled={busy}>
+                Cancel
+              </Button>
+              <Button type="submit" form="api-key-form" variant="primary" disabled={busy}>
+                {busy ? "Creating…" : "Create key"}
+              </Button>
+            </>
+          }
+        >
+          <form id="api-key-form" onSubmit={handleCreate} className="flex flex-col gap-4">
+            <label className={fieldClass}>
               <span className={labelClass}>Name</span>
               <input
                 type="text"
                 required
+                autoFocus
                 maxLength={150}
                 placeholder="My coding agent"
                 value={name}
@@ -162,34 +190,29 @@ export default function ApiKeysPage() {
                 className={inputClass}
               />
             </label>
-            <Button type="submit" variant="primary" disabled={busy}>
-              Create
-            </Button>
-            <Button type="button" variant="secondary" onClick={() => setCreating(false)}>
-              Cancel
-            </Button>
+            {createError && <FormError>{createError}</FormError>}
           </form>
-        </CreatePanel>
+        </Modal>
       )}
 
       {error && (
-        <p role="alert" className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-600 dark:bg-rose-500/10 dark:text-rose-400">
+        <FormError>
           {error}
-        </p>
+        </FormError>
       )}
 
       <ResourceList title="Agent credentials" description={`Connection endpoint: ${MCP_URL}`}>
         {!keys && <ResourceListState>Loading agent keys…</ResourceListState>}
         {keys?.length === 0 && <ResourceListState>No agent keys yet. Create one to connect a coding agent.</ResourceListState>}
         {keys?.map((key) => (
-          <div key={key.id} className="grid gap-4 px-5 py-4 transition-colors hover:bg-accent-soft lg:grid-cols-[1fr_auto]">
+          <div key={key.id} className="grid gap-4 px-5 py-4 transition-colors hover:bg-white/[0.03] lg:grid-cols-[1fr_auto]">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <p className="text-base font-bold text-foreground">{key.name}</p>
+                <p className="text-base font-semibold text-foreground">{key.name}</p>
                 <StatusBadge status={key.revokedAt ? "REVOKED" : "ACTIVE"} />
               </div>
-              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted">
-                <code className="rounded-full border border-border bg-surface-2 px-2.5 py-1 font-mono">{key.keyPrefix}…</code>
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                <code className="rounded-md border border-border bg-surface-2 px-1.5 py-0.5 font-mono">{key.keyPrefix}…</code>
                 <span>Created {new Date(key.createdAt).toLocaleString()}</span>
                 <span>Last used {key.lastUsedAt ? new Date(key.lastUsedAt).toLocaleString() : "never"}</span>
               </div>

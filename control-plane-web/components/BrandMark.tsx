@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { useId } from "react";
+import { cn } from "@/lib/utils";
 
 interface BrandMarkProps {
   href?: string;
@@ -6,32 +8,36 @@ interface BrandMarkProps {
   className?: string;
 }
 
-export function BrandMark({ href, showText = true, className = "" }: BrandMarkProps) {
+// The landing page's mark: a white card and an electric-blue glass card overlapping.
+export function LogoMark({ className }: { className?: string }) {
+  const gradientId = useId();
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={cn("size-[18px]", className)}>
+      <defs>
+        <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#b9c8ff" />
+          <stop offset="1" stopColor="#2f5bff" />
+        </linearGradient>
+      </defs>
+      <rect x="1.5" y="1.5" width="13.5" height="13.5" rx="4.2" fill="#fafafa" />
+      <rect x="9" y="9" width="13.5" height="13.5" rx="4.2" fill={`url(#${gradientId})`} fillOpacity=".92" />
+      <path d="M9 13.2A4.2 4.2 0 0 1 13.2 9H15v1.8a4.2 4.2 0 0 1-4.2 4.2H9z" fill="#dfe6ff" />
+    </svg>
+  );
+}
+
+export function BrandMark({ href, showText = true, className }: BrandMarkProps) {
   const content = (
-    <span className={`inline-flex items-center gap-3 ${className}`}>
-      <span className="relative grid h-10 w-10 place-items-center rounded-2xl border border-accent-border bg-accent-soft text-accent shadow-[0_0_40px_rgba(245,166,35,0.18)]">
-        <span className="absolute inset-1 rounded-xl border border-accent/20" />
-        <svg viewBox="0 0 32 32" fill="none" aria-hidden="true" className="h-6 w-6">
-          <path d="M8 17.5c0-5.2 3.7-9.5 8.5-9.5 3.3 0 6.1 1.9 7.5 4.7" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" />
-          <path d="M24 14.5c0 5.2-3.7 9.5-8.5 9.5-3.3 0-6.1-1.9-7.5-4.7" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" />
-          <path d="M10 10.5 8 17.5l6.8-2" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M22 21.5 24 14.5l-6.8 2" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" />
-          <circle cx="16" cy="16" r="2.5" fill="currentColor" />
-        </svg>
-      </span>
-      {showText && (
-        <span className="leading-tight">
-          <span className="block text-sm font-bold tracking-tight text-foreground">FuncHole</span>
-          <span className="block text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">workspace</span>
-        </span>
-      )}
+    <span className={cn("inline-flex items-center gap-2.5", className)}>
+      <LogoMark />
+      {showText && <span className="text-[15px] font-semibold tracking-tight text-foreground">FuncHole</span>}
     </span>
   );
 
   if (!href) return content;
 
   return (
-    <Link href={href} className="rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-accent">
+    <Link href={href} aria-label="FuncHole home" className="rounded-lg">
       {content}
     </Link>
   );
