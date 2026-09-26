@@ -134,6 +134,9 @@ app:
     # self-register (see CloudSignupService), gets the free package, and is
     # subject to its limits on Function/Flow/Gateway/Domain creation.
     enabled: ${CLOUD_MODE_ENABLED:false}
+  notifications:
+    discord:
+      signup-webhook-url: ${DISCORD_SIGNUP_WEBHOOK_URL:}
   tenant-database:
     # A separate Postgres server (not the primary spring.datasource above,
     # which holds FuncHole's own control-plane schema) that every

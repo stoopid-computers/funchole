@@ -7,12 +7,14 @@ import com.funchole.backend.controlplane.dto.GatewayCreateRequest;
 import com.funchole.backend.controlplane.entity.AppUser;
 import com.funchole.backend.controlplane.entity.Package;
 import com.funchole.backend.controlplane.entity.UserPackage;
+import com.funchole.backend.controlplane.event.UserSignedUpEvent;
 import com.funchole.backend.controlplane.repository.AppUserRepository;
 import com.funchole.backend.controlplane.repository.DatabaseRepository;
 import com.funchole.backend.controlplane.repository.PackageRepository;
 import com.funchole.backend.controlplane.repository.UserPackageRepository;
 import java.security.SecureRandom;
 import java.util.UUID;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,6 +48,7 @@ public class CloudSignupService {
     private final TenantDatabaseProvisioningService tenantDatabaseProvisioningService;
     private final TenantDatabaseProperties tenantDatabaseProperties;
     private final PasswordEncoder passwordEncoder;
+    private final ApplicationEventPublisher eventPublisher;
     private final SecureRandom secureRandom = new SecureRandom();
 
     public CloudSignupService(
@@ -57,7 +60,8 @@ public class CloudSignupService {
             DatabaseService databaseService,
             TenantDatabaseProvisioningService tenantDatabaseProvisioningService,
             TenantDatabaseProperties tenantDatabaseProperties,
-            PasswordEncoder passwordEncoder
+            PasswordEncoder passwordEncoder,
+            ApplicationEventPublisher eventPublisher
     ) {
         this.appUserRepository = appUserRepository;
         this.userPackageRepository = userPackageRepository;
@@ -68,6 +72,7 @@ public class CloudSignupService {
         this.tenantDatabaseProvisioningService = tenantDatabaseProvisioningService;
         this.tenantDatabaseProperties = tenantDatabaseProperties;
         this.passwordEncoder = passwordEncoder;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -85,8 +90,15 @@ public class CloudSignupService {
 
         provisionDefaultGateway(appUser);
         provisionDefaultDatabase(appUser);
+        eventPublisher.publishEvent(new UserSignedUpEvent(resolveSignupIdentity(appUser)));
 
         return appUser;
+    }
+
+    private String resolveSignupIdentity(AppUser appUser) {
+        return appUser.getEmail() != null && !appUser.getEmail().isBlank()
+                ? appUser.getEmail()
+                : appUser.getUsername();
     }
 
     /**
