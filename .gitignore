@@ -16,3 +16,4 @@ FUNCHole_MASTER_PRD_AND_BACKLOG.md
 PRODUCTION_DEPLOYMENT_MISSING.md
 .atlas/
 node_modules/
+.agents

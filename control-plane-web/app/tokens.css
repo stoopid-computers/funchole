@@ -1,0 +1,47 @@
+/*
+ * FuncHole design tokens - the shared palette, radius and type scale.
+ *
+ * Source of truth: the `@theme` block in landing/src/input.css. These values
+ * are copied from it verbatim so the console and the landing page stay one
+ * product; change them there first, then mirror the change here. (Both apps
+ * build in separate Docker contexts, so they can't import one shared file.)
+ *
+ * globals.css maps these onto shadcn/ui's semantic variables.
+ */
+:root {
+  /* Surfaces, darkest to lightest */
+  --fh-ink: #000000;
+  --fh-panel: #0a0a0a;
+  --fh-panel-2: #121212;
+  --fh-raise: #1a1a1a;
+
+  /* Lines */
+  --fh-line: #1d1d1d;
+  --fh-line-strong: #2b2b2b;
+
+  /* Text, brightest to faintest */
+  --fh-fg: #fafafa;
+  --fh-soft: #d4d4d4;
+  --fh-muted: #a1a1a1;
+  --fh-subtle: #7a7a7a;
+  --fh-faint: #525252;
+
+  /* Electric blue: focus, live and active states - never decoration. */
+  --fh-accent: #6b8cff;
+  --fh-accent-strong: #2f5bff;
+  --fh-accent-soft: rgb(107 140 255 / 0.14);
+
+  /* Status */
+  --fh-ok: #4ade80;
+  --fh-warn: #fbbf24;
+  --fh-bad: #f87171;
+
+  /* Code highlighting */
+  --fh-code-fn: #7b9bff;
+  --fh-code-str: #86efac;
+  --fh-code-kw: #f0abfc;
+  --fh-code-num: #fdba74;
+
+  /* Base radius: 8px buttons/inputs; panels are +4px, large cards +8/+16px. */
+  --fh-radius: 0.5rem;
+}

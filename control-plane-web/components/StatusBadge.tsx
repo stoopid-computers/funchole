@@ -1,28 +1,45 @@
-const STATUS_STYLES: Record<string, string> = {
-  ACTIVE: "border-success/30 bg-success/10 text-success",
-  VERIFIED: "border-success/30 bg-success/10 text-success",
-  ADOPTED: "border-success/30 bg-success/10 text-success",
-  READY: "border-success/30 bg-success/10 text-success",
-  COMPLETED: "border-success/30 bg-success/10 text-success",
-  PENDING: "border-accent-border bg-accent-soft text-accent",
-  DRAFT: "border-accent-border bg-accent-soft text-accent",
-  PUBLISHING: "border-info/30 bg-info/10 text-info",
-  FAILED: "border-danger/30 bg-danger/10 text-danger",
-  REVOKED: "border-danger/30 bg-danger/10 text-danger",
-  REJECTED: "border-danger/30 bg-danger/10 text-danger",
-  EXPIRED: "border-danger/30 bg-danger/10 text-danger",
-  ARCHIVED: "border-violet/30 bg-violet/10 text-violet",
-  INACTIVE: "border-border bg-surface-hover text-muted",
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+
+// Landing-page status pills: mono, uppercase, tinted - green for healthy,
+// amber for not-yet-live, blue (pulsing) for in-progress, red for failure.
+const TONES = {
+  ok: "bg-success/10 text-success",
+  pending: "bg-warning/10 text-warning",
+  live: "bg-brand-soft text-brand",
+  bad: "bg-danger/10 text-danger",
+  neutral: "bg-white/[0.06] text-muted-foreground",
+} as const;
+
+const STATUS_TONE: Record<string, keyof typeof TONES> = {
+  ACTIVE: "ok",
+  VERIFIED: "ok",
+  ADOPTED: "ok",
+  READY: "ok",
+  COMPLETED: "ok",
+  PENDING: "pending",
+  DRAFT: "pending",
+  PUBLISHING: "live",
+  FAILED: "bad",
+  REVOKED: "bad",
+  REJECTED: "bad",
+  EXPIRED: "bad",
+  ARCHIVED: "neutral",
+  INACTIVE: "neutral",
 };
 
 export function StatusBadge({ status }: { status: string }) {
-  const style = STATUS_STYLES[status] ?? "border-border bg-surface-hover text-muted";
+  const tone = STATUS_TONE[status] ?? "neutral";
   return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold ${style}`}
+    <Badge
+      variant="outline"
+      className={cn(
+        "h-auto gap-1.5 rounded-md border-transparent px-1.5 py-0.5 font-mono text-[10px] font-medium tracking-wider uppercase",
+        TONES[tone]
+      )}
     >
-      <span className="h-1.5 w-1.5 rounded-full bg-current" />
+      {tone === "live" ? <span className="live-dot" aria-hidden="true" /> : <span className="size-1.5 rounded-full bg-current" aria-hidden="true" />}
       {status}
-    </span>
+    </Badge>
   );
 }

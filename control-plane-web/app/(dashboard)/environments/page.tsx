@@ -1,10 +1,12 @@
 "use client";
 
+import { FormError } from "@/components/FormError";
+import { Modal } from "@/components/Modal";
+import { confirmAction } from "@/components/ConfirmDialog";
 import { useEffect, useState, type FormEvent } from "react";
 import { Pagination } from "@/components/Pagination";
 import { Panel } from "@/components/Panel";
 import { Button } from "@/components/Button";
-import { CreatePanel } from "@/components/CreatePanel";
 import { inputClass, labelClass, fieldClass } from "@/components/Input";
 import { PageHeader } from "@/components/PageHeader";
 import { ResourceList, ResourceListState } from "@/components/ResourceList";
@@ -80,10 +82,12 @@ export default function EnvironmentsPage() {
   }
 
   function openCreate() {
+    setError(null);
     setForm({ ...EMPTY_FORM });
   }
 
   function openEdit(environment: EnvironmentProfileResponse) {
+    setError(null);
     setForm({
       id: environment.id,
       environmentKey: environment.environmentKey,
@@ -93,6 +97,8 @@ export default function EnvironmentsPage() {
   }
 
   function closeForm() {
+    if (busy) return;
+    setError(null);
     setForm(null);
   }
 
@@ -124,7 +130,7 @@ export default function EnvironmentsPage() {
   }
 
   async function handleDelete(environment: EnvironmentProfileResponse) {
-    if (!window.confirm(`Delete variable set "${environment.name}"? Anything using it will stop inheriting these values.`)) {
+    if (!await confirmAction(`Delete variable set "${environment.name}"? Anything using it will stop inheriting these values.`)) {
       return;
     }
     setError(null);
@@ -169,8 +175,24 @@ export default function EnvironmentsPage() {
       />
 
       {form && (
-        <CreatePanel title={form.id ? "Edit variable set" : "New variable set"} description="Create a named profile for shared configuration. Secrets are stored protected and only references are shown later.">
-          <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2">
+        <Modal
+          title={form.id ? "Edit variable set" : "New variable set"}
+          description="Create a named profile for shared configuration. Secrets are stored protected and only references are shown later."
+          onClose={closeForm}
+          dismissible={!busy}
+          widthClassName="max-w-2xl"
+          footer={
+            <>
+              <Button type="button" variant="secondary" onClick={closeForm} disabled={busy}>
+                Cancel
+              </Button>
+              <Button type="submit" form="environment-form" variant="primary" disabled={busy}>
+                {form.id ? "Save changes" : "Create variable set"}
+              </Button>
+            </>
+          }
+        >
+          <form id="environment-form" onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2">
             <label className={fieldClass}>
               <span className={labelClass}>Variable set key</span>
               <input
@@ -207,22 +229,19 @@ export default function EnvironmentsPage() {
                 className={inputClass}
               />
             </label>
-            <div className="flex gap-2 sm:col-span-2">
-              <Button type="submit" variant="primary" disabled={busy}>
-                {form.id ? "Save changes" : "Create variable set"}
-              </Button>
-              <Button type="button" variant="secondary" onClick={closeForm}>
-                Cancel
-              </Button>
-            </div>
+            {error && (
+              <div className="sm:col-span-2">
+                <FormError>{error}</FormError>
+              </div>
+            )}
           </form>
-        </CreatePanel>
+        </Modal>
       )}
 
-      {error && (
-        <p role="alert" className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-600 dark:bg-rose-500/10 dark:text-rose-400">
+      {error && !form && (
+        <FormError>
           {error}
-        </p>
+        </FormError>
       )}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
@@ -232,8 +251,8 @@ export default function EnvironmentsPage() {
           {environments?.items.map((environment) => (
             <div
               key={environment.id}
-              className={`grid gap-4 px-5 py-4 transition-colors hover:bg-accent-soft lg:grid-cols-[1fr_auto] ${
-                selected?.id === environment.id ? "bg-accent-soft" : ""
+              className={`grid gap-4 px-5 py-4 transition-colors hover:bg-white/[0.03] lg:grid-cols-[1fr_auto] ${
+                selected?.id === environment.id ? "bg-white/[0.04]" : ""
               }`}
             >
               <button
@@ -244,12 +263,12 @@ export default function EnvironmentsPage() {
                 }}
                 className="min-w-0 text-left"
               >
-                <p className="text-base font-bold text-foreground hover:text-accent">{environment.name}</p>
+                <p className="text-base font-semibold text-foreground hover:text-muted-strong">{environment.name}</p>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <code className="rounded-full border border-border bg-surface-2 px-2.5 py-1 font-mono text-xs text-muted-strong">{environment.environmentKey}</code>
-                  <span className="text-xs text-muted">Created {new Date(environment.createdAt).toLocaleString()}</span>
+                  <code className="rounded-md border border-border bg-surface-2 px-1.5 py-0.5 font-mono text-[11px] text-muted-strong">{environment.environmentKey}</code>
+                  <span className="text-xs text-muted-foreground">Created {new Date(environment.createdAt).toLocaleString()}</span>
                 </div>
-                {environment.description && <p className="mt-2 line-clamp-1 text-sm text-muted">{environment.description}</p>}
+                {environment.description && <p className="mt-2 line-clamp-1 text-sm text-muted-foreground">{environment.description}</p>}
               </button>
               <div className="flex items-center gap-2 lg:justify-end">
                 <Button variant="secondary" size="icon" title="Edit" onClick={() => openEdit(environment)}>
@@ -288,9 +307,9 @@ function EnvironmentConfigPanel({ selected, config, onSave }: EnvironmentConfigP
   if (!selected) {
     return (
       <Panel className="flex min-h-64 flex-col items-center justify-center gap-3 p-6 text-center">
-        <KeyIcon className="h-8 w-8 text-muted" />
+        <KeyIcon className="h-8 w-8 text-muted-foreground" />
         <p className="text-sm font-medium text-foreground">Select an environment</p>
-        <p className="max-w-xs text-xs text-muted">
+        <p className="max-w-xs text-xs text-muted-foreground">
           Choose a set to manage shared variables and secrets.
         </p>
       </Panel>
@@ -301,7 +320,7 @@ function EnvironmentConfigPanel({ selected, config, onSave }: EnvironmentConfigP
     <Panel className="flex flex-col gap-4 p-4">
       <div>
         <p className="text-sm font-medium text-foreground">{selected.name}</p>
-        <p className="mt-1 font-mono text-xs text-muted">{selected.environmentKey}</p>
+        <p className="mt-1 font-mono text-xs text-muted-foreground">{selected.environmentKey}</p>
       </div>
       <ConfigList
         title="Variables"
@@ -359,15 +378,15 @@ function ConfigList({ title, entries, placeholder, secret, onSave }: ConfigListP
       </div>
 
       {entries === null ? (
-        <p className="px-3 py-3 text-xs text-muted">Loading…</p>
+        <p className="px-3 py-3 text-xs text-muted-foreground">Loading…</p>
       ) : entries.length === 0 && !adding ? (
-        <p className="px-3 py-3 text-xs text-muted">None set.</p>
+        <p className="px-3 py-3 text-xs text-muted-foreground">None set.</p>
       ) : (
         <ul className="divide-y divide-border">
           {entries.map((entry) => (
             <li key={entry.key} className="flex items-center gap-3 px-3 py-2 text-xs">
               <span className="w-36 shrink-0 truncate font-mono font-medium text-foreground">{entry.key}</span>
-              <span className="truncate font-mono text-muted">{secret ? `configured (${entry.value})` : entry.value}</span>
+              <span className="truncate font-mono text-muted-foreground">{secret ? `configured (${entry.value})` : entry.value}</span>
             </li>
           ))}
         </ul>

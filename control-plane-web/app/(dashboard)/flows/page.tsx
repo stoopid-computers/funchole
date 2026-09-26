@@ -5,13 +5,17 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Pagination } from "@/components/Pagination";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button, buttonClasses } from "@/components/Button";
-import { CreatePanel } from "@/components/CreatePanel";
 import { inputClass, labelClass, fieldClass } from "@/components/Input";
 import { PageHeader } from "@/components/PageHeader";
 import { ResourceList, ResourceListState } from "@/components/ResourceList";
-import { PlusIcon, TrashIcon } from "@/components/icons";
+import { PlusIcon, TrashIcon, ServerIcon } from "@/components/icons";
+import { EmptyState } from "@/components/EmptyState";
 import { api, ApiError } from "@/lib/api";
 import type { FlowResponse, GatewayResponse, PaginationResponse } from "@/lib/types";
+import { FormError } from "@/components/FormError";
+import { Modal } from "@/components/Modal";
+import { confirmAction } from "@/components/ConfirmDialog";
+import { NativeSelect } from "@/components/ui/native-select";
 
 const PAGE_SIZE = 10;
 const HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"];
@@ -39,6 +43,8 @@ const EMPTY_FORM: FlowFormState = {
 export default function FlowsPage() {
   const [flows, setFlows] = useState<PaginationResponse<FlowResponse> | null>(null);
   const [gateways, setGateways] = useState<GatewayResponse[]>([]);
+  // False until the entry point list has loaded, so the "create one first" guidance doesn't flash.
+  const [gatewaysLoaded, setGatewaysLoaded] = useState(false);
   const [page, setPage] = useState(1);
   const [reloadKey, setReloadKey] = useState(0);
   const [form, setForm] = useState<FlowFormState | null>(null);
@@ -60,6 +66,7 @@ export default function FlowsPage() {
       } catch {
         if (!cancelled) setGateways([]);
       }
+      if (!cancelled) setGatewaysLoaded(true);
     })();
     return () => {
       cancelled = true;
@@ -71,10 +78,13 @@ export default function FlowsPage() {
   }
 
   function openCreate() {
+    setError(null);
     setForm({ ...EMPTY_FORM, gatewayId: gateways[0]?.id ?? "" });
   }
 
   function closeForm() {
+    if (busy) return;
+    setError(null);
     setForm(null);
   }
 
@@ -103,7 +113,7 @@ export default function FlowsPage() {
   }
 
   async function handleDelete(flow: FlowResponse) {
-    if (!window.confirm(`Delete flow "${flow.name}"?`)) {
+    if (!await confirmAction(`Delete flow "${flow.name}"?`)) {
       return;
     }
     setError(null);
@@ -114,6 +124,8 @@ export default function FlowsPage() {
       setError(err instanceof ApiError ? err.message : "Failed to delete flow");
     }
   }
+
+  const needsGateway = gatewaysLoaded && gateways.length === 0;
 
   return (
     <div className="flex flex-col gap-6">
@@ -129,15 +141,35 @@ export default function FlowsPage() {
         }
       />
 
-      {gateways.length === 0 && (
-        <p className="rounded-2xl border border-accent-border bg-accent-soft px-4 py-3 text-sm text-accent">
-          You need at least one entry point before creating a workflow.
+      {/* When the list is empty its empty state carries this guidance instead. */}
+      {needsGateway && (flows?.items.length ?? 0) > 0 && (
+        <p className="rounded-xl border border-warning/25 bg-warning/[0.06] px-4 py-3 text-sm text-warning">
+          You need at least one entry point before creating a workflow.{" "}
+          <Link href="/gateways" className="font-medium underline underline-offset-4 hover:text-foreground">
+            Create an entry point
+          </Link>
         </p>
       )}
 
       {form && (
-        <CreatePanel title="New workflow" description="Choose the public method and path this workflow should answer.">
-          <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2">
+        <Modal
+          title="New workflow"
+          description="Choose the public method and path this workflow should answer."
+          onClose={closeForm}
+          dismissible={!busy}
+          widthClassName="max-w-2xl"
+          footer={
+            <>
+              <Button type="button" variant="secondary" onClick={closeForm} disabled={busy}>
+                Cancel
+              </Button>
+              <Button type="submit" form="flow-form" variant="primary" disabled={busy}>
+                Create workflow
+              </Button>
+            </>
+          }
+        >
+          <form id="flow-form" onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2">
             <label className={fieldClass}>
               <span className={labelClass}>Workflow key</span>
               <input
@@ -175,33 +207,33 @@ export default function FlowsPage() {
             </label>
             <label className={fieldClass}>
               <span className={labelClass}>Entry point</span>
-              <select
+              <NativeSelect
                 required
                 value={form.gatewayId}
                 onChange={(e) => setForm({ ...form, gatewayId: e.target.value })}
-                className={inputClass}
+                className="w-full"
               >
                 {gateways.map((gateway) => (
                   <option key={gateway.id} value={gateway.id}>
                     {gateway.name} ({gateway.uniqueKey}.{gateway.domainName})
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </label>
             <div className="grid grid-cols-3 gap-3">
               <label className={fieldClass}>
                 <span className={labelClass}>Method</span>
-                <select
+                <NativeSelect
                   value={form.httpMethod}
                   onChange={(e) => setForm({ ...form, httpMethod: e.target.value })}
-                  className={inputClass}
+                  className="w-full"
                 >
                   {HTTP_METHODS.map((method) => (
                     <option key={method} value={method}>
                       {method}
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
               </label>
               <label className={`${fieldClass} col-span-2`}>
                 <span className={labelClass}>Path</span>
@@ -224,40 +256,63 @@ export default function FlowsPage() {
                 className={inputClass}
               />
             </label>
-            <div className="flex gap-2 sm:col-span-2">
-              <Button type="submit" variant="primary" disabled={busy}>
-                Create workflow
-              </Button>
-              <Button type="button" variant="secondary" onClick={closeForm}>
-                Cancel
-              </Button>
-            </div>
+            {error && (
+              <div className="sm:col-span-2">
+                <FormError>{error}</FormError>
+              </div>
+            )}
           </form>
-        </CreatePanel>
+        </Modal>
       )}
 
-      {error && (
-        <p role="alert" className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-600 dark:bg-rose-500/10 dark:text-rose-400">
+      {error && !form && (
+        <FormError>
           {error}
-        </p>
+        </FormError>
       )}
 
       <ResourceList title="Workflow catalog" description="Each workflow owns one public path and becomes live after publishing.">
         {!flows && <ResourceListState>Loading workflows…</ResourceListState>}
-        {flows?.items.length === 0 && <ResourceListState>No workflows yet. Create one after an entry point exists.</ResourceListState>}
+        {flows?.items.length === 0 && gatewaysLoaded && (
+          needsGateway ? (
+            <EmptyState
+              title="Create an entry point first"
+              description="A workflow answers requests on an entry point's public host. Create one, then come back to add a workflow."
+              action={
+                <Button variant="primary" size="sm" asChild>
+                  <Link href="/gateways">
+                    <ServerIcon className="h-4 w-4" />
+                    Create an entry point
+                  </Link>
+                </Button>
+              }
+            />
+          ) : (
+            <EmptyState
+              title="No workflows yet"
+              description="Choose a public method and path on one of your entry points, then connect it to actions."
+              action={
+                <Button variant="primary" size="sm" onClick={openCreate}>
+                  <PlusIcon className="h-4 w-4" />
+                  New workflow
+                </Button>
+              }
+            />
+          )
+        )}
         {flows?.items.map((flow) => (
-          <div key={flow.id} className="grid gap-4 px-5 py-4 transition-colors hover:bg-accent-soft xl:grid-cols-[1fr_auto]">
+          <div key={flow.id} className="grid gap-4 px-5 py-4 transition-colors hover:bg-white/[0.03] xl:grid-cols-[1fr_auto]">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-full border border-accent-border bg-accent-soft px-2.5 py-1 font-mono text-xs font-bold text-accent">{flow.httpMethod}</span>
+                <span className="rounded-md bg-secondary px-1.5 py-0.5 font-mono text-[11px] text-muted-strong">{flow.httpMethod}</span>
                 <code className="truncate font-mono text-sm text-foreground">{flow.path}</code>
                 {flow.activeFlowVersionStatus ? <StatusBadge status={flow.activeFlowVersionStatus} /> : <StatusBadge status="DRAFT" />}
               </div>
-              <Link href={`/flows/${flow.id}`} className="mt-3 block text-base font-bold text-foreground hover:text-accent">
+              <Link href={`/flows/${flow.id}`} className="mt-3 block text-base font-semibold text-foreground hover:text-muted-strong">
                 {flow.name}
               </Link>
-              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted">
-                <code className="rounded-full border border-border bg-surface-2 px-2.5 py-1 font-mono">{flow.flowKey}</code>
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                <code className="rounded-md border border-border bg-surface-2 px-1.5 py-0.5 font-mono">{flow.flowKey}</code>
                 <span>Entry point: {flow.gatewayName}</span>
                 <span>Priority: {flow.priority}</span>
               </div>

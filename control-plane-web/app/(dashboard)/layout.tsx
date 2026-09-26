@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type ComponentType, type ReactNode } from "react";
+import { MenuIcon } from "lucide-react";
 import { api } from "@/lib/api";
 import { clearToken } from "@/lib/auth";
 import type { ProfileResponse } from "@/lib/types";
@@ -21,8 +22,28 @@ import {
   PackageIcon,
 } from "@/components/icons";
 import { BrandMark } from "@/components/BrandMark";
+import { ConfirmHost } from "@/components/ConfirmDialog";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { cn } from "@/lib/utils";
 
-const NAV_GROUPS = [
+interface NavItem {
+  href: string;
+  label: string;
+  icon: ComponentType<{ className?: string }>;
+}
+
+const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: "Build",
     items: [
@@ -59,7 +80,7 @@ const NAV_GROUPS = [
 
 const NAV_ITEMS = NAV_GROUPS.flatMap((group) => group.items);
 
-const ACCOUNT_MENU_ITEMS = [
+const ACCOUNT_MENU_ITEMS: NavItem[] = [
   { href: "/profile", label: "User Profile", icon: UserIcon },
   { href: "/account", label: "Account", icon: UserIcon },
   { href: "/settings", label: "Settings", icon: SettingsIcon },
@@ -70,7 +91,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [profile, setProfile] = useState<ProfileResponse | null>(null);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -95,150 +116,152 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   }
 
   const currentSection = NAV_ITEMS.find((item) => isActive(item.href))?.label ?? "FuncHole";
+  const initial = (profile?.username || profile?.fullName || "U").slice(0, 1).toUpperCase();
 
   return (
     <div className="flex min-h-screen bg-background">
-      <aside className="fixed inset-y-0 left-0 z-20 hidden w-72 flex-col border-r border-border bg-[#0d0d10]/95 px-4 py-5 backdrop-blur-xl lg:flex">
-        <BrandMark href="/" />
-        <div className="mt-8 flex flex-1 flex-col gap-6">
-          {NAV_GROUPS.map((group) => (
-            <nav key={group.label} className="space-y-2">
-              <p className="px-3 text-[11px] font-bold uppercase tracking-[0.2em] text-muted/70">{group.label}</p>
-              <div className="space-y-1">
-                {group.items.map((item) => {
-                  const active = isActive(item.href);
-                  const Icon = item.icon;
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      aria-current={active ? "page" : undefined}
-                      className={`group relative flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold transition-all ${
-                        active
-                          ? "border border-accent-border bg-accent-soft text-accent shadow-[0_14px_34px_rgba(245,166,35,0.08)]"
-                          : "text-muted hover:bg-surface-hover hover:text-foreground"
-                      }`}
-                    >
-                      <Icon className="h-5 w-5" />
-                      <span>{item.label}</span>
-                      {active && <span className="ml-auto h-2 w-2 rounded-full bg-accent shadow-[0_0_16px_rgba(245,166,35,0.9)]" />}
-                    </Link>
-                  );
-                })}
-              </div>
-            </nav>
-          ))}
+      <aside className="fixed inset-y-0 left-0 z-20 hidden w-64 flex-col border-r border-border bg-background lg:flex">
+        <div className="flex h-14 items-center px-5">
+          <BrandMark href="/" />
         </div>
-        <div className="rounded-3xl border border-border bg-surface/70 p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">Agent setup</p>
-          <p className="mt-2 text-sm font-semibold text-foreground">Connect your agent first</p>
-          <p className="mt-1 text-xs leading-5 text-muted">Let coding agents handle building. Use the dashboard for access, secrets, logs, and manual checks.</p>
-          <Link href="/api-keys" className="mt-3 inline-flex text-xs font-bold text-accent hover:text-accent-hover">
-            Configure agent access
-          </Link>
+        <div className="flex flex-1 flex-col overflow-y-auto px-3 pt-3 pb-4">
+          <SidebarNav isActive={isActive} />
+          <AgentSetupCard />
         </div>
       </aside>
 
-      <div className="flex min-h-screen flex-1 flex-col lg:pl-72">
-        <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-border bg-background/70 px-4 backdrop-blur-xl sm:px-6">
-          <div className="flex items-center gap-2 text-sm">
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col lg:pl-64">
+        <header className="sticky top-0 z-10 flex h-14 items-center justify-between gap-3 border-b border-border bg-background/80 px-4 backdrop-blur-xl sm:px-6">
+          <div className="flex min-w-0 items-center gap-2 text-sm">
+            <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="-ml-2 lg:hidden" aria-label="Open navigation">
+                  <MenuIcon />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-72 gap-0 border-border bg-background p-0">
+                <SheetHeader className="h-14 justify-center border-b border-border px-5">
+                  <SheetTitle asChild>
+                    <div>
+                      <BrandMark />
+                    </div>
+                  </SheetTitle>
+                </SheetHeader>
+                <div className="flex flex-1 flex-col overflow-y-auto px-3 pt-3 pb-4">
+                  <SidebarNav isActive={isActive} onNavigate={() => setMobileNavOpen(false)} />
+                  <AgentSetupCard onNavigate={() => setMobileNavOpen(false)} />
+                </div>
+              </SheetContent>
+            </Sheet>
             <span className="lg:hidden">
               <BrandMark href="/" showText={false} />
             </span>
-            <span className="hidden font-semibold tracking-tight text-foreground lg:inline">FuncHole</span>
-            <ChevronDivider />
-            <span className="text-muted">{currentSection}</span>
+            <span className="hidden font-medium tracking-tight text-foreground sm:inline">FuncHole</span>
+            <span className="hidden text-faint sm:inline" aria-hidden="true">
+              /
+            </span>
+            <span className="truncate text-muted-foreground">{currentSection}</span>
           </div>
-          <div className="relative flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setUserMenuOpen((open) => !open)}
-              className={`flex h-10 items-center gap-2 rounded-full border px-2 pl-3 text-left transition-colors ${
-                userMenuOpen
-                  ? "border-accent-border bg-accent-soft text-accent"
-                  : "border-border bg-surface/60 text-muted hover:border-border-strong hover:bg-surface-hover hover:text-foreground"
-              }`}
-              aria-expanded={userMenuOpen}
-              aria-label="Open account menu"
-            >
-              <span className="hidden max-w-32 truncate text-sm font-semibold sm:block">
-                {profile?.username || "Account"}
-              </span>
-              <span className="grid h-7 w-7 place-items-center rounded-full border border-accent-border bg-accent-soft text-accent">
-                <span className="text-xs font-bold uppercase">
-                  {(profile?.username || profile?.fullName || "U").slice(0, 1)}
-                </span>
-              </span>
-            </button>
 
-            {userMenuOpen && (
-              <div className="absolute right-0 top-12 z-30 w-72 overflow-hidden rounded-3xl border border-border bg-[#0d0d10]/98 shadow-[0_24px_90px_rgba(0,0,0,0.45)] backdrop-blur-xl">
-                <div className="border-b border-border p-4">
-                  <div className="flex items-center gap-3">
-                    <span className="grid h-10 w-10 place-items-center rounded-2xl border border-accent-border bg-accent-soft text-accent">
-                      <UserIcon className="h-5 w-5" />
-                    </span>
-                    <span className="min-w-0">
-                      <p className="truncate text-sm font-bold text-foreground">{profile?.fullName || profile?.username || "User"}</p>
-                      <p className="mt-1 truncate text-xs text-muted">{profile?.email || "Manage your workspace account"}</p>
-                    </span>
-                  </div>
-                </div>
-                <div className="p-2">
-                  {ACCOUNT_MENU_ITEMS.map((item) => {
-                    const Icon = item.icon;
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        onClick={() => setUserMenuOpen(false)}
-                        className="flex items-center gap-3 rounded-2xl px-3 py-2 text-sm font-semibold text-muted transition-colors hover:bg-surface-hover hover:text-foreground"
-                      >
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-9 gap-2 rounded-full pr-1 pl-3" aria-label="Open account menu">
+                <span className="hidden max-w-32 truncate text-sm text-muted-strong sm:block">{profile?.username || "Account"}</span>
+                <Avatar className="size-7">
+                  <AvatarFallback className="bg-secondary text-xs font-medium text-foreground">{initial}</AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64">
+              <DropdownMenuLabel className="px-2 py-2 font-normal">
+                <p className="truncate text-sm font-medium text-foreground">{profile?.fullName || profile?.username || "User"}</p>
+                <p className="mt-0.5 truncate text-xs text-muted-foreground">{profile?.email || "Manage your workspace account"}</p>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuGroup>
+                {ACCOUNT_MENU_ITEMS.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <DropdownMenuItem key={item.href} asChild>
+                      <Link href={item.href}>
                         <Icon className="h-4 w-4" />
                         {item.label}
                       </Link>
-                    );
-                  })}
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="flex w-full cursor-pointer items-center gap-3 rounded-2xl px-3 py-2 text-sm font-semibold text-danger transition-colors hover:bg-danger/10"
-                  >
-                    <LogOutIcon className="h-4 w-4" />
-                    Logout
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuGroup>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem variant="destructive" onSelect={handleLogout}>
+                <LogOutIcon className="h-4 w-4" />
+                Logout
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </header>
-        <nav className="sticky top-16 z-10 flex gap-2 overflow-x-auto border-b border-border bg-background/75 px-4 py-3 backdrop-blur-xl lg:hidden">
-          {NAV_ITEMS.map((item) => {
-            const active = isActive(item.href);
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={active ? "page" : undefined}
-                className={`flex shrink-0 items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold ${
-                  active
-                    ? "border-accent-border bg-accent-soft text-accent"
-                    : "border-border bg-surface/70 text-muted"
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
-        <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6">{children}</main>
+
+        <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 lg:px-10 lg:py-10">{children}</main>
       </div>
+
+      <ConfirmHost />
     </div>
   );
 }
 
-function ChevronDivider() {
-  return <span className="text-border-strong">/</span>;
+function SidebarNav({ isActive, onNavigate }: { isActive: (href: string) => boolean; onNavigate?: () => void }) {
+  return (
+    <div className="flex flex-1 flex-col gap-6">
+      {NAV_GROUPS.map((group) => (
+        <nav key={group.label} aria-label={group.label}>
+          <p className="eyebrow px-2.5 pb-2">{group.label}</p>
+          <div className="space-y-0.5">
+            {group.items.map((item) => {
+              const active = isActive(item.href);
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={onNavigate}
+                  aria-current={active ? "page" : undefined}
+                  className={cn(
+                    "flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-sm transition-colors",
+                    active
+                      ? "bg-white/[0.07] text-foreground"
+                      : "text-muted-foreground hover:bg-white/[0.04] hover:text-foreground"
+                  )}
+                >
+                  <Icon className={cn("h-4 w-4", active ? "text-foreground" : "text-subtle")} />
+                  <span className="truncate">{item.label}</span>
+                  {active && <span className="ml-auto size-1.5 rounded-full bg-brand" aria-hidden="true" />}
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
+      ))}
+    </div>
+  );
+}
+
+function AgentSetupCard({ onNavigate }: { onNavigate?: () => void }) {
+  return (
+    <div className="mt-6 overflow-hidden rounded-xl border border-border bg-card p-4">
+      <p className="flex items-center gap-2 text-sm font-medium text-foreground">
+        <span className="live-dot text-brand" aria-hidden="true" />
+        Connect your agent first
+      </p>
+      <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+        Let coding agents handle building. Use the dashboard for access, secrets, logs, and manual checks.
+      </p>
+      <Link
+        href="/api-keys"
+        onClick={onNavigate}
+        className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-foreground hover:text-muted-strong"
+      >
+        Configure agent access
+        <span aria-hidden="true">→</span>
+      </Link>
+    </div>
+  );
 }

@@ -4,13 +4,16 @@ import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 import { Pagination } from "@/components/Pagination";
 import { Button, buttonClasses } from "@/components/Button";
-import { CreatePanel } from "@/components/CreatePanel";
 import { inputClass, labelClass, fieldClass } from "@/components/Input";
 import { PageHeader } from "@/components/PageHeader";
 import { ResourceList, ResourceListState } from "@/components/ResourceList";
 import { PlusIcon, TrashIcon } from "@/components/icons";
 import { api, ApiError } from "@/lib/api";
 import type { FunctionResponse, PaginationResponse } from "@/lib/types";
+import { FormError } from "@/components/FormError";
+import { Modal } from "@/components/Modal";
+import { confirmAction } from "@/components/ConfirmDialog";
+import { NativeSelect } from "@/components/ui/native-select";
 
 const PAGE_SIZE = 10;
 
@@ -56,10 +59,13 @@ export default function FunctionsPage() {
   }
 
   function openCreate() {
+    setError(null);
     setForm({ ...EMPTY_FORM });
   }
 
   function closeForm() {
+    if (busy) return;
+    setError(null);
     setForm(null);
   }
 
@@ -85,7 +91,7 @@ export default function FunctionsPage() {
   }
 
   async function handleDelete(fn: FunctionResponse) {
-    if (!window.confirm(`Delete function "${fn.name}"?`)) {
+    if (!await confirmAction(`Delete function "${fn.name}"?`)) {
       return;
     }
     setError(null);
@@ -112,8 +118,24 @@ export default function FunctionsPage() {
       />
 
       {form && (
-        <CreatePanel title="New action" description="Create the stable action identity. Source and versions are managed after creation.">
-          <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2">
+        <Modal
+          title="New action"
+          description="Create the stable action identity. Source and versions are managed after creation."
+          onClose={closeForm}
+          dismissible={!busy}
+          widthClassName="max-w-2xl"
+          footer={
+            <>
+              <Button type="button" variant="secondary" onClick={closeForm} disabled={busy}>
+                Cancel
+              </Button>
+              <Button type="submit" form="function-form" variant="primary" disabled={busy}>
+                Create action
+              </Button>
+            </>
+          }
+        >
+          <form id="function-form" onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2">
             <label className={fieldClass}>
               <span className={labelClass}>Action key</span>
               <input
@@ -151,30 +173,27 @@ export default function FunctionsPage() {
             </label>
             <label className={fieldClass}>
               <span className={labelClass}>Runtime</span>
-              <select
+              <NativeSelect
                 value={form.runtime}
                 onChange={(e) => setForm({ ...form, runtime: e.target.value })}
-                className={inputClass}
+                className="w-full"
               >
                 <option value="NODE">NODE</option>
-              </select>
+              </NativeSelect>
             </label>
-            <div className="flex gap-2 sm:col-span-2">
-              <Button type="submit" variant="primary" disabled={busy}>
-                Create action
-              </Button>
-              <Button type="button" variant="secondary" onClick={closeForm}>
-                Cancel
-              </Button>
-            </div>
+            {error && (
+              <div className="sm:col-span-2">
+                <FormError>{error}</FormError>
+              </div>
+            )}
           </form>
-        </CreatePanel>
+        </Modal>
       )}
 
-      {error && (
-        <p role="alert" className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-600 dark:bg-rose-500/10 dark:text-rose-400">
+      {error && !form && (
+        <FormError>
           {error}
-        </p>
+        </FormError>
       )}
 
       <ResourceList title="Action catalog" description="Open an action to inspect versions, source, runtime context, and tests.">
@@ -183,17 +202,17 @@ export default function FunctionsPage() {
           <ResourceListState>No actions yet. Create one manually or let a connected agent prepare the first capability.</ResourceListState>
         )}
         {functions?.items.map((fn) => (
-          <div key={fn.id} className="grid gap-4 px-5 py-4 transition-colors hover:bg-accent-soft lg:grid-cols-[1fr_auto]">
+          <div key={fn.id} className="grid gap-4 px-5 py-4 transition-colors hover:bg-white/[0.03] lg:grid-cols-[1fr_auto]">
             <div className="min-w-0">
-              <Link href={`/functions/${fn.id}`} className="text-base font-bold text-foreground hover:text-accent">
+              <Link href={`/functions/${fn.id}`} className="text-base font-semibold text-foreground hover:text-muted-strong">
                 {fn.name}
               </Link>
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                <code className="rounded-full border border-border bg-surface-2 px-2.5 py-1 font-mono text-xs text-muted-strong">{fn.functionKey}</code>
-                <span className="rounded-full border border-accent-border bg-accent-soft px-2.5 py-1 font-mono text-xs font-bold text-accent">{fn.runtime}</span>
-                <span className="text-xs text-muted">Created {new Date(fn.createdAt).toLocaleString()}</span>
+                <code className="rounded-md border border-border bg-surface-2 px-1.5 py-0.5 font-mono text-[11px] text-muted-strong">{fn.functionKey}</code>
+                <span className="rounded-md bg-secondary px-1.5 py-0.5 font-mono text-[11px] text-muted-strong">{fn.runtime}</span>
+                <span className="text-xs text-muted-foreground">Created {new Date(fn.createdAt).toLocaleString()}</span>
               </div>
-              {fn.description && <p className="mt-2 text-sm leading-6 text-muted">{fn.description}</p>}
+              {fn.description && <p className="mt-2 text-sm leading-6 text-muted-foreground">{fn.description}</p>}
             </div>
             <div className="flex items-center gap-2 lg:justify-end">
               <Link href={`/functions/${fn.id}`} className={buttonClasses("secondary", "sm")}>

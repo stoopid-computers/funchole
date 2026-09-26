@@ -3,449 +3,564 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FuncHole — The platform built for AI coding agents</title>
-<meta name="description" content="FuncHole is the platform built for AI coding agents. Connect Claude Code, Codex, or any MCP client — it creates, deploys, and fixes your backend itself. Free to start, open source under the hood.">
-<meta name="robots" content="index, follow">
-<meta name="theme-color" content="#0a0a0c">
-<link rel="canonical" href="https://funchole.dev/">
-
-<!-- Open Graph -->
+<title>FuncHole — Serverless your coding agent ships to</title>
+<meta name="description" content="FuncHole is an open-source serverless platform built for AI coding agents. Connect Claude Code, Codex, or any MCP client and it creates, deploys, and fixes your app itself. Free to start, self-hostable anytime.">
+<meta name="theme-color" content="#000000">
+<meta property="og:title" content="FuncHole — Serverless your coding agent ships to">
+<meta property="og:description" content="The open-source serverless platform built for AI coding agents. MCP-native from day one.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://funchole.dev/">
-<meta property="og:site_name" content="FuncHole">
-<meta property="og:locale" content="en_US">
-<meta property="og:title" content="FuncHole — The platform built for AI coding agents">
-<meta property="og:description" content="Connect Claude Code, Codex, or any MCP client — it creates, deploys, and fixes your backend itself. Free to start, open source under the hood.">
-<meta property="og:image" content="https://funchole.dev/og-image.png">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="FuncHole — Describe it. Your agent ships it.">
 
-<!-- Twitter -->
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="FuncHole — The platform built for AI coding agents">
-<meta name="twitter:description" content="Connect Claude Code, Codex, or any MCP client — it creates, deploys, and fixes your backend itself. Free to start, open source under the hood.">
-<meta name="twitter:image" content="https://funchole.dev/og-image.png">
-<meta name="twitter:image:alt" content="FuncHole — Describe it. Your agent ships it.">
-
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><circle cx=%2212%22 cy=%2212%22 r=%229%22 fill=%22%230A0A0C%22 stroke=%22%23F5A623%22 stroke-width=%222%22/><circle cx=%2212%22 cy=%2212%22 r=%223%22 fill=%22%23F5A623%22/></svg>">
-<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><rect width=%2224%22 height=%2224%22 rx=%225%22 fill=%22%230A0A0C%22/><circle cx=%2212%22 cy=%2212%22 r=%227.5%22 stroke=%22%23F5A623%22 stroke-width=%221.6%22/><circle cx=%2212%22 cy=%2212%22 r=%222.5%22 fill=%22%23F5A623%22/></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%22-5 -5 34 34%22><rect x=%22-5%22 y=%22-5%22 width=%2234%22 height=%2234%22 rx=%229%22 fill=%22%23000%22/><defs><linearGradient id=%22g%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22><stop offset=%220%22 stop-color=%22%23b9c8ff%22/><stop offset=%221%22 stop-color=%22%232f5bff%22/></linearGradient></defs><rect x=%221.5%22 y=%221.5%22 width=%2213.5%22 height=%2213.5%22 rx=%224.2%22 fill=%22%23fafafa%22/><rect x=%229%22 y=%229%22 width=%2213.5%22 height=%2213.5%22 rx=%224.2%22 fill=%22url(%23g)%22 fill-opacity=%22.92%22/><path d=%22M9 13.2A4.2 4.2 0 0 1 13.2 9H15v1.8a4.2 4.2 0 0 1-4.2 4.2H9z%22 fill=%22%23dfe6ff%22/></svg>">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 
-<script type="application/ld+json">
+<script>
+  // Hide reveal targets until script.js animates them in; if the module never
+  // boots (CDN blocked, old browser), show everything after a short grace period.
+  document.documentElement.classList.add('js');
+  setTimeout(function () { if (!window.__landingReady) document.documentElement.classList.remove('js'); }, 2500);
+</script>
+<script type="importmap">
 {
-  "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  "name": "FuncHole",
-  "url": "https://funchole.dev/",
-  "description": "FuncHole is the platform built for AI coding agents. Connect Claude Code, Codex, or any MCP client — it creates, deploys, and fixes your backend itself.",
-  "applicationCategory": "DeveloperApplication",
-  "operatingSystem": "Web",
-  "offers": {
-    "@type": "Offer",
-    "price": "0",
-    "priceCurrency": "USD"
-  },
-  "sameAs": [
-    "https://github.com/stoopid-computers/funchole"
-  ]
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.min.js",
+    "motion": "https://cdn.jsdelivr.net/npm/motion@13.4.4/+esm"
+  }
 }
 </script>
+<script type="module" src="script.js"></script>
 </head>
 <body>
 
-<div class="noise-overlay" aria-hidden="true"></div>
+<div class="grain" aria-hidden="true"></div>
+<a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[70] focus:rounded-lg focus:bg-fg focus:px-4 focus:py-2 focus:text-ink">Skip to content</a>
 
-<header class="site-header" id="top">
-  <div class="container header-inner">
-    <a href="#top" class="logo">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/>
-        <circle cx="12" cy="12" r="2.75" fill="var(--accent)"/>
-      </svg>
-      <span>FuncHole</span>
+<!-- ============ Nav ============ -->
+<header id="site-header" class="fixed inset-x-0 top-0 z-50 border-b border-transparent bg-ink/0 transition-[background-color,border-color] duration-300 data-scrolled:border-line data-scrolled:bg-ink/85 data-scrolled:backdrop-blur-xl">
+  <div class="mx-auto flex h-16 max-w-[82.5rem] items-center gap-8 px-4 sm:px-6 lg:px-[3.75rem]">
+    <a href="#top" class="flex items-center gap-2.5 text-[15px] font-semibold tracking-tight text-fg" aria-label="FuncHole home">
+      <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="fh-mark-nav" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b9c8ff"/><stop offset="1" stop-color="#2f5bff"/></linearGradient></defs><rect x="1.5" y="1.5" width="13.5" height="13.5" rx="4.2" fill="#fafafa"/><rect x="9" y="9" width="13.5" height="13.5" rx="4.2" fill="url(#fh-mark-nav)" fill-opacity=".92"/><path d="M9 13.2A4.2 4.2 0 0 1 13.2 9H15v1.8a4.2 4.2 0 0 1-4.2 4.2H9z" fill="#dfe6ff"/></svg>
+      FuncHole
     </a>
-
-    <nav class="main-nav" aria-label="Primary">
-      <a href="#how-it-works">How it works</a>
-      <a href="#features">Features</a>
-      <a href="#pricing">Pricing</a>
-      <a href="https://github.com/stoopid-computers/funchole/tree/main/docs" target="_blank" rel="noopener">Docs</a>
-      <a href="https://github.com/stoopid-computers/funchole" target="_blank" rel="noopener" class="nav-star-btn">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56 0-.27-.01-1.17-.02-2.12-3.2.7-3.88-1.36-3.88-1.36-.52-1.34-1.28-1.69-1.28-1.69-1.05-.72.08-.71.08-.71 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.71 1.26 3.37.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.29 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.8 0c2.2-1.49 3.17-1.18 3.17-1.18.64 1.59.24 2.76.12 3.05.74.8 1.19 1.83 1.19 3.09 0 4.43-2.7 5.41-5.27 5.69.42.36.78 1.07.78 2.16 0 1.56-.02 2.82-.02 3.2 0 .31.21.67.8.56A10.52 10.52 0 0 0 23.5 12c0-6.35-5.15-11.5-11.5-11.5Z"/></svg>
-        Star on GitHub
-        <span class="star-count">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.9 6.6 7.1.6-5.4 4.7 1.7 7L12 17.3 5.7 20.9l1.7-7-5.4-4.7 7.1-.6L12 2Z"/></svg>
-          <span id="nav-star-count">—</span>
-        </span>
-      </a>
+    <nav class="hidden items-center gap-7 text-sm text-soft md:flex" aria-label="Primary">
+      <a class="transition-colors hover:text-fg" href="#agents">Agents</a>
+      <a class="transition-colors hover:text-fg" href="#platform">Platform</a>
+      <a class="transition-colors hover:text-fg" href="#open">Roadmap</a>
+      <a class="transition-colors hover:text-fg" href="#pricing">Pricing</a>
+      <a class="transition-colors hover:text-fg" href="https://github.com/stoopid-computers/funchole/tree/main/docs">Docs</a>
     </nav>
-
-    <div class="header-cta">
-      <a href="https://app.funchole.dev" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">Sign in</a>
-      <a href="https://app.funchole.dev" target="_blank" rel="noopener" class="btn btn-solid btn-sm">Start free</a>
+    <div class="ml-auto flex items-center gap-1.5">
+      <a href="https://github.com/stoopid-computers/funchole" class="hidden min-h-9 items-center gap-1.5 rounded-lg px-2.5 text-sm text-subtle transition-colors hover:text-fg sm:inline-flex" aria-label="Star FuncHole on GitHub">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .3a12 12 0 0 0-3.8 23.38c.6.12.83-.26.83-.57L9 21.07c-3.34.72-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.08-.74.09-.73.09-.73 1.2.09 1.83 1.24 1.83 1.24 1.07 1.83 2.81 1.3 3.5 1 .1-.78.42-1.31.76-1.61-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.14-.3-.54-1.52.1-3.18 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.28-1.55 3.29-1.23 3.29-1.23.64 1.66.24 2.88.12 3.18a4.65 4.65 0 0 1 1.23 3.22c0 4.61-2.8 5.63-5.48 5.92.43.37.81 1.1.81 2.22l-.01 3.29c0 .32.21.7.82.58A12 12 0 0 0 12 .3"/></svg>
+        <span class="font-mono text-xs" data-stars>Star</span>
+      </a>
+      <a href="https://app.funchole.dev" class="hidden min-h-9 items-center rounded-lg px-2.5 text-sm text-subtle transition-colors hover:text-fg sm:inline-flex">Log in</a>
+      <a href="https://app.funchole.dev" class="btn-primary">Start free</a>
     </div>
-
-    <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="mobileNav">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
-    </button>
-  </div>
-
-  <div class="mobile-nav" id="mobileNav">
-    <a href="#how-it-works">How it works</a>
-    <a href="#features">Features</a>
-    <a href="#pricing">Pricing</a>
-    <a href="https://github.com/stoopid-computers/funchole/tree/main/docs" target="_blank" rel="noopener">Docs</a>
-    <a href="https://github.com/stoopid-computers/funchole" target="_blank" rel="noopener">Star on GitHub</a>
-    <a href="https://app.funchole.dev" target="_blank" rel="noopener" class="btn btn-solid">Start free</a>
   </div>
 </header>
 
-<main>
+<main id="main">
 
-  <!-- ============ HERO ============ -->
-  <section class="hero">
-    <div class="container hero-inner">
-      <div class="hero-copy reveal">
-        <p class="eyebrow">MCP-NATIVE PLATFORM</p>
-        <h1>Describe it.<br>Your agent ships it.</h1>
-        <p class="hero-sub">
-          FuncHole is the platform built for AI coding agents. Connect
-          Claude&nbsp;Code, Codex, or any MCP client — it creates, deploys, and fixes
-          your backend itself. No dashboard required, though one's there if you want it.
-        </p>
-        <div class="hero-actions">
-          <a href="https://app.funchole.dev" target="_blank" rel="noopener" class="btn btn-solid btn-lg">
-            Start free
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-          </a>
-          <a href="https://github.com/stoopid-computers/funchole" target="_blank" rel="noopener" class="btn btn-ghost btn-lg">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56 0-.27-.01-1.17-.02-2.12-3.2.7-3.88-1.36-3.88-1.36-.52-1.34-1.28-1.69-1.28-1.69-1.05-.72.08-.71.08-.71 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.71 1.26 3.37.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.29 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.8 0c2.2-1.49 3.17-1.18 3.17-1.18.64 1.59.24 2.76.12 3.05.74.8 1.19 1.83 1.19 3.09 0 4.43-2.7 5.41-5.27 5.69.42.36.78 1.07.78 2.16 0 1.56-.02 2.82-.02 3.2 0 .31.21.67.8.56A10.52 10.52 0 0 0 23.5 12c0-6.35-5.15-11.5-11.5-11.5Z"/></svg>
-            View on GitHub
-            <span class="star-count" aria-live="polite">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.9 6.6 7.1.6-5.4 4.7 1.7 7L12 17.3 5.7 20.9l1.7-7-5.4-4.7 7.1-.6L12 2Z"/></svg>
-              <span id="hero-star-count"></span>
-            </span>
-          </a>
+<!-- ============ Hero ============ -->
+<section id="top" class="mx-auto max-w-[82.5rem] px-4 pt-32 sm:px-6 sm:pt-40 lg:px-[3.75rem]">
+  <h1 class="display max-w-[21ch] text-[clamp(2.4rem,5vw,4rem)]" data-split>FuncHole is the serverless platform your coding agent ships to</h1>
+
+  <div class="mt-8 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between" data-hero>
+    <div class="flex flex-wrap items-center gap-2.5">
+      <a href="https://app.funchole.dev" class="btn-primary btn-lg">Start for free</a>
+      <button type="button" class="btn-dark btn-lg group font-mono !text-[13px]" data-copy-text="claude mcp add --transport http funchole https://app.funchole.dev/mcp --header &quot;Authorization: Bearer fh_mcp_...&quot;" aria-label="Copy the Claude Code MCP command">
+        claude mcp add funchole
+        <svg class="text-subtle transition-colors group-hover:text-fg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+      </button>
+    </div>
+    <a href="#open" class="link-arrow !text-sm"><span class="text-fg">Open source:</span><span class="text-subtle">Apache 2.0</span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </a>
+  </div>
+
+  <!-- Hero stage: a looping "film" of an agent shipping things -->
+  <div class="hero-frame relative mt-12 aspect-[4/5] overflow-hidden rounded-3xl border border-line sm:aspect-[16/10] lg:aspect-[16/8.4]" id="hero-frame" data-hero>
+    <canvas id="field" aria-hidden="true"></canvas>
+
+    <div class="absolute inset-0 flex flex-col items-center justify-center px-4" role="img" id="scene" aria-label="Looping demo: an agent is asked to build a todo API, ship a frontend, and fix a failed deploy; each time it calls FuncHole's MCP tools and returns a live URL.">
+      <div class="neon w-full max-w-[27rem] rounded-[1.35rem] p-5 sm:p-6" id="scene-card">
+        <p class="min-h-[4.2em] text-[20px] leading-[1.3] font-medium tracking-[-0.01em] text-white sm:text-[25px]" id="scene-prompt">Build a todo API backed by Postgres and put it at /todos</p>
+        <div class="mt-5 flex items-end gap-3">
+          <ul class="flex min-h-[6.6rem] flex-1 flex-wrap content-end gap-1.5" id="scene-tools">
+            <li class="inline-flex items-center gap-1.5 rounded-md bg-white/10 px-2 py-1 font-mono text-[11px] text-white/85"><span class="text-ok">✓</span>create_function</li>
+            <li class="inline-flex items-center gap-1.5 rounded-md bg-white/10 px-2 py-1 font-mono text-[11px] text-white/85"><span class="text-ok">✓</span>attach_function_version_database</li>
+            <li class="inline-flex items-center gap-1.5 rounded-md bg-white/10 px-2 py-1 font-mono text-[11px] text-white/85"><span class="text-ok">✓</span>deploy_function_version</li>
+          </ul>
+          <span class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-white/15 text-white" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+          </span>
         </div>
-        <p class="hero-note">Free while you prototype · No credit card · Self-hostable anytime</p>
       </div>
+      <p class="mt-6 inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/50 px-3.5 py-1.5 font-mono text-[12px] text-white/90 backdrop-blur-md" id="scene-live">
+        <span class="live-dot text-ok"></span><span id="scene-url">gw3f81.funchole.dev/todos</span>
+      </p>
+    </div>
 
-      <div class="hero-visual reveal reveal-delay-1">
-        <div class="terminal" role="img" aria-label="Terminal showing an AI agent connecting to FuncHole, building a todo API, and deploying it to a live URL">
-          <div class="terminal-bar">
-            <span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span>
-            <span class="terminal-title">agent — funchole</span>
+    <div class="absolute right-3 bottom-3 flex items-center gap-2 sm:right-4 sm:bottom-4">
+      <span class="rounded-md bg-black/60 px-2 py-1 font-mono text-[11px] text-white/80 backdrop-blur" id="scene-index">01 / 03</span>
+      <button type="button" id="scene-toggle" class="inline-flex size-7 cursor-pointer items-center justify-center rounded-md bg-black/60 text-white/80 backdrop-blur transition-colors hover:text-white" aria-label="Pause demo">
+        <svg data-icon-pause width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="4" width="4.5" height="16" rx="1"/><rect x="14.5" y="4" width="4.5" height="16" rx="1"/></svg>
+        <svg data-icon-play class="hidden" width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12-7.5a1 1 0 0 0 0-1.72l-12-7.5A1 1 0 0 0 7 4.5Z"/></svg>
+      </button>
+    </div>
+    <div class="absolute inset-x-0 bottom-0 h-[2px] bg-white/5"><div class="h-full w-0 bg-accent" id="scene-progress"></div></div>
+  </div>
+</section>
+
+<!-- ============ Works with ============ -->
+<section class="mx-auto max-w-[82.5rem] px-4 py-20 sm:px-6 sm:py-28 lg:px-[3.75rem]">
+  <p class="text-center text-sm text-subtle" data-reveal>Works with the agent you already use</p>
+  <ul class="mx-auto mt-8 grid max-w-3xl grid-cols-2 gap-x-6 gap-y-8 text-center text-[19px] font-medium tracking-tight text-soft sm:grid-cols-3" data-reveal aria-label="Supported agents">
+    <li class="flex items-center justify-center gap-2"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8z"/></svg>Claude Code</li>
+    <li class="flex items-center justify-center gap-2 font-mono text-[17px]"><span class="text-subtle">&gt;_</span>codex</li>
+    <li class="flex items-center justify-center gap-2 font-mono text-[17px]">opencode</li>
+    <li class="flex items-center justify-center gap-2"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 3 7v10l9 5 9-5V7z"/><path d="M12 22V12L3 7M12 12l9-5"/></svg>Cursor</li>
+    <li class="flex items-center justify-center gap-2">Puku</li>
+    <li class="flex items-center justify-center gap-2 text-subtle">+ any MCP client</li>
+  </ul>
+</section>
+
+<!-- ============ Agents: cards + sticky agent panel ============ -->
+<section id="agents" class="mx-auto max-w-[82.5rem] px-4 pb-24 sm:px-6 lg:px-[3.75rem]">
+  <div class="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between" data-reveal>
+    <h2 class="section-title max-w-[15ch]">Agents that ship, not just suggest</h2>
+    <a href="#connect" class="btn-dark">Connect your agent</a>
+  </div>
+
+  <div class="mt-12 grid gap-3 lg:grid-cols-[1fr_20rem]">
+    <div class="min-w-0 space-y-3" id="cards">
+
+      <!-- Card 1: Flows -->
+      <article class="rounded-3xl border border-line bg-panel p-2.5" data-card="0">
+        <div class="stage min-h-[26rem] sm:min-h-[30rem]">
+          <div class="panel w-full max-w-2xl overflow-hidden shadow-[0_30px_80px_-20px_rgb(0_0_0)]">
+            <div class="panel-head">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.5 6H14a4 4 0 0 1 4 4v5.5"/></svg>
+              flow · todos-api · v2
+              <span class="ml-auto text-subtle">5 steps · immutable</span>
+            </div>
+            <div class="grid sm:grid-cols-[11.5rem_1fr]">
+              <div class="relative border-b border-line p-2 sm:border-r sm:border-b-0" role="tablist" aria-label="Flow steps" aria-orientation="vertical" id="step-tabs">
+                <span class="absolute top-6 bottom-6 left-[1.35rem] w-px bg-line-strong" aria-hidden="true"></span>
+                <span class="pulse-dot absolute left-[1.35rem] size-1.5 rounded-full opacity-0" id="step-pulse" aria-hidden="true"></span>
+              </div>
+              <div class="min-w-0">
+                <div class="flex items-center gap-2 border-b border-line px-4 py-2 font-mono text-[11px] text-subtle" id="step-meta">index.mjs</div>
+                <pre class="scroll-thin h-64 overflow-auto p-4 font-mono text-[11.5px] leading-[1.75] text-soft" id="step-code" role="tabpanel" aria-live="polite"></pre>
+              </div>
+            </div>
           </div>
-          <div class="terminal-body" id="terminalBody">
-            <div class="tl"><span class="prompt">$</span> claude mcp add funchole https://app.funchole.dev/mcp</div>
-            <div class="tl tl-gap"><span class="prompt-user">&gt;</span> build a todo api with a postgres database</div>
-            <div class="tl tl-tool"><span class="dot-status"></span>create_function_version <span class="tl-result">draft created</span></div>
-            <div class="tl tl-tool"><span class="dot-status"></span>submit_function_version_source <span class="tl-result">3 files</span></div>
-            <div class="tl tl-tool"><span class="dot-status"></span>attach_function_version_database <span class="tl-result">primary</span></div>
-            <div class="tl tl-tool"><span class="dot-status dot-status-pending"></span>deploy_function_version <span class="tl-result">building…</span></div>
-            <div class="tl tl-tool"><span class="dot-status dot-status-ok"></span>get_function_version <span class="tl-result tl-ready">READY</span></div>
-            <div class="tl tl-gap tl-final">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
-              live at <span class="tl-url">gw3f81.funchole.dev/todos</span>
+        </div>
+        <div class="flex flex-col gap-4 px-4 pt-6 pb-5 sm:flex-row sm:items-end sm:justify-between sm:px-5">
+          <p class="caption"><b>Compose with an agent</b>A Flow chains middleware, functions, sub-flows, and a response — each step gets the last one's output, and every request runs a frozen, immutable snapshot.</p>
+          <a href="https://github.com/stoopid-computers/funchole/blob/main/docs/architecture.md" class="link-arrow shrink-0">How Flows run<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        </div>
+      </article>
+
+      <!-- Card 2: Routing -->
+      <article class="rounded-3xl border border-line bg-panel p-2.5" data-card="1">
+        <div class="stage min-h-[26rem] sm:min-h-[30rem]">
+          <div class="w-full max-w-xl">
+            <div class="mx-auto flex w-fit gap-1 rounded-xl border border-line bg-panel p-1" role="tablist" aria-label="Route shape" id="route-tabs">
+              <button type="button" role="tab" aria-selected="true" data-route="0" class="relative min-h-8 cursor-pointer overflow-hidden rounded-lg px-3 font-mono text-[12px] text-subtle transition-colors hover:text-soft aria-selected:bg-raise aria-selected:text-fg">/orders<span class="absolute bottom-0 left-0 h-px w-0 bg-accent" data-route-progress></span></button>
+              <button type="button" role="tab" aria-selected="false" tabindex="-1" data-route="1" class="relative min-h-8 cursor-pointer overflow-hidden rounded-lg px-3 font-mono text-[12px] text-subtle transition-colors hover:text-soft aria-selected:bg-raise aria-selected:text-fg">/:id<span class="absolute bottom-0 left-0 h-px w-0 bg-accent" data-route-progress></span></button>
+              <button type="button" role="tab" aria-selected="false" tabindex="-1" data-route="2" class="relative min-h-8 cursor-pointer overflow-hidden rounded-lg px-3 font-mono text-[12px] text-subtle transition-colors hover:text-soft aria-selected:bg-raise aria-selected:text-fg">/*<span class="absolute bottom-0 left-0 h-px w-0 bg-accent" data-route-progress></span></button>
+            </div>
+            <div class="panel mt-4 overflow-hidden shadow-[0_30px_80px_-20px_rgb(0_0_0)]" aria-live="polite">
+              <div class="flex items-center gap-3 border-b border-line px-3.5 py-2.5">
+                <svg class="shrink-0 text-subtle" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+                <p class="min-w-0 flex-1 truncate rounded-md border border-line bg-panel-2 px-3 py-1.5 font-mono text-[12px]"><span class="text-subtle">https://gw3f81.funchole.dev</span><span class="text-fg" id="route-url">/orders</span></p>
+              </div>
+              <div class="grid grid-cols-2 border-b border-line font-mono text-[12px]">
+                <div class="border-r border-line px-4 py-3"><p class="eyebrow !text-[10px] !text-faint">Flow route</p><p class="mt-1.5 text-fg" id="route-pattern">/orders</p></div>
+                <div class="px-4 py-3"><p class="eyebrow !text-[10px] !text-faint">Runtime</p><p class="mt-1.5 text-fg" id="route-runtime">NODE</p></div>
+              </div>
+              <p class="eyebrow px-4 pt-4 !text-[10px] !text-faint" id="route-caption">handler(input)</p>
+              <pre class="min-h-[9.5rem] overflow-x-auto px-4 pt-2 pb-5 font-mono text-[12px] leading-[1.7] text-soft"><code id="route-event"></code></pre>
             </div>
           </div>
         </div>
-      </div>
-    </div>
-  </section>
+        <div class="flex flex-col gap-4 px-4 pt-6 pb-5 sm:flex-row sm:items-end sm:justify-between sm:px-5">
+          <p class="caption"><b>Route with an agent</b>Every gateway gets a stable host. Paths map to Flows — exactly, with captured parameters, or owning a whole subtree for your frontend.</p>
+          <a href="https://github.com/stoopid-computers/funchole#overview" class="link-arrow shrink-0">Routing docs<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        </div>
+      </article>
 
-  <!-- ============ LOGOS / MCP CLIENTS ============ -->
-  <section class="clients-strip reveal">
-    <div class="container">
-      <p class="clients-label">Works with the agent you already use</p>
-      <div class="clients-list">
-        <span class="client"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.3041 3.541h-3.6718l6.696 16.918H24Zm-10.6082 0L0 20.459h3.7442l1.3693-3.5527h7.0052l1.3693 3.5528h3.7442L10.5363 3.5409Zm-.3712 10.2232 2.2914-5.9456 2.2914 5.9456Z"/></svg>Claude Code</span>
-        <span class="sep">·</span>
-        <span class="client"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.0729zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.872zm16.5963 3.8558L13.1038 8.364 15.1192 7.2a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.667zm2.0107-3.0231l-.142-.0852-4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.6802 4.66zM8.3065 12.863l-2.02-1.1638a.0804.0804 0 0 1-.038-.0567V6.0742a4.4992 4.4992 0 0 1 7.3757-3.4537l-.142.0805L8.704 5.459a.7948.7948 0 0 0-.3927.6813zm1.0976-2.3654l2.602-1.4998 2.6069 1.4998v2.9994l-2.5974 1.4997-2.6067-1.4997Z"/></svg>Codex CLI</span>
-        <span class="sep">·</span>
-        <span class="client"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22 24H2V0h20zM17 4.8H7v14.4h10z"/></svg>opencode</span>
-        <span class="sep">·</span>
-        <span class="client">Any MCP client</span>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ HOW IT WORKS ============ -->
-  <section class="how-it-works" id="how-it-works">
-    <div class="container">
-      <div class="section-head reveal">
-        <p class="eyebrow">HOW IT WORKS</p>
-        <h2>Set up once. Build from anywhere.</h2>
-        <p class="section-sub">No infrastructure to provision first. Three steps, the last one is the only one you'll repeat.</p>
-      </div>
-
-      <div class="setup-steps">
-
-        <!-- Step 1 — Create an MCP API key -->
-        <div class="setup-step reveal">
-          <div class="setup-step-copy">
-            <div class="setup-step-head">
-              <span class="setup-step-num">01</span>
-              <div class="setup-step-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M10.8 12.2 20 3M15 8l3 3M18 5l3 3"/></svg>
-              </div>
+      <!-- Card 3: Versions -->
+      <article class="rounded-3xl border border-line bg-panel p-2.5" data-card="2">
+        <div class="stage min-h-[26rem] sm:min-h-[30rem]">
+          <div class="panel w-full max-w-xl overflow-hidden shadow-[0_30px_80px_-20px_rgb(0_0_0)]" id="versions-panel">
+            <div class="panel-head">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v6M12 15v6"/></svg>
+              function · todos-handler<span class="ml-auto text-subtle">versions</span>
             </div>
-            <h3>Create an MCP API key</h3>
-            <p>From your FuncHole dashboard, generate a key scoped to your account. It's the only credential your agent needs — no OAuth dance, no service account.</p>
+            <ol class="font-mono text-[12px]">
+              <li class="flex items-center gap-3 border-b border-line px-4 py-3"><span class="w-6 text-subtle">v2</span><span class="truncate text-muted">add due dates</span><span class="ml-auto rounded bg-white/[0.06] px-1.5 py-0.5 text-[11px] text-subtle">SUPERSEDED</span></li>
+              <li class="border-b border-line px-4 py-3">
+                <div class="flex items-center gap-3"><span class="w-6 text-fg">v3</span><span class="truncate text-muted">add tags column</span><span class="ml-auto rounded bg-bad/10 px-1.5 py-0.5 text-[11px] text-bad">BUILD_FAILED</span></div>
+                <p class="mt-2 ml-9 rounded-md border border-bad/20 bg-bad/[0.04] px-2.5 py-1.5 text-[11px] text-bad/90">SyntaxError: Unexpected token '}' · index.mjs:18</p>
+              </li>
+              <li class="px-4 py-3">
+                <div class="flex items-center gap-3"><span class="w-6 text-fg">v4</span><span class="truncate text-muted">fix brace in tags query</span><span class="ml-auto rounded bg-ok/10 px-1.5 py-0.5 text-[11px] text-ok" id="v4-status">READY</span></div>
+                <div class="mt-2 ml-9 flex flex-wrap gap-1.5" id="v4-carried">
+                  <span class="chip">↳ source from v3</span><span class="chip">↳ 2 secrets</span><span class="chip">↳ db: primary</span>
+                </div>
+                <div class="mt-3 ml-9 h-24 overflow-hidden rounded-md border border-line bg-ink/60 px-2.5 py-2 text-[11px] leading-[1.6] text-subtle" id="v4-log">
+                  <p>› installing dependencies</p><p>› bundling index.mjs</p><p>› publishing artifact</p><p class="text-ok">✓ READY in 7.8s</p>
+                </div>
+              </li>
+            </ol>
           </div>
-          <div class="setup-step-visual">
-            <div class="key-card">
-              <div class="key-card-row">
-                <span class="key-card-label">MCP API KEY</span>
-                <span class="key-card-status">Active</span>
-              </div>
-              <div class="key-card-value">fh_mcp_8f2a1c94••••d3f6</div>
-              <button class="key-card-copy" type="button" data-copy="fh_mcp_8f2a1c94b7e0d3f6" aria-label="Copy example API key">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                Copy
+        </div>
+        <div class="flex flex-col gap-4 px-4 pt-6 pb-5 sm:flex-row sm:items-end sm:justify-between sm:px-5">
+          <p class="caption"><b>Fix forward with an agent</b>A new version starts as a copy of the last — source, secrets, and database. When a build fails, your agent reads the logs, patches a line, and ships again.</p>
+          <a href="https://github.com/stoopid-computers/funchole#managing-funchole-via-mcp" class="link-arrow shrink-0">Build logs<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        </div>
+      </article>
+
+      <!-- Card 4: Connect -->
+      <article id="connect" class="rounded-3xl border border-line bg-panel p-2.5" data-card="3">
+        <div class="stage min-h-[26rem] sm:min-h-[30rem]">
+          <div class="panel w-full max-w-xl overflow-hidden shadow-[0_30px_80px_-20px_rgb(0_0_0)]">
+            <div class="panel-head">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m4 17 6-6-6-6M12 19h8"/></svg>
+              funchole-mcp<span class="ml-auto text-subtle">streamable http</span>
+            </div>
+            <div class="relative flex gap-1 border-b border-line px-2 pt-2" role="tablist" aria-label="Agent" id="agent-tabs">
+              <button type="button" role="tab" id="agent-tab-claude" aria-selected="true" aria-controls="agent-cmd" data-agent="claude" class="min-h-9 cursor-pointer px-3 font-mono text-xs text-subtle transition-colors hover:text-soft aria-selected:text-fg">claude</button>
+              <button type="button" role="tab" id="agent-tab-codex" aria-selected="false" aria-controls="agent-cmd" data-agent="codex" tabindex="-1" class="min-h-9 cursor-pointer px-3 font-mono text-xs text-subtle transition-colors hover:text-soft aria-selected:text-fg">codex</button>
+              <button type="button" role="tab" id="agent-tab-opencode" aria-selected="false" aria-controls="agent-cmd" data-agent="opencode" tabindex="-1" class="min-h-9 cursor-pointer px-3 font-mono text-xs text-subtle transition-colors hover:text-soft aria-selected:text-fg">opencode</button>
+              <span class="pointer-events-none absolute h-px bg-fg" id="agent-underline" aria-hidden="true"></span>
+            </div>
+            <div class="relative border-b border-line" id="agent-cmd" role="tabpanel" aria-labelledby="agent-tab-claude">
+              <pre class="min-h-[5.5rem] p-4 pr-12 font-mono text-[12px] leading-relaxed whitespace-pre-wrap text-soft [overflow-wrap:anywhere]"><code id="agent-cmd-text">claude mcp add --transport http funchole https://app.funchole.dev/mcp --header "Authorization: Bearer fh_mcp_..."</code></pre>
+              <button type="button" data-copy="#agent-cmd-text" class="absolute top-2.5 right-2.5 inline-flex size-8 cursor-pointer items-center justify-center rounded-md text-subtle transition-colors hover:bg-white/5 hover:text-fg" aria-label="Copy command">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
               </button>
             </div>
+            <div class="flex items-center gap-2 border-b border-line px-4 py-2.5">
+              <svg class="shrink-0 text-subtle" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+              <label for="tool-filter" class="sr-only">Filter MCP tools</label>
+              <input id="tool-filter" type="search" placeholder="Filter the tools your agent gets…" autocomplete="off" spellcheck="false" class="min-w-0 flex-1 bg-transparent font-mono text-[12px] text-fg placeholder:text-faint focus:outline-none">
+              <span class="shrink-0 font-mono text-[11px] text-subtle" aria-live="polite"><span id="tool-shown">66</span> tools</span>
+            </div>
+            <ul id="tool-list" class="scroll-thin h-48 overflow-y-auto p-2 font-mono text-[12px]"></ul>
           </div>
         </div>
-
-        <!-- Step 2 — Connect your agent -->
-        <div class="setup-step reveal">
-          <div class="setup-step-copy">
-            <div class="setup-step-head">
-              <span class="setup-step-num">02</span>
-              <div class="setup-step-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 14.5 14.5 9.5"/><path d="M11 6.5 12.5 5A3.5 3.5 0 0 1 17.5 10l-1.5 1.5"/><path d="M13 17.5 11.5 19A3.5 3.5 0 0 1 6.5 14l1.5-1.5"/></svg>
-              </div>
-            </div>
-            <h3>Connect your agent</h3>
-            <p>Paste one command into Claude Code, Codex, or opencode. FuncHole shows up as a set of tools your agent can call directly — nothing to install on your machine.</p>
-          </div>
-          <div class="setup-step-visual">
-            <div class="connect-card">
-              <div class="agent-tabs" role="tablist" aria-label="Choose your coding agent">
-                <button class="agent-tab is-active" role="tab" aria-selected="true" data-agent="claude" type="button">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.3041 3.541h-3.6718l6.696 16.918H24Zm-10.6082 0L0 20.459h3.7442l1.3693-3.5527h7.0052l1.3693 3.5528h3.7442L10.5363 3.5409Zm-.3712 10.2232 2.2914-5.9456 2.2914 5.9456Z"/></svg>
-                  Claude Code
-                </button>
-                <button class="agent-tab" role="tab" aria-selected="false" data-agent="codex" type="button">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.0729zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.872zm16.5963 3.8558L13.1038 8.364 15.1192 7.2a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.667zm2.0107-3.0231l-.142-.0852-4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.6802 4.66zM8.3065 12.863l-2.02-1.1638a.0804.0804 0 0 1-.038-.0567V6.0742a4.4992 4.4992 0 0 1 7.3757-3.4537l-.142.0805L8.704 5.459a.7948.7948 0 0 0-.3927.6813zm1.0976-2.3654l2.602-1.4998 2.6069 1.4998v2.9994l-2.5974 1.4997-2.6067-1.4997Z"/></svg>
-                  Codex
-                </button>
-                <button class="agent-tab" role="tab" aria-selected="false" data-agent="opencode" type="button">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22 24H2V0h20zM17 4.8H7v14.4h10z"/></svg>
-                  opencode
-                </button>
-              </div>
-              <div class="agent-code">
-                <pre id="agentCommand" data-claude='claude mcp add --transport http funchole https://app.funchole.dev/mcp --header "Authorization: Bearer fh_mcp_..."' data-codex='export FUNCHOLE_MCP_TOKEN=fh_mcp_...
-codex mcp add funchole --url https://app.funchole.dev/mcp --bearer-token-env-var FUNCHOLE_MCP_TOKEN' data-opencode='opencode mcp add funchole --url https://app.funchole.dev/mcp --header "Authorization=Bearer fh_mcp_..."'><code id="agentCommandCode">claude mcp add --transport http funchole https://app.funchole.dev/mcp --header "Authorization: Bearer fh_mcp_..."</code></pre>
-                <button class="agent-code-copy" type="button" id="agentCodeCopy" aria-label="Copy command">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                </button>
-              </div>
-            </div>
-          </div>
+        <div class="flex flex-col gap-4 px-4 pt-6 pb-5 sm:flex-row sm:items-end sm:justify-between sm:px-5">
+          <p class="caption"><b>Connect any agent</b>One command and an <span class="font-mono text-[15px] text-soft">fh_mcp_</span> key. Claude Code, Codex, opencode, or any MCP client gets every lifecycle step as a tool — nothing to install.</p>
+          <a href="https://github.com/stoopid-computers/funchole#managing-funchole-via-mcp" class="link-arrow shrink-0">MCP guide<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
         </div>
-
-        <!-- Step 3 — Build directly on FuncHole -->
-        <div class="setup-step reveal">
-          <div class="setup-step-copy">
-            <div class="setup-step-head">
-              <span class="setup-step-num">03</span>
-              <div class="setup-step-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 9.5 9.5 2 12l7.5 2.5L12 22l2.5-7.5L22 12l-7.5-2.5Z"/></svg>
-              </div>
-            </div>
-            <h3>Build directly on FuncHole</h3>
-            <p>Describe what you want. Your agent calls the same tools every time — create, submit source, deploy, inspect — and hands you back a live URL.</p>
-          </div>
-          <div class="setup-step-visual">
-            <div class="tool-chips">
-              <span class="tool-chip">create_function_version</span>
-              <svg class="tool-chip-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-              <span class="tool-chip">submit_function_version_source</span>
-              <svg class="tool-chip-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-              <span class="tool-chip">deploy_function_version</span>
-              <svg class="tool-chip-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-              <span class="tool-chip tool-chip-ready">✓ READY</span>
-            </div>
-          </div>
-        </div>
-
-      </div>
+      </article>
     </div>
-  </section>
 
-  <!-- ============ FEATURES ============ -->
-  <section class="features" id="features">
-    <div class="container">
-      <div class="section-head reveal">
-        <p class="eyebrow">WHAT YOU GET</p>
-        <h2>Built for building things fast.</h2>
-      </div>
-
-      <div class="feature-grid">
-        <div class="feature-card reveal reveal-delay-1">
-          <div class="feature-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3v4M15 3v4M9 21v-4M15 21v-4M3 9h4M3 15h4M21 9h-4M21 15h-4"/><rect x="7" y="7" width="10" height="10" rx="1.5"/></svg>
-          </div>
-          <h3>Agent-native, not agent-tolerant</h3>
-          <p>Every part of the lifecycle — create, submit source, deploy, wire into a Flow, inspect — is a real MCP tool. Your agent doesn't just write the code, it ships it.</p>
+    <!-- Sticky agent panel (desktop) — follows whichever card is in view -->
+    <aside class="hidden lg:block" aria-label="Agent conversation for the card in view">
+      <div class="sticky top-24 flex h-[min(40rem,calc(100vh-8rem))] flex-col rounded-3xl border border-line bg-panel p-2.5">
+        <div class="flex items-center gap-2 px-2.5 pt-1.5 pb-3 font-mono text-[11px] text-subtle">
+          <span class="flex gap-1.5" aria-hidden="true"><span class="size-2.5 rounded-full bg-white/10"></span><span class="size-2.5 rounded-full bg-white/10"></span><span class="size-2.5 rounded-full bg-white/10"></span></span>
+          <span class="ml-auto">claude · funchole</span>
         </div>
-
-        <div class="feature-card reveal reveal-delay-2">
-          <div class="feature-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="6" r="2.4"/><circle cx="19" cy="6" r="2.4"/><circle cx="12" cy="18" r="2.4"/><path d="M6.8 7.6 10.5 16M17.2 7.6 13.5 16M7.4 6h9.2"/></svg>
+        <div class="min-h-0 flex-1 space-y-3 overflow-hidden px-1" id="chat" aria-live="polite"></div>
+        <div class="mt-3 rounded-2xl border border-line bg-panel-2 p-3">
+          <p class="text-[13px] text-faint">Add follow up…</p>
+          <div class="mt-6 flex items-center gap-2 font-mono text-[11px] text-subtle">
+            <span>Claude Code</span>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+            <span class="ml-auto flex size-6 items-center justify-center rounded-md bg-raise text-soft"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span>
           </div>
-          <h3>Compose real apps, not isolated functions</h3>
-          <p>Flows chain your Functions into a real pipeline — logic, validation, response — instead of a pile of disconnected endpoints.</p>
-        </div>
-
-        <div class="feature-card reveal reveal-delay-3">
-          <div class="feature-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7 12 3l8 4-8 4-8-4Z"/><path d="M4 12l8 4 8-4M4 17l8 4 8-4"/></svg>
-          </div>
-          <h3>Frontend and backend, one project</h3>
-          <p>A Node Function for your logic, a Static Function for your UI — the same platform serves both, so your prototype is a whole app, not half of one.</p>
-        </div>
-
-        <div class="feature-card reveal reveal-delay-4">
-          <div class="feature-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 15.3-6.4L21 8M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.3 6.4L3 16M3 21v-5h5"/></svg>
-          </div>
-          <h3>Fix forward, never from scratch</h3>
-          <p>A new version automatically carries forward the last one's code, secrets, and database — so a failed build is a fix, not a restart.</p>
         </div>
       </div>
-    </div>
-  </section>
+    </aside>
+  </div>
+</section>
 
-  <!-- ============ PRICING ============ -->
-  <section class="pricing" id="pricing">
-    <div class="container">
-      <div class="section-head reveal">
-        <p class="eyebrow">PRICING</p>
-        <h2>Free to prototype. No catch.</h2>
-        <p class="section-sub">FuncHole Cloud is free while you're building. As the platform grows, more plans will sit alongside this one — this tier isn't going away.</p>
-      </div>
+<!-- ============ Platform bento ============ -->
+<section id="platform" class="mx-auto max-w-[82.5rem] px-4 py-24 sm:px-6 sm:py-32 lg:px-[3.75rem]">
+  <div class="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between" data-reveal>
+    <h2 class="section-title max-w-[14ch]">Not just prompts, a full platform</h2>
+    <a href="https://github.com/stoopid-computers/funchole/tree/main/docs" class="btn-dark">Read the docs</a>
+  </div>
 
-      <div class="pricing-card reveal reveal-delay-1">
-        <div class="pricing-card-head">
-          <div>
-            <p class="pricing-plan">Free</p>
-            <p class="pricing-price">$0<span>/month</span></p>
-          </div>
-          <span class="pricing-badge">Early access</span>
+  <div class="mt-12 grid gap-px overflow-hidden rounded-3xl border border-line bg-line lg:grid-cols-3" data-reveal>
+    <!-- Invocations -->
+    <a href="https://github.com/stoopid-computers/funchole/blob/main/docs/architecture.md" class="spotlight group flex min-h-[22rem] flex-col bg-ink p-6 sm:p-8">
+      <div class="panel p-5">
+        <div class="flex items-center justify-between"><p class="text-[14px] text-fg">todos-api</p><span class="flex items-center gap-1.5 rounded-md bg-ok/10 px-1.5 py-0.5 font-mono text-[10px] text-ok"><span class="live-dot"></span>LIVE</span></div>
+        <div class="mt-5 flex h-20 items-end gap-[3px]" id="spark" aria-hidden="true"></div>
+        <div class="mt-4 grid grid-cols-3 gap-2 border-t border-line pt-4 font-mono text-[11px]">
+          <div><p class="text-faint">p50</p><p class="mt-1 text-[15px] text-accent" id="stat-p50">14ms</p></div>
+          <div><p class="text-faint">steps</p><p class="mt-1 text-[15px] text-accent">2</p></div>
+          <div><p class="text-faint">status</p><p class="mt-1 text-[15px] text-accent">200</p></div>
         </div>
-        <p class="pricing-desc">Everything you need to prototype and ship a small app.</p>
-        <ul class="pricing-list">
-          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Full Function &amp; Flow builder, deployed via MCP or the dashboard</li>
-          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>A Gateway with your own <code>*.funchole.dev</code> subdomain</li>
-          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>A managed Postgres database, ready on sign-up</li>
-          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Custom domain support with automatic TLS</li>
-          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>MCP access for Claude Code, Codex, opencode, and more</li>
+      </div>
+      <p class="link-arrow mt-auto pt-8 !text-[17px]">Invocations<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></p>
+    </a>
+
+    <!-- Databases -->
+    <a href="https://github.com/stoopid-computers/funchole#current-status" class="spotlight group flex min-h-[22rem] flex-col bg-ink p-6 sm:p-8 lg:col-span-2">
+      <div class="panel fade-bottom grid overflow-hidden sm:grid-cols-[12rem_1fr]">
+        <div class="hidden border-r border-line p-2 text-[13px] sm:block">
+          <p class="rounded-md bg-raise px-2.5 py-1.5 text-fg">Databases</p>
+          <ul class="mt-2 space-y-0.5">
+            <li class="flex items-center gap-2 rounded-md bg-white/[0.04] px-2.5 py-1.5 text-fg"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/></svg>primary<span class="ml-auto font-mono text-[10px] text-subtle">pg 17</span></li>
+            <li class="flex items-center gap-2 px-2.5 py-1.5 text-subtle"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/></svg>analytics</li>
+            <li class="px-2.5 pt-3 font-mono text-[10px] tracking-wider text-faint">ATTACHED TO</li>
+            <li class="px-2.5 py-1 font-mono text-[11px] text-soft">todos-handler v4</li>
+            <li class="px-2.5 py-1 font-mono text-[11px] text-soft">flow · reports</li>
+          </ul>
+        </div>
+        <div class="min-w-0 font-mono text-[12px]">
+          <div class="flex items-center gap-2 border-b border-line px-4 py-2.5 text-subtle">primary <span class="text-faint">›</span> <span class="text-fg">todos</span><span class="ml-auto text-faint">4 rows</span></div>
+          <table class="w-full text-left">
+            <thead class="text-faint"><tr class="border-b border-line"><th class="px-4 py-2 font-normal">id</th><th class="px-4 py-2 font-normal">title</th><th class="px-4 py-2 font-normal">done</th></tr></thead>
+            <tbody class="text-soft">
+              <tr class="border-b border-line/70"><td class="px-4 py-2 text-subtle">1</td><td class="px-4 py-2">Ship the landing page</td><td class="px-4 py-2 text-ok">true</td></tr>
+              <tr class="border-b border-line/70"><td class="px-4 py-2 text-subtle">2</td><td class="px-4 py-2">Wire the webhook flow</td><td class="px-4 py-2 text-ok">true</td></tr>
+              <tr class="border-b border-line/70"><td class="px-4 py-2 text-subtle">3</td><td class="px-4 py-2">Add tags column</td><td class="px-4 py-2 text-subtle">false</td></tr>
+              <tr><td class="px-4 py-2 text-subtle">4</td><td class="px-4 py-2">Custom domain + TLS</td><td class="px-4 py-2 text-subtle">false</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <p class="link-arrow mt-auto pt-8 !text-[17px]">Postgres databases<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></p>
+    </a>
+
+    <!-- Secrets -->
+    <a href="https://github.com/stoopid-computers/funchole/blob/main/docs/environment-variables.md" class="spotlight group flex min-h-[20rem] flex-col bg-ink p-6 sm:p-8">
+      <ul class="panel divide-y divide-line font-mono text-[12px]">
+        <li class="flex items-center gap-2 px-4 py-2.5"><span class="text-soft">LOG_LEVEL</span><span class="ml-auto text-subtle">info</span></li>
+        <li class="flex items-center gap-2 px-4 py-2.5"><span class="text-soft">STRIPE_KEY</span><span class="ml-auto tracking-widest text-subtle">••••••••</span><svg class="text-accent" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></li>
+        <li class="flex items-center gap-2 px-4 py-2.5"><span class="text-soft">WEBHOOK_SECRET</span><span class="ml-auto tracking-widest text-subtle">••••••••</span><svg class="text-accent" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></li>
+        <li class="flex items-center gap-2 px-4 py-2.5 text-faint">injected at invocation · OpenBao</li>
+      </ul>
+      <p class="link-arrow mt-auto pt-8 !text-[17px]">Secrets &amp; environments<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></p>
+    </a>
+
+    <!-- Static -->
+    <a href="https://github.com/stoopid-computers/funchole#architecture-at-a-glance" class="spotlight group flex min-h-[20rem] flex-col bg-ink p-6 sm:p-8">
+      <div class="panel overflow-hidden">
+        <div class="flex items-center gap-1.5 border-b border-line px-3 py-2"><span class="size-2 rounded-full bg-white/10"></span><span class="size-2 rounded-full bg-white/10"></span><span class="ml-2 flex-1 truncate rounded bg-panel-2 px-2 py-0.5 font-mono text-[10px] text-subtle">gw3f81.funchole.dev/app</span></div>
+        <ul class="p-3 font-mono text-[11px] leading-[1.9] text-subtle">
+          <li><span class="text-accent">STATIC</span> · web-app v7</li>
+          <li class="text-soft">dist/</li>
+          <li class="pl-4">index.html</li>
+          <li class="pl-4">assets/main.js</li>
+          <li class="pl-4">assets/app.css</li>
         </ul>
-        <a href="https://app.funchole.dev" target="_blank" rel="noopener" class="btn btn-solid btn-block">Start free — no credit card</a>
       </div>
-    </div>
-  </section>
+      <p class="link-arrow mt-auto pt-8 !text-[17px]">Static frontends<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></p>
+    </a>
 
-  <!-- ============ OPEN SOURCE ============ -->
-  <section class="opensource">
-    <div class="container opensource-inner reveal">
-      <div class="opensource-copy">
-        <p class="eyebrow">OPEN SOURCE</p>
-        <h2>Prefer to run it yourself?</h2>
-        <p>
-          FuncHole Cloud is the hosted version of the exact same platform on GitHub —
-          Apache&nbsp;2.0, nothing held back for the paid tiers that don't exist yet.
-          Self-host it on your own infrastructure today, or move between self-hosted
-          and Cloud whenever it suits you.
-        </p>
-        <div class="opensource-actions">
-          <a href="https://github.com/stoopid-computers/funchole" target="_blank" rel="noopener" class="btn btn-solid">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56 0-.27-.01-1.17-.02-2.12-3.2.7-3.88-1.36-3.88-1.36-.52-1.34-1.28-1.69-1.28-1.69-1.05-.72.08-.71.08-.71 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.71 1.26 3.37.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.29 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.8 0c2.2-1.49 3.17-1.18 3.17-1.18.64 1.59.24 2.76.12 3.05.74.8 1.19 1.83 1.19 3.09 0 4.43-2.7 5.41-5.27 5.69.42.36.78 1.07.78 2.16 0 1.56-.02 2.82-.02 3.2 0 .31.21.67.8.56A10.52 10.52 0 0 0 23.5 12c0-6.35-5.15-11.5-11.5-11.5Z"/></svg>
-            Star on GitHub
-          </a>
-          <a href="https://github.com/stoopid-computers/funchole/blob/main/LICENSE" target="_blank" rel="noopener" class="license-pill">Apache 2.0</a>
+    <!-- Domains -->
+    <a href="https://github.com/stoopid-computers/funchole/blob/main/docs/environment-variables.md" class="spotlight group flex min-h-[20rem] flex-col bg-ink p-6 sm:p-8">
+      <div class="panel p-4">
+        <p class="font-mono text-[13px] text-fg">api.acme.dev</p>
+        <ul class="mt-4 space-y-2.5 text-[13px]">
+          <li class="flex items-center gap-2"><span class="text-ok">✓</span>TXT record verified</li>
+          <li class="flex items-center gap-2"><span class="text-ok">✓</span>Certificate · Let's Encrypt</li>
+          <li class="flex items-center gap-2"><span class="live-dot text-accent"></span>Renews before expiry</li>
+        </ul>
+      </div>
+      <p class="link-arrow mt-auto pt-8 !text-[17px]">Custom domains &amp; TLS<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></p>
+    </a>
+
+    <!-- Architecture -->
+    <a href="https://github.com/stoopid-computers/funchole/blob/main/docs/architecture.md" class="spotlight group flex min-h-[20rem] flex-col bg-ink p-6 sm:p-8 lg:col-span-2">
+      <div class="panel overflow-hidden p-6 pb-7" id="arch">
+        <div class="relative">
+          <div class="absolute top-5 right-[10%] left-[10%] hidden h-px bg-line-strong sm:block" aria-hidden="true"></div>
+          <div class="absolute top-5 right-[10%] left-[10%] hidden h-0 sm:block" data-pulse aria-hidden="true"><span class="pulse-dot absolute top-0 left-0 size-2 -translate-x-1/2 -translate-y-1/2 rounded-full"></span></div>
+          <ol class="relative grid grid-cols-2 gap-5 text-center sm:grid-cols-5 sm:gap-2">
+            <li><span data-node class="mx-auto flex size-10 items-center justify-center rounded-xl border border-line-strong bg-panel-2 font-mono text-[11px] text-soft">01</span><p class="mt-3 text-[13px] text-fg">Gateway</p><p class="font-mono text-[10px] text-faint">Netty</p></li>
+            <li><span data-node class="mx-auto flex size-10 items-center justify-center rounded-xl border border-line-strong bg-panel-2 font-mono text-[11px] text-soft">02</span><p class="mt-3 text-[13px] text-fg">Registry</p><p class="font-mono text-[10px] text-faint">snapshot</p></li>
+            <li><span data-node class="mx-auto flex size-10 items-center justify-center rounded-xl border border-line-strong bg-panel-2 font-mono text-[11px] text-soft">03</span><p class="mt-3 text-[13px] text-fg">JetStream</p><p class="font-mono text-[10px] text-faint">NATS</p></li>
+            <li><span data-node class="mx-auto flex size-10 items-center justify-center rounded-xl border border-line-strong bg-panel-2 font-mono text-[11px] text-soft">04</span><p class="mt-3 text-[13px] text-fg">Dispatcher</p><p class="font-mono text-[10px] text-faint">idempotent</p></li>
+            <li><span data-node class="mx-auto flex size-10 items-center justify-center rounded-xl border border-line-strong bg-panel-2 font-mono text-[11px] text-soft">05</span><p class="mt-3 text-[13px] text-fg">Runtime</p><p class="font-mono text-[10px] text-faint">Node · IPC</p></li>
+          </ol>
         </div>
       </div>
+      <p class="link-arrow mt-auto pt-8 !text-[17px]">Built like infrastructure<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></p>
+    </a>
 
-      <div class="opensource-card">
-        <div class="opensource-card-row">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56 0-.27-.01-1.17-.02-2.12-3.2.7-3.88-1.36-3.88-1.36-.52-1.34-1.28-1.69-1.28-1.69-1.05-.72.08-.71.08-.71 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.71 1.26 3.37.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.29 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.8 0c2.2-1.49 3.17-1.18 3.17-1.18.64 1.59.24 2.76.12 3.05.74.8 1.19 1.83 1.19 3.09 0 4.43-2.7 5.41-5.27 5.69.42.36.78 1.07.78 2.16 0 1.56-.02 2.82-.02 3.2 0 .31.21.67.8.56A10.52 10.52 0 0 0 23.5 12c0-6.35-5.15-11.5-11.5-11.5Z"/></svg>
-          <span class="opensource-repo">stoopid-computers/funchole</span>
-        </div>
-        <div class="opensource-stats">
-          <div class="stat">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.9 6.6 7.1.6-5.4 4.7 1.7 7L12 17.3 5.7 20.9l1.7-7-5.4-4.7 7.1-.6L12 2Z"/></svg>
-            <span id="os-star-count" class="stat-num">—</span>
-            <span class="stat-label">stars</span>
-          </div>
-          <div class="stat">
-            <span class="stat-num">Apache 2.0</span>
-            <span class="stat-label">license</span>
-          </div>
-        </div>
+    <!-- Self-host -->
+    <div class="spotlight flex min-h-[20rem] flex-col bg-ink p-6 sm:p-8">
+      <div class="relative panel">
+        <pre class="p-4 pr-11 font-mono text-[11.5px] leading-[1.8] whitespace-pre-wrap text-soft [overflow-wrap:anywhere]"><code id="selfhost-cmd"><span class="text-faint">$</span> git clone https://github.com/stoopid-computers/funchole
+<span class="text-faint">$</span> cd funchole
+<span class="text-faint">$</span> docker compose -f docker-compose.dev.yml up --build</code></pre>
+        <button type="button" data-copy="#selfhost-cmd" class="absolute top-2 right-2 inline-flex size-8 cursor-pointer items-center justify-center rounded-md text-subtle transition-colors hover:bg-white/5 hover:text-fg" aria-label="Copy self-host commands">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+        </button>
+      </div>
+      <a href="https://github.com/stoopid-computers/funchole/blob/main/docs/development.md" class="link-arrow mt-auto pt-8 !text-[17px]">Self-host it<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ Built in the open (carousel) ============ -->
+<section id="open" class="py-24 sm:py-32">
+  <div class="mx-auto flex max-w-[82.5rem] flex-col gap-6 px-4 sm:flex-row sm:items-end sm:justify-between sm:px-6 lg:px-[3.75rem]" data-reveal>
+    <h2 class="section-title max-w-[14ch]">Built in the open, shipped in the open</h2>
+    <div class="flex items-center gap-2">
+      <button type="button" class="inline-flex size-9 cursor-pointer items-center justify-center rounded-lg bg-raise text-soft transition-colors hover:text-fg disabled:opacity-40" data-scroll="-1" aria-label="Previous"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg></button>
+      <button type="button" class="inline-flex size-9 cursor-pointer items-center justify-center rounded-lg bg-raise text-soft transition-colors hover:text-fg disabled:opacity-40" data-scroll="1" aria-label="Next"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
+      <a href="https://github.com/stoopid-computers/funchole" class="btn-dark ml-1">View on GitHub</a>
+    </div>
+  </div>
+
+  <div class="no-scrollbar rail-pad mt-12 flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-2" id="rail" data-reveal tabindex="0" aria-label="What's shipped and what's next">
+    <article class="flex min-h-[17rem] w-[19rem] shrink-0 snap-start flex-col rounded-3xl border border-line bg-panel p-6">
+      <span class="w-fit rounded-md bg-ok/10 px-1.5 py-0.5 font-mono text-[10px] tracking-wider text-ok">SHIPPED</span>
+      <h3 class="mt-5 text-lg font-medium tracking-tight">An MCP server with <span data-tool-count>66</span> tools</h3>
+      <p class="mt-2 text-[14px]">Functions, flows, gateways, domains, databases, environments, and invocations — all agent-drivable.</p>
+      <p class="mt-auto pt-6 font-mono text-[11px] text-faint">/api/mcp · fh_mcp_ keys</p>
+    </article>
+    <article class="flex min-h-[17rem] w-[19rem] shrink-0 snap-start flex-col rounded-3xl border border-line bg-panel p-6">
+      <span class="w-fit rounded-md bg-ok/10 px-1.5 py-0.5 font-mono text-[10px] tracking-wider text-ok">SHIPPED</span>
+      <h3 class="mt-5 text-lg font-medium tracking-tight">STATIC frontends</h3>
+      <p class="mt-2 text-[14px]">Build a site and have the gateway serve it straight from its artifact cache.</p>
+      <p class="mt-auto pt-6 font-mono text-[11px] text-faint">runtime: STATIC</p>
+    </article>
+    <article class="flex min-h-[17rem] w-[19rem] shrink-0 snap-start flex-col rounded-3xl border border-line bg-panel p-6">
+      <span class="w-fit rounded-md bg-ok/10 px-1.5 py-0.5 font-mono text-[10px] tracking-wider text-ok">SHIPPED</span>
+      <h3 class="mt-5 text-lg font-medium tracking-tight">Real certificates</h3>
+      <p class="mt-2 text-[14px]">Let's Encrypt issuance over HTTP-01 with expiry-based renewal.</p>
+      <p class="mt-auto pt-6 font-mono text-[11px] text-faint">CERTIFICATE_PROVIDER=LETS_ENCRYPT</p>
+    </article>
+    <article class="flex min-h-[17rem] w-[19rem] shrink-0 snap-start flex-col rounded-3xl border border-line bg-panel p-6">
+      <span class="w-fit rounded-md border border-line-strong px-1.5 py-0.5 font-mono text-[10px] tracking-wider text-soft">PLANNED</span>
+      <h3 class="mt-5 text-lg font-medium tracking-tight">Server-rendered responses</h3>
+      <p class="mt-2 text-[14px]">Raw bodies and custom content types from a NODE response step, for true SSR.</p>
+      <p class="mt-auto pt-6 font-mono text-[11px] text-faint">RESPONSE step</p>
+    </article>
+    <article class="flex min-h-[17rem] w-[19rem] shrink-0 snap-start flex-col rounded-3xl border border-line bg-panel p-6">
+      <span class="w-fit rounded-md border border-line-strong px-1.5 py-0.5 font-mono text-[10px] tracking-wider text-soft">PLANNED</span>
+      <h3 class="mt-5 text-lg font-medium tracking-tight">Distributed runtime reservation</h3>
+      <p class="mt-2 text-[14px]">Durable capacity state shared across dispatchers, not in-memory per process.</p>
+      <p class="mt-auto pt-6 font-mono text-[11px] text-faint">runtime-registry</p>
+    </article>
+    <article class="flex min-h-[17rem] w-[19rem] shrink-0 snap-start flex-col rounded-3xl border border-line bg-panel p-6">
+      <span class="w-fit rounded-md border border-line px-1.5 py-0.5 font-mono text-[10px] tracking-wider text-subtle">EXPLORING</span>
+      <h3 class="mt-5 text-lg font-medium tracking-tight">DNS-01 certificates</h3>
+      <p class="mt-2 text-[14px]">Wildcard-friendly ACME challenges alongside today's HTTP-01.</p>
+      <p class="mt-auto pt-6 font-mono text-[11px] text-faint">ACME</p>
+    </article>
+    <article class="flex min-h-[17rem] w-[19rem] shrink-0 snap-start flex-col rounded-3xl border border-line bg-panel p-6">
+      <span class="w-fit rounded-md border border-line px-1.5 py-0.5 font-mono text-[10px] tracking-wider text-subtle">EXPLORING</span>
+      <h3 class="mt-5 text-lg font-medium tracking-tight">Parameters inside wildcards</h3>
+      <p class="mt-2 text-[14px]">Routes like <span class="font-mono text-[12px] text-soft">/:tenant/*</span> that capture and own a subtree.</p>
+      <p class="mt-auto pt-6 font-mono text-[11px] text-faint">gateway routing</p>
+    </article>
+    <article class="flex min-h-[17rem] w-[19rem] shrink-0 snap-start flex-col rounded-3xl border border-line bg-panel p-6">
+      <span class="w-fit rounded-md border border-line px-1.5 py-0.5 font-mono text-[10px] tracking-wider text-subtle">EXPLORING</span>
+      <h3 class="mt-5 text-lg font-medium tracking-tight">Artifact cache eviction</h3>
+      <p class="mt-2 text-[14px]">TTLs for the runtime and gateway source caches.</p>
+      <p class="mt-auto pt-6 font-mono text-[11px] text-faint">artifact</p>
+    </article>
+    <span class="w-px shrink-0" aria-hidden="true"></span>
+  </div>
+</section>
+
+<!-- ============ Pricing ============ -->
+<section id="pricing" class="mx-auto max-w-[82.5rem] px-4 pb-24 sm:px-6 sm:pb-32 lg:px-[3.75rem]">
+  <div class="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between" data-reveal>
+    <h2 class="section-title max-w-[14ch]">Free while you build. Yours to self-host.</h2>
+    <a href="https://app.funchole.dev" class="btn-dark">Start for free</a>
+  </div>
+  <div class="mt-12 grid gap-3 md:grid-cols-2" data-reveal>
+    <div class="spotlight flex min-w-0 flex-col rounded-3xl border border-line bg-panel p-7 sm:p-9">
+      <div class="flex items-center justify-between"><h3 class="text-lg font-medium">Cloud</h3><span class="rounded-md bg-accent-soft px-1.5 py-0.5 font-mono text-[10px] tracking-wider text-accent">EARLY ACCESS</span></div>
+      <p class="mt-6 flex items-baseline gap-1.5"><span class="display text-6xl text-fg">$0</span><span class="text-sm">/ month</span></p>
+      <ul class="mt-8 space-y-3 text-[15px]">
+        <li class="flex gap-3"><span class="text-fg">✓</span>Functions &amp; Flows via MCP or the dashboard</li>
+        <li class="flex gap-3"><span class="text-fg">✓</span><span>A gateway on your own <span class="font-mono text-[13px] text-soft">*.funchole.dev</span> host</span></li>
+        <li class="flex gap-3"><span class="text-fg">✓</span>A managed Postgres database, ready on sign-up</li>
+        <li class="flex gap-3"><span class="text-fg">✓</span>Custom domains with automatic TLS</li>
+      </ul>
+      <a href="https://app.funchole.dev" class="btn-primary btn-lg mt-10 w-full">Start free — no credit card</a>
+    </div>
+    <div class="spotlight flex min-w-0 flex-col rounded-3xl border border-line bg-panel p-7 sm:p-9">
+      <div class="flex items-center justify-between"><h3 class="text-lg font-medium">Self-hosted</h3><span class="rounded-md border border-line-strong px-1.5 py-0.5 font-mono text-[10px] tracking-wider text-soft">APACHE 2.0</span></div>
+      <p class="mt-6 flex items-baseline gap-1.5"><span class="display text-6xl text-fg">Free</span><span class="text-sm">forever</span></p>
+      <ul class="mt-8 space-y-3 text-[15px]">
+        <li class="flex gap-3"><span class="text-fg">✓</span>The exact same platform, on your infrastructure</li>
+        <li class="flex gap-3"><span class="text-fg">✓</span>PostgreSQL, NATS JetStream, OpenBao, S3-compatible storage</li>
+        <li class="flex gap-3"><span class="text-fg">✓</span>Nothing held back for paid tiers</li>
+        <li class="flex gap-3"><span class="text-fg">✓</span>Move between self-hosted and Cloud anytime</li>
+      </ul>
+      <a href="https://github.com/stoopid-computers/funchole" class="btn-dark btn-lg mt-10 w-full">Star on GitHub <span class="font-mono text-xs text-subtle" data-stars></span></a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ Final CTA: prompt box ============ -->
+<section class="mx-auto max-w-[82.5rem] px-4 pt-16 pb-28 sm:px-6 sm:pb-40 lg:px-[3.75rem]">
+  <h2 class="display mx-auto max-w-[16ch] text-center text-[clamp(2.25rem,5vw,3.75rem)]" data-reveal>Your next app starts with a prompt</h2>
+  <form class="mx-auto mt-10 max-w-2xl" id="prompt-form" data-reveal>
+    <label for="prompt-input" class="sr-only">Describe what you want your agent to build</label>
+    <div class="rounded-2xl border border-line-strong bg-panel-2 p-3 transition-colors focus-within:border-[#3d3d3d]">
+      <textarea id="prompt-input" rows="4" class="w-full resize-none bg-transparent px-1.5 pt-1 text-[15px] text-fg placeholder:text-faint focus:outline-none" placeholder="Build a URL shortener with a Postgres table and put it at /s/:code…"></textarea>
+      <div class="flex items-center gap-2 border-t border-line pt-3">
+        <label for="prompt-agent" class="sr-only">Agent</label>
+        <select id="prompt-agent" class="cursor-pointer rounded-md bg-transparent px-1.5 py-1 font-mono text-[12px] text-subtle hover:text-fg focus:outline-none">
+          <option value="Claude Code">Claude Code</option>
+          <option value="Codex">Codex</option>
+          <option value="opencode">opencode</option>
+        </select>
+        <button type="submit" class="btn-primary ml-auto">Copy prompt
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+        </button>
       </div>
     </div>
-  </section>
-
-  <!-- ============ COMMUNITY ============ -->
-  <section class="community reveal">
-    <div class="container community-inner">
-      <div>
-        <h2>Come build with us.</h2>
-        <p>Questions, feedback, or just want to see what people are shipping — join the Discord.</p>
-      </div>
-      <a href="https://discord.gg/yS8etyU7p" target="_blank" rel="noopener" class="btn btn-solid btn-lg">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.3 5.3A17.9 17.9 0 0 0 15.9 4l-.3.6a12.9 12.9 0 0 1 3.9 1.5 15.9 15.9 0 0 0-13.9 0 12.9 12.9 0 0 1 3.9-1.5L9.2 4a17.9 17.9 0 0 0-4.4 1.3C1.7 9.3 1 13.2 1.3 17c1.7 1.3 3.4 2.1 5 2.6l.7-1.2a10.4 10.4 0 0 1-1.6-.8l.4-.3a12.6 12.6 0 0 0 10.4 0l.4.3c-.5.3-1 .6-1.6.8l.7 1.2c1.6-.5 3.3-1.3 5-2.6.4-4.4-.7-8.3-3.4-11.7ZM8.7 14.6c-.9 0-1.7-.9-1.7-1.9s.7-1.9 1.7-1.9 1.7.9 1.7 1.9-.8 1.9-1.7 1.9Zm6.6 0c-.9 0-1.7-.9-1.7-1.9s.7-1.9 1.7-1.9 1.7.9 1.7 1.9-.8 1.9-1.7 1.9Z"/></svg>
-        Join the Discord
-      </a>
+    <div class="mt-3 flex flex-wrap justify-center gap-2" id="prompt-chips">
+      <button type="button" class="cursor-pointer rounded-lg bg-raise px-3 py-1.5 text-[13px] text-muted transition-colors hover:text-fg">Todo API with Postgres</button>
+      <button type="button" class="cursor-pointer rounded-lg bg-raise px-3 py-1.5 text-[13px] text-muted transition-colors hover:text-fg">Webhook receiver</button>
+      <button type="button" class="cursor-pointer rounded-lg bg-raise px-3 py-1.5 text-[13px] text-muted transition-colors hover:text-fg">Static portfolio site</button>
+      <button type="button" class="cursor-pointer rounded-lg bg-raise px-3 py-1.5 text-[13px] text-muted transition-colors hover:text-fg">URL shortener</button>
     </div>
-  </section>
-
-  <!-- ============ FINAL CTA ============ -->
-  <section class="final-cta reveal">
-    <div class="container final-cta-inner">
-      <h2>Ship your first idea today.</h2>
-      <p>Free to start. Fixes forward. Yours to self-host whenever you want.</p>
-      <a href="https://app.funchole.dev" target="_blank" rel="noopener" class="btn btn-solid btn-lg">
-        Start free
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-      </a>
-    </div>
-  </section>
+    <p class="mt-8 text-center text-[13px] text-subtle">Paste it into your agent once FuncHole is connected. <a href="#connect" class="text-fg underline decoration-line-strong underline-offset-4 hover:decoration-fg">Connect first →</a></p>
+  </form>
+</section>
 
 </main>
 
-<footer class="site-footer">
-  <div class="container footer-inner">
-    <a href="#top" class="logo logo-footer">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/>
-        <circle cx="12" cy="12" r="2.75" fill="var(--accent)"/>
-      </svg>
-      <span>FuncHole</span>
-    </a>
-
-    <nav class="footer-nav" aria-label="Footer">
-      <a href="https://github.com/stoopid-computers/funchole/tree/main/docs" target="_blank" rel="noopener">Docs</a>
-      <a href="https://github.com/stoopid-computers/funchole" target="_blank" rel="noopener">GitHub</a>
-      <a href="https://discord.gg/yS8etyU7p" target="_blank" rel="noopener">Discord</a>
-      <a href="https://github.com/stoopid-computers/funchole/blob/main/LICENSE" target="_blank" rel="noopener">License</a>
-    </nav>
-
-    <p class="footer-copy">© <span id="year"></span> FuncHole. Apache 2.0 licensed.</p>
+<!-- ============ Footer ============ -->
+<footer class="border-t border-line">
+  <div class="mx-auto max-w-[82.5rem] px-4 pt-16 pb-10 sm:px-6 lg:px-[3.75rem]">
+    <div class="grid grid-cols-2 gap-10 text-sm sm:grid-cols-4 lg:grid-cols-5">
+      <div class="col-span-2 sm:col-span-4 lg:col-span-1">
+        <a href="#top" class="flex items-center gap-2.5 font-semibold text-fg">
+          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="fh-mark-foot" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b9c8ff"/><stop offset="1" stop-color="#2f5bff"/></linearGradient></defs><rect x="1.5" y="1.5" width="13.5" height="13.5" rx="4.2" fill="#fafafa"/><rect x="9" y="9" width="13.5" height="13.5" rx="4.2" fill="url(#fh-mark-foot)" fill-opacity=".92"/><path d="M9 13.2A4.2 4.2 0 0 1 13.2 9H15v1.8a4.2 4.2 0 0 1-4.2 4.2H9z" fill="#dfe6ff"/></svg>
+          FuncHole
+        </a>
+        <p class="mt-3 max-w-[16rem] text-[13px] text-subtle">Open-source serverless your coding agent can drive.</p>
+      </div>
+      <div><p class="text-fg">Product</p><ul class="mt-4 space-y-2.5 text-subtle"><li><a class="hover:text-fg" href="#agents">Agents</a></li><li><a class="hover:text-fg" href="#platform">Platform</a></li><li><a class="hover:text-fg" href="#pricing">Pricing</a></li><li><a class="hover:text-fg" href="https://app.funchole.dev">Dashboard</a></li></ul></div>
+      <div><p class="text-fg">Developers</p><ul class="mt-4 space-y-2.5 text-subtle"><li><a class="hover:text-fg" href="https://github.com/stoopid-computers/funchole/tree/main/docs">Docs</a></li><li><a class="hover:text-fg" href="https://github.com/stoopid-computers/funchole#managing-funchole-via-mcp">MCP guide</a></li><li><a class="hover:text-fg" href="https://github.com/stoopid-computers/funchole/blob/main/docs/architecture.md">Architecture</a></li><li><a class="hover:text-fg" href="https://github.com/stoopid-computers/funchole/blob/main/docs/limitations.md">Limitations</a></li></ul></div>
+      <div><p class="text-fg">Community</p><ul class="mt-4 space-y-2.5 text-subtle"><li><a class="hover:text-fg" href="https://github.com/stoopid-computers/funchole">GitHub</a></li><li><a class="hover:text-fg" href="https://discord.gg/yS8etyU7p">Discord</a></li><li><a class="hover:text-fg" href="https://github.com/stoopid-computers/funchole/blob/main/CONTRIBUTING.md">Contributing</a></li></ul></div>
+      <div><p class="text-fg">Legal</p><ul class="mt-4 space-y-2.5 text-subtle"><li><a class="hover:text-fg" href="https://github.com/stoopid-computers/funchole/blob/main/LICENSE">Apache 2.0 License</a></li></ul></div>
+    </div>
+    <div class="mt-14 flex flex-col items-center justify-between gap-3 border-t border-line pt-6 text-[13px] text-subtle sm:flex-row">
+      <p class="flex items-center gap-2"><span class="size-1.5 rounded-full bg-accent"></span>Open source · Apache 2.0</p>
+      <p>FuncHole © <span id="year">2026</span></p>
+    </div>
   </div>
 </footer>
 
-<script src="script.js"></script>
+<!-- Toast -->
+<div class="pointer-events-none fixed inset-x-0 bottom-6 z-[65] flex justify-center px-4" aria-live="polite">
+  <p id="toast" class="flex items-center gap-2 rounded-full border border-line-strong bg-panel-2/95 px-4 py-2 text-[13px] text-fg opacity-0 shadow-[0_20px_50px_-10px_rgb(0_0_0)] backdrop-blur-xl"></p>
+</div>
+
 </body>
 </html>

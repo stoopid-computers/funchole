@@ -1,51 +1,72 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
-import { XIcon } from "@/components/icons";
-import { panelClass } from "@/components/Panel";
+import type { ReactNode } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 
 interface ModalProps {
   title: string;
+  /** Optional line under the title. */
+  description?: ReactNode;
   onClose: () => void;
   children: ReactNode;
+  /**
+   * Action buttons, pinned below the scrolling body. To submit a form in the
+   * body, give the form an `id` and the submit button `form="<that id>"`.
+   */
+  footer?: ReactNode;
+  /** False blocks Esc, outside-click and ✕ - e.g. while a save is in flight. */
+  dismissible?: boolean;
   widthClassName?: string;
 }
 
-export function Modal({ title, onClose, children, widthClassName = "max-w-lg" }: ModalProps) {
-  useEffect(() => {
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
-    }
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, [onClose]);
+/**
+ * The app's one modal, built on shadcn's Dialog (focus trap, Esc, overlay).
+ * It's always open while mounted - render it conditionally:
+ *
+ *   {open && <Modal title="…" onClose={() => setOpen(false)}>…</Modal>}
+ */
+export function Modal({
+  title,
+  description,
+  onClose,
+  children,
+  footer,
+  dismissible = true,
+  widthClassName = "max-w-lg",
+}: ModalProps) {
+  // Dialog's own `sm:max-w-sm` needs an `sm:`-prefixed override to widen it.
+  const width = widthClassName
+    .split(/\s+/)
+    .map((cls) => (cls.startsWith("max-w-") ? `${cls} sm:${cls}` : cls))
+    .join(" ");
 
   return (
-    <div
-      role="presentation"
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/75 px-4 py-10 backdrop-blur-md"
-      onClick={onClose}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
-        onClick={(event) => event.stopPropagation()}
-        className={`${panelClass} w-full ${widthClassName} fh-reveal shadow-2xl`}
+    <Dialog open onOpenChange={(open) => !open && dismissible && onClose()}>
+      <DialogContent
+        className={cn("max-h-[calc(100dvh-2rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 p-0", width)}
+        // With a description Radix links it automatically; without one, opt out
+        // explicitly so Radix doesn't warn about a missing description.
+        {...(description ? {} : { "aria-describedby": undefined })}
       >
-        <div className="flex items-center justify-between border-b border-border px-5 py-4">
-          <h2 className="text-base font-semibold text-foreground">{title}</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-hover hover:text-foreground"
-          >
-            <XIcon className="h-4 w-4" />
-          </button>
-        </div>
-        <div className="max-h-[75vh] overflow-y-auto p-5">{children}</div>
-      </div>
-    </div>
+        <DialogHeader className="gap-1 border-b border-border px-5 py-4 pr-12">
+          <DialogTitle className="text-base font-medium tracking-tight">{title}</DialogTitle>
+          {description && <DialogDescription className="leading-relaxed">{description}</DialogDescription>}
+        </DialogHeader>
+        <div className="min-h-0 overflow-y-auto p-5">{children}</div>
+        {footer && (
+          <DialogFooter className="mx-0 mb-0 rounded-b-xl border-t border-border bg-transparent px-5 py-4">
+            {footer}
+          </DialogFooter>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -1,38 +1,50 @@
 import type { ButtonHTMLAttributes } from "react";
+import { Button as UIButton, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
+// App-level button vocabulary on top of shadcn's Button. Primary is the
+// landing page's white CTA; secondary is its dark "btn-dark"; the electric
+// blue is reserved for focus and live states, never for buttons.
 export type ButtonVariant = "primary" | "secondary" | "danger" | "ghost";
 export type ButtonSize = "md" | "sm" | "icon";
 
-const VARIANT_CLASSES: Record<ButtonVariant, string> = {
-  primary:
-    "bg-accent text-accent-ink shadow-[0_0_0_1px_rgba(245,166,35,0.18),0_10px_30px_rgba(245,166,35,0.16)] hover:bg-accent-hover",
-  secondary:
-    "border border-border bg-surface/80 text-foreground hover:border-accent-border hover:bg-accent-soft",
-  danger:
-    "border border-danger/35 bg-danger/10 text-danger hover:bg-danger/15",
-  ghost: "text-muted hover:bg-surface-hover hover:text-foreground",
-};
+const VARIANT = {
+  primary: "default",
+  secondary: "secondary",
+  danger: "destructive",
+  ghost: "ghost",
+} as const;
 
-const SIZE_CLASSES: Record<ButtonSize, string> = {
-  md: "h-9 px-4 text-sm",
-  sm: "h-8 px-3 text-xs",
-  icon: "h-8 w-8 p-0",
+const SIZE = {
+  md: "lg",
+  sm: "default",
+  icon: "icon",
+} as const;
+
+const SIZE_EXTRA: Record<ButtonSize, string> = {
+  md: "px-3.5",
+  sm: "px-3 text-[13px]",
+  icon: "",
 };
 
 export function buttonClasses(variant: ButtonVariant = "secondary", size: ButtonSize = "md") {
-  return `inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-xl font-medium transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 disabled:pointer-events-none disabled:opacity-50 ${VARIANT_CLASSES[variant]} ${SIZE_CLASSES[size]}`;
+  return cn(buttonVariants({ variant: VARIANT[variant], size: SIZE[size] }), SIZE_EXTRA[size], "active:scale-[0.97]");
 }
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
   size?: ButtonSize;
+  asChild?: boolean;
 }
 
-export function Button({ variant = "secondary", size = "md", className = "", type = "button", ...props }: ButtonProps) {
+export function Button({ variant = "secondary", size = "md", className, type = "button", asChild, ...props }: ButtonProps) {
   return (
-    <button
-      type={type}
-      className={`${buttonClasses(variant, size)} ${className}`}
+    <UIButton
+      type={asChild ? undefined : type}
+      asChild={asChild}
+      variant={VARIANT[variant]}
+      size={SIZE[size]}
+      className={cn(SIZE_EXTRA[size], "active:scale-[0.97]", className)}
       {...props}
     />
   );

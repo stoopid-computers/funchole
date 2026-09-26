@@ -1,0 +1,406 @@
+/*
+ * Tailwind source for the landing page. `npm run build:css` compiles this
+ * into ../styles.css, which is the file index.html, the Dockerfile and the
+ * `build` script actually ship - re-run it after touching any class names.
+ */
+@import "tailwindcss" source(none);
+@source "../index.html";
+@source "../script.js";
+
+@theme {
+  --color-ink: #000000;
+  --color-panel: #0a0a0a;
+  --color-panel-2: #121212;
+  --color-raise: #1a1a1a;
+  --color-line: #1d1d1d;
+  --color-line-strong: #2b2b2b;
+  --color-fg: #fafafa;
+  --color-soft: #d4d4d4;
+  --color-muted: #a1a1a1;
+  --color-subtle: #7a7a7a;
+  --color-faint: #525252;
+
+  /* Electric blue: the hero glow and anything "live"/active - never decoration. */
+  --color-accent: #6b8cff;
+  --color-accent-strong: #2f5bff;
+  --color-accent-soft: rgb(107 140 255 / 0.14);
+  --color-ok: #4ade80;
+  --color-warn: #fbbf24;
+  --color-bad: #f87171;
+  --color-code-fn: #7b9bff;
+  --color-code-str: #86efac;
+  --color-code-kw: #f0abfc;
+  --color-code-num: #fdba74;
+
+  --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 5rem;
+  }
+
+  body {
+    @apply bg-ink text-muted font-sans antialiased;
+    font-size: 15px;
+    line-height: 1.6;
+    overflow-x: clip;
+  }
+
+  ::selection {
+    background: rgb(107 140 255 / 0.4);
+    color: #fff;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  h1,
+  h2,
+  h3 {
+    color: var(--color-fg);
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+}
+
+/* ---------- Type ---------- */
+
+/* Medium weight, tight tracking: confident without shouting. */
+@utility display {
+  font-weight: 500;
+  letter-spacing: -0.045em;
+  line-height: 1.02;
+}
+
+@utility section-title {
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  font-size: clamp(2.1rem, 4.2vw, 3.25rem);
+}
+
+@utility eyebrow {
+  @apply font-mono text-[11px] font-medium tracking-[0.16em] uppercase text-subtle;
+}
+
+/* Card caption: a white title flowing into a grey description at one size. */
+@utility caption {
+  @apply max-w-xl text-[17px] leading-[1.45] tracking-[-0.01em] text-muted sm:text-lg;
+  & b {
+    @apply block font-normal text-fg;
+  }
+}
+
+/* ---------- Buttons ---------- */
+
+@utility btn {
+  @apply inline-flex min-h-9 cursor-pointer items-center justify-center gap-2 rounded-lg px-3.5 text-sm font-medium whitespace-nowrap select-none;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.35s var(--ease-spring);
+  &:active {
+    transform: scale(0.96);
+    transition-duration: 0.08s;
+  }
+}
+
+@utility btn-primary {
+  @apply btn bg-fg text-ink hover:bg-white;
+}
+
+@utility btn-dark {
+  @apply btn bg-raise text-fg hover:bg-[#242424];
+}
+
+@utility btn-lg {
+  @apply min-h-11 rounded-xl px-5 text-[15px];
+}
+
+@utility link-arrow {
+  @apply inline-flex min-h-9 items-center gap-1.5 text-[15px] text-fg transition-colors hover:text-soft;
+  & svg {
+    transition: transform 0.3s var(--ease-spring);
+  }
+  &:hover svg {
+    transform: translateX(3px);
+  }
+}
+
+/* ---------- Surfaces ---------- */
+
+@utility panel {
+  @apply rounded-xl border border-line bg-panel;
+}
+
+@utility panel-head {
+  @apply flex items-center gap-2 border-b border-line px-3.5 py-2.5 font-mono text-xs text-soft;
+}
+
+@utility chip {
+  @apply inline-flex items-center gap-1.5 rounded-md border border-line bg-panel-2 px-1.5 py-0.5 font-mono text-[11px] text-muted;
+}
+
+/* Big feature card: an inset "stage" for the visual plus a caption row. */
+@utility stage {
+  @apply relative flex items-center justify-center overflow-hidden rounded-2xl bg-panel-2 p-4 sm:p-8;
+  background-image: radial-gradient(ellipse 80% 60% at 50% 0%, rgb(255 255 255 / 0.04), transparent 70%);
+}
+
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ---------- Hero ---------- */
+
+.hero-frame {
+  background:
+    radial-gradient(ellipse 55% 55% at 50% 58%, rgb(34 70 255 / 0.55), transparent 70%),
+    radial-gradient(ellipse 90% 80% at 50% 60%, #06123f 0%, #02061a 45%, #000 80%);
+}
+
+#field {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 1.4s var(--ease-out-expo);
+}
+
+#field.is-ready {
+  opacity: 1;
+}
+
+/* The glowing prompt card at the centre of the hero. */
+.neon {
+  position: relative;
+  background: linear-gradient(180deg, rgb(70 100 255 / 0.28), rgb(30 50 180 / 0.18));
+  border: 1.5px solid rgb(150 180 255 / 0.95);
+  box-shadow:
+    0 0 0 1px rgb(60 100 255 / 0.5),
+    0 0 24px 2px rgb(60 110 255 / 0.85),
+    0 0 90px 10px rgb(30 70 255 / 0.55),
+    inset 0 0 30px rgb(90 130 255 / 0.35);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.neon::after {
+  /* Specular edge along the top, like light catching glass. */
+  content: "";
+  position: absolute;
+  inset: -1.5px;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: linear-gradient(100deg, transparent 20%, rgb(255 255 255 / 0.9) 45%, transparent 60%);
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+/* Cursor-following spotlight; script.js feeds --x/--y. */
+.spotlight {
+  position: relative;
+  isolation: isolate;
+}
+.spotlight::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  background: radial-gradient(420px circle at var(--x, 50%) var(--y, 50%), rgb(255 255 255 / 0.05), transparent 45%);
+}
+.spotlight:hover::before {
+  opacity: 1;
+}
+
+.fade-bottom {
+  mask-image: linear-gradient(180deg, #000 65%, transparent);
+  -webkit-mask-image: linear-gradient(180deg, #000 65%, transparent);
+}
+
+.fade-x {
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Horizontal rail whose first card lines up with the page's content column. */
+.rail-pad {
+  padding-inline: 1rem;
+  scroll-padding-inline: 1rem;
+}
+@media (min-width: 640px) {
+  .rail-pad {
+    padding-inline: 1.5rem;
+    scroll-padding-inline: 1.5rem;
+  }
+}
+@media (min-width: 1024px) {
+  .rail-pad {
+    padding-inline: max(3.75rem, calc((100vw - 82.5rem) / 2 + 3.75rem));
+    scroll-padding-inline: max(3.75rem, calc((100vw - 82.5rem) / 2 + 3.75rem));
+  }
+}
+
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line-strong) transparent;
+}
+
+/* ---------- Live bits ---------- */
+
+.caret {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: -0.12em;
+  background: currentColor;
+  animation: blink 1s steps(1) infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.spinner {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  border: 1.5px solid rgb(255 255 255 / 0.2);
+  border-top-color: #fff;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.live-dot {
+  position: relative;
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: currentColor;
+}
+.live-dot::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  border: 1px solid currentColor;
+  animation: ping 1.8s var(--ease-out-expo) infinite;
+}
+
+@keyframes ping {
+  from {
+    transform: scale(0.6);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+.pulse-dot {
+  background: #fff;
+  box-shadow:
+    0 0 0 3px rgb(107 140 255 / 0.25),
+    0 0 18px 4px rgb(107 140 255 / 0.6);
+}
+
+.shimmer {
+  background: linear-gradient(90deg, var(--color-subtle) 0%, #fff 50%, var(--color-subtle) 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 1.6s linear infinite;
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+/* ---------- Reveal-on-scroll (script.js drives the motion) ---------- */
+
+.js [data-reveal],
+.js [data-hero],
+.js [data-word] {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .caret,
+  .spinner,
+  .live-dot::after,
+  .shimmer {
+    animation: none;
+  }
+
+  .shimmer {
+    color: var(--color-muted);
+  }
+
+  .js [data-reveal],
+  .js [data-hero],
+  .js [data-word] {
+    opacity: 1;
+  }
+
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+  }
+}
