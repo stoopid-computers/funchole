@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FuncHole — Serverless your coding agent ships to</title>
-<meta name="description" content="FuncHole is an open-source serverless platform built for AI coding agents. Connect Claude Code, Codex, or any MCP client and it creates, deploys, and fixes your app itself. Free to start, self-hostable anytime.">
+<title>FuncHole — Where coding agents build and launch app work</title>
+<meta name="description" content="FuncHole gives coding agents a place to build, publish, test, and operate app capabilities through MCP while humans manage setup, secrets, data, logs, and live routes.">
 <meta name="theme-color" content="#000000">
-<meta property="og:title" content="FuncHole — Serverless your coding agent ships to">
-<meta property="og:description" content="The open-source serverless platform built for AI coding agents. MCP-native from day one.">
+<meta property="og:title" content="FuncHole — Where coding agents build and launch app work">
+<meta property="og:description" content="Connect your coding agent through MCP, let it build and publish product capabilities, then manage the parts that still need human control.">
 <meta property="og:type" content="website">
 
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%22-5 -5 34 34%22><rect x=%22-5%22 y=%22-5%22 width=%2234%22 height=%2234%22 rx=%229%22 fill=%22%23000%22/><defs><linearGradient id=%22g%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22><stop offset=%220%22 stop-color=%22%23b9c8ff%22/><stop offset=%221%22 stop-color=%22%232f5bff%22/></linearGradient></defs><rect x=%221.5%22 y=%221.5%22 width=%2213.5%22 height=%2213.5%22 rx=%224.2%22 fill=%22%23fafafa%22/><rect x=%229%22 y=%229%22 width=%2213.5%22 height=%2213.5%22 rx=%224.2%22 fill=%22url(%23g)%22 fill-opacity=%22.92%22/><path d=%22M9 13.2A4.2 4.2 0 0 1 13.2 9H15v1.8a4.2 4.2 0 0 1-4.2 4.2H9z%22 fill=%22%23dfe6ff%22/></svg>">
@@ -58,7 +58,7 @@
         <span class="font-mono text-xs" data-stars>Star</span>
       </a>
       <a href="https://app.funchole.dev" class="hidden min-h-9 items-center rounded-lg px-2.5 text-sm text-subtle transition-colors hover:text-fg sm:inline-flex">Log in</a>
-      <a href="https://app.funchole.dev" class="btn-primary">Start free</a>
+      <a href="https://app.funchole.dev" class="btn-primary">Start for free</a>
     </div>
   </div>
 </header>
@@ -67,7 +67,7 @@
 
 <!-- ============ Hero ============ -->
 <section id="top" class="mx-auto max-w-[82.5rem] px-4 pt-32 sm:px-6 sm:pt-40 lg:px-[3.75rem]">
-  <h1 class="display max-w-[21ch] text-[clamp(2.4rem,5vw,4rem)]" data-split>FuncHole is the serverless platform your coding agent ships to</h1>
+  <h1 class="display max-w-[21ch] text-[clamp(2.4rem,5vw,4rem)]" data-split>FuncHole is where your coding agent builds and launches app work</h1>
 
   <div class="mt-8 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between" data-hero>
     <div class="flex flex-wrap items-center gap-2.5">
@@ -82,13 +82,13 @@
     </a>
   </div>
 
-  <!-- Hero stage: a looping "film" of an agent shipping things -->
+  <!-- Hero stage: a looping "film" of an agent building app work -->
   <div class="hero-frame relative mt-12 aspect-[4/5] overflow-hidden rounded-3xl border border-line sm:aspect-[16/10] lg:aspect-[16/8.4]" id="hero-frame" data-hero>
     <canvas id="field" aria-hidden="true"></canvas>
 
-    <div class="absolute inset-0 flex flex-col items-center justify-center px-4" role="img" id="scene" aria-label="Looping demo: an agent is asked to build a todo API, ship a frontend, and fix a failed deploy; each time it calls FuncHole's MCP tools and returns a live URL.">
+    <div class="absolute inset-0 flex flex-col items-center justify-center px-4" role="img" id="scene" aria-label="Looping demo: an agent is asked to create an endpoint, publish a frontend, and fix a failed build; each time it calls FuncHole's MCP tools and returns a live route.">
       <div class="neon w-full max-w-[27rem] rounded-[1.35rem] p-5 sm:p-6" id="scene-card">
-        <p class="min-h-[4.2em] text-[20px] leading-[1.3] font-medium tracking-[-0.01em] text-white sm:text-[25px]" id="scene-prompt">Build a todo API backed by Postgres and put it at /todos</p>
+        <p class="min-h-[4.2em] text-[20px] leading-[1.3] font-medium tracking-[-0.01em] text-white sm:text-[25px]" id="scene-prompt">Create an orders endpoint, attach Postgres, and publish it at /orders</p>
         <div class="mt-5 flex items-end gap-3">
           <ul class="flex min-h-[6.6rem] flex-1 flex-wrap content-end gap-1.5" id="scene-tools">
             <li class="inline-flex items-center gap-1.5 rounded-md bg-white/10 px-2 py-1 font-mono text-[11px] text-white/85"><span class="text-ok">✓</span>create_function</li>
@@ -101,7 +101,7 @@
         </div>
       </div>
       <p class="mt-6 inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/50 px-3.5 py-1.5 font-mono text-[12px] text-white/90 backdrop-blur-md" id="scene-live">
-        <span class="live-dot text-ok"></span><span id="scene-url">gw3f81.funchole.dev/todos</span>
+        <span class="live-dot text-ok"></span><span id="scene-url">gw3f81.funchole.dev/orders</span>
       </p>
     </div>
 
@@ -118,7 +118,7 @@
 
 <!-- ============ Works with ============ -->
 <section class="mx-auto max-w-[82.5rem] px-4 py-20 sm:px-6 sm:py-28 lg:px-[3.75rem]">
-  <p class="text-center text-sm text-subtle" data-reveal>Works with the agent you already use</p>
+  <p class="text-center text-sm text-subtle" data-reveal>Connect the coding agent your team already trusts</p>
   <ul class="mx-auto mt-8 grid max-w-3xl grid-cols-2 gap-x-6 gap-y-8 text-center text-[19px] font-medium tracking-tight text-soft sm:grid-cols-3" data-reveal aria-label="Supported agents">
     <li class="flex items-center justify-center gap-2"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8z"/></svg>Claude Code</li>
     <li class="flex items-center justify-center gap-2 font-mono text-[17px]"><span class="text-subtle">&gt;_</span>codex</li>
@@ -132,7 +132,7 @@
 <!-- ============ Agents: cards + sticky agent panel ============ -->
 <section id="agents" class="mx-auto max-w-[82.5rem] px-4 pb-24 sm:px-6 lg:px-[3.75rem]">
   <div class="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between" data-reveal>
-    <h2 class="section-title max-w-[15ch]">Agents that ship, not just suggest</h2>
+    <h2 class="section-title max-w-[15ch]">Your agent builds. You stay in control.</h2>
     <a href="#connect" class="btn-dark">Connect your agent</a>
   </div>
 
@@ -145,7 +145,7 @@
           <div class="panel w-full max-w-2xl overflow-hidden shadow-[0_30px_80px_-20px_rgb(0_0_0)]">
             <div class="panel-head">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.5 6H14a4 4 0 0 1 4 4v5.5"/></svg>
-              flow · todos-api · v2
+              workflow · orders · v2
               <span class="ml-auto text-subtle">5 steps · immutable</span>
             </div>
             <div class="grid sm:grid-cols-[11.5rem_1fr]">
@@ -161,8 +161,8 @@
           </div>
         </div>
         <div class="flex flex-col gap-4 px-4 pt-6 pb-5 sm:flex-row sm:items-end sm:justify-between sm:px-5">
-          <p class="caption"><b>Compose with an agent</b>A Flow chains middleware, functions, sub-flows, and a response — each step gets the last one's output, and every request runs a frozen, immutable snapshot.</p>
-          <a href="https://github.com/stoopid-computers/funchole/blob/main/docs/architecture.md" class="link-arrow shrink-0">How Flows run<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+          <p class="caption"><b>Describe the outcome</b>Your agent turns a request into ordered, versioned app behavior and leaves you with something reviewable instead of a loose chat transcript.</p>
+          <a href="https://github.com/stoopid-computers/funchole/blob/main/docs/architecture.md" class="link-arrow shrink-0">How execution works<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
         </div>
       </article>
 
@@ -190,8 +190,8 @@
           </div>
         </div>
         <div class="flex flex-col gap-4 px-4 pt-6 pb-5 sm:flex-row sm:items-end sm:justify-between sm:px-5">
-          <p class="caption"><b>Route with an agent</b>Every gateway gets a stable host. Paths map to Flows — exactly, with captured parameters, or owning a whole subtree for your frontend.</p>
-          <a href="https://github.com/stoopid-computers/funchole#overview" class="link-arrow shrink-0">Routing docs<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+          <p class="caption"><b>Publish real URLs</b>The agent can attach work to a stable host and path, while you keep the human-facing map of what is live, where it points, and how it behaves.</p>
+          <a href="https://github.com/stoopid-computers/funchole#overview" class="link-arrow shrink-0">Routing model<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
         </div>
       </article>
 
@@ -201,7 +201,7 @@
           <div class="panel w-full max-w-xl overflow-hidden shadow-[0_30px_80px_-20px_rgb(0_0_0)]" id="versions-panel">
             <div class="panel-head">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v6M12 15v6"/></svg>
-              function · todos-handler<span class="ml-auto text-subtle">versions</span>
+              action · orders-handler<span class="ml-auto text-subtle">versions</span>
             </div>
             <ol class="font-mono text-[12px]">
               <li class="flex items-center gap-3 border-b border-line px-4 py-3"><span class="w-6 text-subtle">v2</span><span class="truncate text-muted">add due dates</span><span class="ml-auto rounded bg-white/[0.06] px-1.5 py-0.5 text-[11px] text-subtle">SUPERSEDED</span></li>
@@ -222,8 +222,8 @@
           </div>
         </div>
         <div class="flex flex-col gap-4 px-4 pt-6 pb-5 sm:flex-row sm:items-end sm:justify-between sm:px-5">
-          <p class="caption"><b>Fix forward with an agent</b>A new version starts as a copy of the last — source, secrets, and database. When a build fails, your agent reads the logs, patches a line, and ships again.</p>
-          <a href="https://github.com/stoopid-computers/funchole#managing-funchole-via-mcp" class="link-arrow shrink-0">Build logs<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+          <p class="caption"><b>Review every change</b>Each attempt keeps source, build output, secrets, and database attachments visible. When something fails, the agent can read the logs and create the next version.</p>
+          <a href="https://github.com/stoopid-computers/funchole#managing-funchole-via-mcp" class="link-arrow shrink-0">Review logs<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
         </div>
       </article>
 
@@ -257,7 +257,7 @@
           </div>
         </div>
         <div class="flex flex-col gap-4 px-4 pt-6 pb-5 sm:flex-row sm:items-end sm:justify-between sm:px-5">
-          <p class="caption"><b>Connect any agent</b>One command and an <span class="font-mono text-[15px] text-soft">fh_mcp_</span> key. Claude Code, Codex, opencode, or any MCP client gets every lifecycle step as a tool — nothing to install.</p>
+          <p class="caption"><b>Give agents safe tools</b>One command and an <span class="font-mono text-[15px] text-soft">fh_mcp_</span> key gives Claude Code, Codex, opencode, or any MCP client controlled access to build, test, and inspect work.</p>
           <a href="https://github.com/stoopid-computers/funchole#managing-funchole-via-mcp" class="link-arrow shrink-0">MCP guide<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
         </div>
       </article>
@@ -287,7 +287,7 @@
 <!-- ============ Platform bento ============ -->
 <section id="platform" class="mx-auto max-w-[82.5rem] px-4 py-24 sm:px-6 sm:py-32 lg:px-[3.75rem]">
   <div class="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between" data-reveal>
-    <h2 class="section-title max-w-[14ch]">Not just prompts, a full platform</h2>
+    <h2 class="section-title max-w-[14ch]">The manual controls agents still need</h2>
     <a href="https://github.com/stoopid-computers/funchole/tree/main/docs" class="btn-dark">Read the docs</a>
   </div>
 
@@ -295,7 +295,7 @@
     <!-- Invocations -->
     <a href="https://github.com/stoopid-computers/funchole/blob/main/docs/architecture.md" class="spotlight group flex min-h-[22rem] flex-col bg-ink p-6 sm:p-8">
       <div class="panel p-5">
-        <div class="flex items-center justify-between"><p class="text-[14px] text-fg">todos-api</p><span class="flex items-center gap-1.5 rounded-md bg-ok/10 px-1.5 py-0.5 font-mono text-[10px] text-ok"><span class="live-dot"></span>LIVE</span></div>
+        <div class="flex items-center justify-between"><p class="text-[14px] text-fg">orders-api</p><span class="flex items-center gap-1.5 rounded-md bg-ok/10 px-1.5 py-0.5 font-mono text-[10px] text-ok"><span class="live-dot"></span>LIVE</span></div>
         <div class="mt-5 flex h-20 items-end gap-[3px]" id="spark" aria-hidden="true"></div>
         <div class="mt-4 grid grid-cols-3 gap-2 border-t border-line pt-4 font-mono text-[11px]">
           <div><p class="text-faint">p50</p><p class="mt-1 text-[15px] text-accent" id="stat-p50">14ms</p></div>
@@ -303,7 +303,7 @@
           <div><p class="text-faint">status</p><p class="mt-1 text-[15px] text-accent">200</p></div>
         </div>
       </div>
-      <p class="link-arrow mt-auto pt-8 !text-[17px]">Invocations<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></p>
+      <p class="link-arrow mt-auto pt-8 !text-[17px]">Test runs &amp; results<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></p>
     </a>
 
     <!-- Databases -->
@@ -315,24 +315,24 @@
             <li class="flex items-center gap-2 rounded-md bg-white/[0.04] px-2.5 py-1.5 text-fg"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/></svg>primary<span class="ml-auto font-mono text-[10px] text-subtle">pg 17</span></li>
             <li class="flex items-center gap-2 px-2.5 py-1.5 text-subtle"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/></svg>analytics</li>
             <li class="px-2.5 pt-3 font-mono text-[10px] tracking-wider text-faint">ATTACHED TO</li>
-            <li class="px-2.5 py-1 font-mono text-[11px] text-soft">todos-handler v4</li>
+            <li class="px-2.5 py-1 font-mono text-[11px] text-soft">orders-handler v4</li>
             <li class="px-2.5 py-1 font-mono text-[11px] text-soft">flow · reports</li>
           </ul>
         </div>
         <div class="min-w-0 font-mono text-[12px]">
-          <div class="flex items-center gap-2 border-b border-line px-4 py-2.5 text-subtle">primary <span class="text-faint">›</span> <span class="text-fg">todos</span><span class="ml-auto text-faint">4 rows</span></div>
+          <div class="flex items-center gap-2 border-b border-line px-4 py-2.5 text-subtle">primary <span class="text-faint">›</span> <span class="text-fg">orders</span><span class="ml-auto text-faint">4 rows</span></div>
           <table class="w-full text-left">
             <thead class="text-faint"><tr class="border-b border-line"><th class="px-4 py-2 font-normal">id</th><th class="px-4 py-2 font-normal">title</th><th class="px-4 py-2 font-normal">done</th></tr></thead>
             <tbody class="text-soft">
-              <tr class="border-b border-line/70"><td class="px-4 py-2 text-subtle">1</td><td class="px-4 py-2">Ship the landing page</td><td class="px-4 py-2 text-ok">true</td></tr>
-              <tr class="border-b border-line/70"><td class="px-4 py-2 text-subtle">2</td><td class="px-4 py-2">Wire the webhook flow</td><td class="px-4 py-2 text-ok">true</td></tr>
-              <tr class="border-b border-line/70"><td class="px-4 py-2 text-subtle">3</td><td class="px-4 py-2">Add tags column</td><td class="px-4 py-2 text-subtle">false</td></tr>
-              <tr><td class="px-4 py-2 text-subtle">4</td><td class="px-4 py-2">Custom domain + TLS</td><td class="px-4 py-2 text-subtle">false</td></tr>
+              <tr class="border-b border-line/70"><td class="px-4 py-2 text-subtle">1</td><td class="px-4 py-2">Connect MCP agent</td><td class="px-4 py-2 text-ok">true</td></tr>
+              <tr class="border-b border-line/70"><td class="px-4 py-2 text-subtle">2</td><td class="px-4 py-2">Attach shared database</td><td class="px-4 py-2 text-ok">true</td></tr>
+              <tr class="border-b border-line/70"><td class="px-4 py-2 text-subtle">3</td><td class="px-4 py-2">Review generated source</td><td class="px-4 py-2 text-subtle">false</td></tr>
+              <tr><td class="px-4 py-2 text-subtle">4</td><td class="px-4 py-2">Verify domain + TLS</td><td class="px-4 py-2 text-subtle">false</td></tr>
             </tbody>
           </table>
         </div>
       </div>
-      <p class="link-arrow mt-auto pt-8 !text-[17px]">Postgres databases<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></p>
+      <p class="link-arrow mt-auto pt-8 !text-[17px]">Shared data sources<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></p>
     </a>
 
     <!-- Secrets -->
@@ -343,7 +343,7 @@
         <li class="flex items-center gap-2 px-4 py-2.5"><span class="text-soft">WEBHOOK_SECRET</span><span class="ml-auto tracking-widest text-subtle">••••••••</span><svg class="text-accent" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></li>
         <li class="flex items-center gap-2 px-4 py-2.5 text-faint">injected at invocation · OpenBao</li>
       </ul>
-      <p class="link-arrow mt-auto pt-8 !text-[17px]">Secrets &amp; environments<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></p>
+      <p class="link-arrow mt-auto pt-8 !text-[17px]">Secrets &amp; variables<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></p>
     </a>
 
     <!-- Static -->
@@ -358,7 +358,7 @@
           <li class="pl-4">assets/app.css</li>
         </ul>
       </div>
-      <p class="link-arrow mt-auto pt-8 !text-[17px]">Static frontends<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></p>
+      <p class="link-arrow mt-auto pt-8 !text-[17px]">Source &amp; artifacts<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></p>
     </a>
 
     <!-- Domains -->
@@ -371,7 +371,7 @@
           <li class="flex items-center gap-2"><span class="live-dot text-accent"></span>Renews before expiry</li>
         </ul>
       </div>
-      <p class="link-arrow mt-auto pt-8 !text-[17px]">Custom domains &amp; TLS<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></p>
+      <p class="link-arrow mt-auto pt-8 !text-[17px]">Domains &amp; certificates<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></p>
     </a>
 
     <!-- Architecture -->
@@ -389,7 +389,7 @@
           </ol>
         </div>
       </div>
-      <p class="link-arrow mt-auto pt-8 !text-[17px]">Built like infrastructure<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></p>
+      <p class="link-arrow mt-auto pt-8 !text-[17px]">Request to runtime path<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></p>
     </a>
 
     <!-- Self-host -->
@@ -402,7 +402,7 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
         </button>
       </div>
-      <a href="https://github.com/stoopid-computers/funchole/blob/main/docs/development.md" class="link-arrow mt-auto pt-8 !text-[17px]">Self-host it<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      <a href="https://github.com/stoopid-computers/funchole/blob/main/docs/development.md" class="link-arrow mt-auto pt-8 !text-[17px]">Run it locally<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
     </div>
   </div>
 </section>
@@ -410,7 +410,7 @@
 <!-- ============ Built in the open (carousel) ============ -->
 <section id="open" class="py-24 sm:py-32">
   <div class="mx-auto flex max-w-[82.5rem] flex-col gap-6 px-4 sm:flex-row sm:items-end sm:justify-between sm:px-6 lg:px-[3.75rem]" data-reveal>
-    <h2 class="section-title max-w-[14ch]">Built in the open, shipped in the open</h2>
+    <h2 class="section-title max-w-[14ch]">What agents can use today</h2>
     <div class="flex items-center gap-2">
       <button type="button" class="inline-flex size-9 cursor-pointer items-center justify-center rounded-lg bg-raise text-soft transition-colors hover:text-fg disabled:opacity-40" data-scroll="-1" aria-label="Previous"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg></button>
       <button type="button" class="inline-flex size-9 cursor-pointer items-center justify-center rounded-lg bg-raise text-soft transition-colors hover:text-fg disabled:opacity-40" data-scroll="1" aria-label="Next"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
@@ -418,35 +418,35 @@
     </div>
   </div>
 
-  <div class="no-scrollbar rail-pad mt-12 flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-2" id="rail" data-reveal tabindex="0" aria-label="What's shipped and what's next">
+  <div class="no-scrollbar rail-pad mt-12 flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-2" id="rail" data-reveal tabindex="0" aria-label="What agents can use now and what is next">
     <article class="flex min-h-[17rem] w-[19rem] shrink-0 snap-start flex-col rounded-3xl border border-line bg-panel p-6">
       <span class="w-fit rounded-md bg-ok/10 px-1.5 py-0.5 font-mono text-[10px] tracking-wider text-ok">SHIPPED</span>
       <h3 class="mt-5 text-lg font-medium tracking-tight">An MCP server with <span data-tool-count>66</span> tools</h3>
-      <p class="mt-2 text-[14px]">Functions, flows, gateways, domains, databases, environments, and invocations — all agent-drivable.</p>
+      <p class="mt-2 text-[14px]">Agents can create work, attach data and secrets, publish routes, run tests, and inspect results through one tool surface.</p>
       <p class="mt-auto pt-6 font-mono text-[11px] text-faint">/api/mcp · fh_mcp_ keys</p>
     </article>
     <article class="flex min-h-[17rem] w-[19rem] shrink-0 snap-start flex-col rounded-3xl border border-line bg-panel p-6">
       <span class="w-fit rounded-md bg-ok/10 px-1.5 py-0.5 font-mono text-[10px] tracking-wider text-ok">SHIPPED</span>
-      <h3 class="mt-5 text-lg font-medium tracking-tight">STATIC frontends</h3>
-      <p class="mt-2 text-[14px]">Build a site and have the gateway serve it straight from its artifact cache.</p>
+      <h3 class="mt-5 text-lg font-medium tracking-tight">Frontend artifacts</h3>
+      <p class="mt-2 text-[14px]">An agent can publish prepared static files and the gateway serves them from the artifact cache.</p>
       <p class="mt-auto pt-6 font-mono text-[11px] text-faint">runtime: STATIC</p>
     </article>
     <article class="flex min-h-[17rem] w-[19rem] shrink-0 snap-start flex-col rounded-3xl border border-line bg-panel p-6">
       <span class="w-fit rounded-md bg-ok/10 px-1.5 py-0.5 font-mono text-[10px] tracking-wider text-ok">SHIPPED</span>
       <h3 class="mt-5 text-lg font-medium tracking-tight">Real certificates</h3>
-      <p class="mt-2 text-[14px]">Let's Encrypt issuance over HTTP-01 with expiry-based renewal.</p>
+      <p class="mt-2 text-[14px]">Domains can be verified and served over TLS without asking the user to wire certificate plumbing by hand.</p>
       <p class="mt-auto pt-6 font-mono text-[11px] text-faint">CERTIFICATE_PROVIDER=LETS_ENCRYPT</p>
     </article>
     <article class="flex min-h-[17rem] w-[19rem] shrink-0 snap-start flex-col rounded-3xl border border-line bg-panel p-6">
       <span class="w-fit rounded-md border border-line-strong px-1.5 py-0.5 font-mono text-[10px] tracking-wider text-soft">PLANNED</span>
-      <h3 class="mt-5 text-lg font-medium tracking-tight">Server-rendered responses</h3>
-      <p class="mt-2 text-[14px]">Raw bodies and custom content types from a NODE response step, for true SSR.</p>
+      <h3 class="mt-5 text-lg font-medium tracking-tight">Richer response control</h3>
+      <p class="mt-2 text-[14px]">More response shapes for pages, APIs, and custom content types when the execution model expands.</p>
       <p class="mt-auto pt-6 font-mono text-[11px] text-faint">RESPONSE step</p>
     </article>
     <article class="flex min-h-[17rem] w-[19rem] shrink-0 snap-start flex-col rounded-3xl border border-line bg-panel p-6">
       <span class="w-fit rounded-md border border-line-strong px-1.5 py-0.5 font-mono text-[10px] tracking-wider text-soft">PLANNED</span>
-      <h3 class="mt-5 text-lg font-medium tracking-tight">Distributed runtime reservation</h3>
-      <p class="mt-2 text-[14px]">Durable capacity state shared across dispatchers, not in-memory per process.</p>
+      <h3 class="mt-5 text-lg font-medium tracking-tight">Distributed runtime capacity</h3>
+      <p class="mt-2 text-[14px]">A shared view of available runtimes so work can be scheduled reliably across more machines.</p>
       <p class="mt-auto pt-6 font-mono text-[11px] text-faint">runtime-registry</p>
     </article>
     <article class="flex min-h-[17rem] w-[19rem] shrink-0 snap-start flex-col rounded-3xl border border-line bg-panel p-6">
@@ -457,8 +457,8 @@
     </article>
     <article class="flex min-h-[17rem] w-[19rem] shrink-0 snap-start flex-col rounded-3xl border border-line bg-panel p-6">
       <span class="w-fit rounded-md border border-line px-1.5 py-0.5 font-mono text-[10px] tracking-wider text-subtle">EXPLORING</span>
-      <h3 class="mt-5 text-lg font-medium tracking-tight">Parameters inside wildcards</h3>
-      <p class="mt-2 text-[14px]">Routes like <span class="font-mono text-[12px] text-soft">/:tenant/*</span> that capture and own a subtree.</p>
+      <h3 class="mt-5 text-lg font-medium tracking-tight">Smarter route matching</h3>
+      <p class="mt-2 text-[14px]">Routes like <span class="font-mono text-[12px] text-soft">/:tenant/*</span> that capture values and own a subtree.</p>
       <p class="mt-auto pt-6 font-mono text-[11px] text-faint">gateway routing</p>
     </article>
     <article class="flex min-h-[17rem] w-[19rem] shrink-0 snap-start flex-col rounded-3xl border border-line bg-panel p-6">
@@ -474,7 +474,7 @@
 <!-- ============ Pricing ============ -->
 <section id="pricing" class="mx-auto max-w-[82.5rem] px-4 pb-24 sm:px-6 sm:pb-32 lg:px-[3.75rem]">
   <div class="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between" data-reveal>
-    <h2 class="section-title max-w-[14ch]">Free while you build. Yours to self-host.</h2>
+    <h2 class="section-title max-w-[14ch]">Open while we build. Yours to self-host.</h2>
     <a href="https://app.funchole.dev" class="btn-dark">Start for free</a>
   </div>
   <div class="mt-12 grid gap-3 md:grid-cols-2" data-reveal>
@@ -482,10 +482,10 @@
       <div class="flex items-center justify-between"><h3 class="text-lg font-medium">Cloud</h3><span class="rounded-md bg-accent-soft px-1.5 py-0.5 font-mono text-[10px] tracking-wider text-accent">EARLY ACCESS</span></div>
       <p class="mt-6 flex items-baseline gap-1.5"><span class="display text-6xl text-fg">$0</span><span class="text-sm">/ month</span></p>
       <ul class="mt-8 space-y-3 text-[15px]">
-        <li class="flex gap-3"><span class="text-fg">✓</span>Functions &amp; Flows via MCP or the dashboard</li>
-        <li class="flex gap-3"><span class="text-fg">✓</span><span>A gateway on your own <span class="font-mono text-[13px] text-soft">*.funchole.dev</span> host</span></li>
-        <li class="flex gap-3"><span class="text-fg">✓</span>A managed Postgres database, ready on sign-up</li>
-        <li class="flex gap-3"><span class="text-fg">✓</span>Custom domains with automatic TLS</li>
+        <li class="flex gap-3"><span class="text-fg">✓</span>Agent access through MCP plus a dashboard for manual control</li>
+        <li class="flex gap-3"><span class="text-fg">✓</span><span>Live routes on your own <span class="font-mono text-[13px] text-soft">*.funchole.dev</span> host</span></li>
+        <li class="flex gap-3"><span class="text-fg">✓</span>Databases, variables, and secrets your work can share</li>
+        <li class="flex gap-3"><span class="text-fg">✓</span>Logs, source review, test invocations, and TLS setup</li>
       </ul>
       <a href="https://app.funchole.dev" class="btn-primary btn-lg mt-10 w-full">Start free — no credit card</a>
     </div>
@@ -493,10 +493,10 @@
       <div class="flex items-center justify-between"><h3 class="text-lg font-medium">Self-hosted</h3><span class="rounded-md border border-line-strong px-1.5 py-0.5 font-mono text-[10px] tracking-wider text-soft">APACHE 2.0</span></div>
       <p class="mt-6 flex items-baseline gap-1.5"><span class="display text-6xl text-fg">Free</span><span class="text-sm">forever</span></p>
       <ul class="mt-8 space-y-3 text-[15px]">
-        <li class="flex gap-3"><span class="text-fg">✓</span>The exact same platform, on your infrastructure</li>
+        <li class="flex gap-3"><span class="text-fg">✓</span>The same agent-ready product workspace, on your infrastructure</li>
         <li class="flex gap-3"><span class="text-fg">✓</span>PostgreSQL, NATS JetStream, OpenBao, S3-compatible storage</li>
         <li class="flex gap-3"><span class="text-fg">✓</span>Nothing held back for paid tiers</li>
-        <li class="flex gap-3"><span class="text-fg">✓</span>Move between self-hosted and Cloud anytime</li>
+        <li class="flex gap-3"><span class="text-fg">✓</span>Run local experiments without waiting for a hosted account</li>
       </ul>
       <a href="https://github.com/stoopid-computers/funchole" class="btn-dark btn-lg mt-10 w-full">Star on GitHub <span class="font-mono text-xs text-subtle" data-stars></span></a>
     </div>
@@ -505,11 +505,11 @@
 
 <!-- ============ Final CTA: prompt box ============ -->
 <section class="mx-auto max-w-[82.5rem] px-4 pt-16 pb-28 sm:px-6 sm:pb-40 lg:px-[3.75rem]">
-  <h2 class="display mx-auto max-w-[16ch] text-center text-[clamp(2.25rem,5vw,3.75rem)]" data-reveal>Your next app starts with a prompt</h2>
+  <h2 class="display mx-auto max-w-[16ch] text-center text-[clamp(2.25rem,5vw,3.75rem)]" data-reveal>Give your agent the next product task</h2>
   <form class="mx-auto mt-10 max-w-2xl" id="prompt-form" data-reveal>
     <label for="prompt-input" class="sr-only">Describe what you want your agent to build</label>
     <div class="rounded-2xl border border-line-strong bg-panel-2 p-3 transition-colors focus-within:border-[#3d3d3d]">
-      <textarea id="prompt-input" rows="4" class="w-full resize-none bg-transparent px-1.5 pt-1 text-[15px] text-fg placeholder:text-faint focus:outline-none" placeholder="Build a URL shortener with a Postgres table and put it at /s/:code…"></textarea>
+      <textarea id="prompt-input" rows="4" class="w-full resize-none bg-transparent px-1.5 pt-1 text-[15px] text-fg placeholder:text-faint focus:outline-none" placeholder="Create a URL shortener, attach Postgres, and publish it at /s/:code…"></textarea>
       <div class="flex items-center gap-2 border-t border-line pt-3">
         <label for="prompt-agent" class="sr-only">Agent</label>
         <select id="prompt-agent" class="cursor-pointer rounded-md bg-transparent px-1.5 py-1 font-mono text-[12px] text-subtle hover:text-fg focus:outline-none">
@@ -523,7 +523,7 @@
       </div>
     </div>
     <div class="mt-3 flex flex-wrap justify-center gap-2" id="prompt-chips">
-      <button type="button" class="cursor-pointer rounded-lg bg-raise px-3 py-1.5 text-[13px] text-muted transition-colors hover:text-fg">Todo API with Postgres</button>
+      <button type="button" class="cursor-pointer rounded-lg bg-raise px-3 py-1.5 text-[13px] text-muted transition-colors hover:text-fg">Orders endpoint with Postgres</button>
       <button type="button" class="cursor-pointer rounded-lg bg-raise px-3 py-1.5 text-[13px] text-muted transition-colors hover:text-fg">Webhook receiver</button>
       <button type="button" class="cursor-pointer rounded-lg bg-raise px-3 py-1.5 text-[13px] text-muted transition-colors hover:text-fg">Static portfolio site</button>
       <button type="button" class="cursor-pointer rounded-lg bg-raise px-3 py-1.5 text-[13px] text-muted transition-colors hover:text-fg">URL shortener</button>
@@ -543,7 +543,7 @@
           <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="fh-mark-foot" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b9c8ff"/><stop offset="1" stop-color="#2f5bff"/></linearGradient></defs><rect x="1.5" y="1.5" width="13.5" height="13.5" rx="4.2" fill="#fafafa"/><rect x="9" y="9" width="13.5" height="13.5" rx="4.2" fill="url(#fh-mark-foot)" fill-opacity=".92"/><path d="M9 13.2A4.2 4.2 0 0 1 13.2 9H15v1.8a4.2 4.2 0 0 1-4.2 4.2H9z" fill="#dfe6ff"/></svg>
           FuncHole
         </a>
-        <p class="mt-3 max-w-[16rem] text-[13px] text-subtle">Open-source serverless your coding agent can drive.</p>
+        <p class="mt-3 max-w-[16rem] text-[13px] text-subtle">Open-source workspace for app work your coding agent can build, launch, and operate.</p>
       </div>
       <div><p class="text-fg">Product</p><ul class="mt-4 space-y-2.5 text-subtle"><li><a class="hover:text-fg" href="#agents">Agents</a></li><li><a class="hover:text-fg" href="#platform">Platform</a></li><li><a class="hover:text-fg" href="#pricing">Pricing</a></li><li><a class="hover:text-fg" href="https://app.funchole.dev">Dashboard</a></li></ul></div>
       <div><p class="text-fg">Developers</p><ul class="mt-4 space-y-2.5 text-subtle"><li><a class="hover:text-fg" href="https://github.com/stoopid-computers/funchole/tree/main/docs">Docs</a></li><li><a class="hover:text-fg" href="https://github.com/stoopid-computers/funchole#managing-funchole-via-mcp">MCP guide</a></li><li><a class="hover:text-fg" href="https://github.com/stoopid-computers/funchole/blob/main/docs/architecture.md">Architecture</a></li><li><a class="hover:text-fg" href="https://github.com/stoopid-computers/funchole/blob/main/docs/limitations.md">Limitations</a></li></ul></div>

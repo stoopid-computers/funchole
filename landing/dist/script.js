@@ -268,25 +268,25 @@ export async function handler(input) {
   },
   {
     type: 'FUNCTION',
-    name: 'parse-todo',
+    name: 'validate-order-query',
     color: 'text-accent',
     meta: 'index.mjs',
     code: `export async function handler(input) {
-  const { title } = JSON.parse(input.body);
-  return { title: String(title ?? '').trim() };
+  const limit = Number(input.query.limit ?? 20);
+  return { limit: Math.min(limit, 100) };
 }`,
   },
   {
     type: 'FUNCTION',
-    name: 'save-todo',
+    name: 'fetch-orders',
     color: 'text-accent',
     meta: 'index.mjs · db: primary',
     code: `export async function handler(input, context) {
   const pool = context.db('primary');
   const { rows } = await pool.query(
-    'INSERT INTO todos(title) VALUES($1) RETURNING *',
-    [input.title]);
-  return rows[0];
+    'SELECT * FROM orders ORDER BY created_at DESC LIMIT $1',
+    [input.limit]);
+  return { orders: rows };
 }`,
   },
   {
@@ -306,8 +306,8 @@ notify-team v3
     name: 'created',
     color: 'text-ok',
     meta: 'index.mjs · ends the invocation',
-    code: `export async function handler(todo) {
-  return { status: 201, body: todo };
+    code: `export async function handler(result) {
+  return { status: 200, body: result };
 }`,
   },
 ];
@@ -373,7 +373,7 @@ const ROUTES = [
     url: '/orders',
     pattern: '/orders',
     runtime: 'NODE',
-    caption: 'handler(input)',
+    caption: 'request snapshot',
     event: `{
   <span class="text-code-fn">"method"</span>: <span class="text-code-str">"GET"</span>,
   <span class="text-code-fn">"path"</span>: <span class="text-code-str">"/orders"</span>,
@@ -381,13 +381,13 @@ const ROUTES = [
 }`,
   },
   {
-    url: '/api/todos/42',
-    pattern: '/api/todos/:id',
+    url: '/api/orders/42',
+    pattern: '/api/orders/:id',
     runtime: 'NODE',
-    caption: 'handler(input)',
+    caption: 'request snapshot',
     event: `{
   <span class="text-code-fn">"method"</span>: <span class="text-code-str">"GET"</span>,
-  <span class="text-code-fn">"path"</span>: <span class="text-code-str">"/api/todos/42"</span>,
+  <span class="text-code-fn">"path"</span>: <span class="text-code-str">"/api/orders/42"</span>,
   <span class="text-code-fn">"pathParameters"</span>: { <span class="rounded bg-accent-soft px-1 text-accent">"id": "42"</span> }
 }`,
   },
@@ -502,19 +502,19 @@ function setupHeader() {
 
 const SCENES = [
   {
-    prompt: 'Build a todo API backed by Postgres and put it at /todos',
+    prompt: 'Create an orders endpoint, attach Postgres, and publish it at /orders',
     tools: ['create_function', 'submit_function_version_source', 'attach_function_version_database', 'deploy_function_version', 'adopt_flow_version'],
-    url: 'gw3f81.funchole.dev/todos',
+    url: 'gw3f81.funchole.dev/orders',
   },
   {
-    prompt: 'Ship my Vite app as the frontend at /app/*',
+    prompt: 'Publish my Vite dashboard at /app/* so I can preview it',
     tools: ['create_function', 'submit_function_version_source', 'deploy_function_version', 'adopt_flow_version'],
     url: 'gw3f81.funchole.dev/app',
   },
   {
-    prompt: 'The deploy failed. Read the build logs and fix it',
+    prompt: 'The build failed. Read the logs, patch the source, and try again',
     tools: ['get_function_version_build_logs', 'create_function_version', 'submit_function_version_source', 'deploy_function_version'],
-    url: 'todos-handler v4 · READY',
+    url: 'orders-handler v4 · READY',
   },
 ];
 const SCENE_MS = 9500;
@@ -619,21 +619,21 @@ function setupHeroScene() {
 
 const CHATS = [
   {
-    prompt: 'Add a notify step to todos-api and return 201 when a todo is created',
-    reply: "I'll insert a SUB_FLOW step that runs notify-team, end the flow with a RESPONSE step, and publish it as a new version.",
+    prompt: 'Add an audit step before orders are returned',
+    reply: "I'll create a new workflow version, insert the audit step before the response, test it once, and make the new version live.",
     changes: [
-      ['create_flow_version', 'todos-api v2'],
-      ['create_flow_step', 'SUB_FLOW notify-team'],
-      ['create_flow_step', 'RESPONSE created'],
+      ['create_flow_version', 'orders v2'],
+      ['create_flow_step', 'FUNCTION audit-request'],
+      ['invoke_flow_version', 'test passed'],
       ['adopt_flow_version', 'v2 live'],
     ],
   },
   {
-    prompt: 'Serve the dashboard at /app/* and the API at /api/todos/:id',
-    reply: 'Two flows on the same gateway: a STATIC one that owns /app/*, and the API with an id parameter captured into its input.',
+    prompt: 'Serve the dashboard at /app/* and the API at /api/orders/:id',
+    reply: 'I will keep both routes on the same gateway: the dashboard serves from an artifact and the API captures the order id into the request input.',
     changes: [
       ['create_flow', 'web-app → /app/*'],
-      ['create_flow', 'todos-api → /api/todos/:id'],
+      ['create_flow', 'orders-api → /api/orders/:id'],
       ['get_gateway', 'gw3f81.funchole.dev'],
     ],
   },
@@ -648,7 +648,7 @@ const CHATS = [
   },
   {
     prompt: 'What can you do on FuncHole?',
-    reply: 'I can create and deploy functions, compose flows, route them through gateways, attach databases and secrets, and invoke anything to check it works.',
+    reply: 'I can build app actions, wire routes, attach databases and secrets, publish artifacts, run test invocations, and pull logs when something breaks.',
     changes: [
       ['funchole', 'connected'],
       ['tools', `${TOOLS.length} available`],
@@ -779,10 +779,10 @@ function setupRail() {
  * ------------------------------------------------------------------------ */
 
 const PROMPT_PRESETS = {
-  'Todo API with Postgres': 'Build a todo API backed by a Postgres database and put it at /todos',
+  'Orders endpoint with Postgres': 'Create an orders endpoint backed by a Postgres database and publish it at /orders',
   'Webhook receiver': 'Build a webhook receiver at /hooks/:source that stores every payload in Postgres',
-  'Static portfolio site': 'Build a static portfolio site and serve it at /*',
-  'URL shortener': 'Build a URL shortener with a Postgres table and put it at /s/:code',
+  'Static portfolio site': 'Publish a prepared static portfolio site and serve it at /*',
+  'URL shortener': 'Create a URL shortener with a Postgres table and publish it at /s/:code',
 };
 
 function setupPromptBox() {
@@ -802,7 +802,7 @@ function setupPromptBox() {
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     const ask = (input.value.trim() || input.placeholder.replace(/…$/, '')).replace(/[.\s]+$/, '');
-    const text = `Using the funchole MCP server: ${ask}. Deploy it, wire it into a Flow on my gateway, invoke it once to check it works, and give me the live URL.`;
+    const text = `Using the funchole MCP server: ${ask}. Create the needed app work, attach any required data or environment, publish it on my gateway, run a test invocation, and give me the live URL plus the logs if anything fails.`;
     try {
       await navigator.clipboard.writeText(text);
       toast(`Prompt copied — paste it into ${agent.value}`);
