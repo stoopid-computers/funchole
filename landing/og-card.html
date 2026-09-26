@@ -5,15 +5,15 @@
 <title>OG Card</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body {
     width: 1200px;
     height: 630px;
-    background: #0a0a0c;
+    background: #000000;
     overflow: hidden;
-    font-family: 'IBM Plex Sans', sans-serif;
+    font-family: 'Geist', ui-sans-serif, system-ui, sans-serif;
   }
   .wrap {
     position: relative;
@@ -26,69 +26,122 @@
   }
   .glow {
     position: absolute;
-    top: -220px;
+    top: -260px;
     left: 50%;
     transform: translateX(-50%);
-    width: 900px;
-    height: 500px;
-    background: radial-gradient(ellipse, rgba(245,166,35,0.16), transparent 70%);
+    width: 1000px;
+    height: 560px;
+    background: radial-gradient(ellipse, rgb(107 140 255 / 0.16), transparent 70%);
   }
   .logo {
     position: relative;
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 12px;
     margin-bottom: 48px;
   }
   .logo span {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Geist', sans-serif;
     font-weight: 600;
-    font-size: 30px;
-    color: #f5f5f0;
-    letter-spacing: -0.01em;
-  }
-  h1 {
-    position: relative;
-    font-size: 68px;
-    font-weight: 700;
-    line-height: 1.08;
-    letter-spacing: -0.02em;
-    color: #f5f5f0;
-    margin-bottom: 28px;
-    max-width: 950px;
-  }
-  h1 span { color: #f5a623; }
-  p {
-    position: relative;
     font-size: 26px;
-    line-height: 1.5;
-    color: #a3a19b;
-    max-width: 780px;
+    color: #fafafa;
+    letter-spacing: -0.02em;
   }
   .eyebrow {
     position: relative;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 18px;
+    font-family: 'Geist Mono', monospace;
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #7a7a7a;
+    margin-bottom: 20px;
+  }
+  h1 {
+    position: relative;
+    font-size: 66px;
+    font-weight: 500;
+    line-height: 1.06;
+    letter-spacing: -0.045em;
+    color: #fafafa;
+    margin-bottom: 28px;
+    max-width: 960px;
+  }
+  h1 span { color: #6b8cff; }
+  p {
+    position: relative;
+    font-size: 25px;
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+    color: #a1a1a1;
+    max-width: 780px;
+  }
+  .rail {
+    position: absolute;
+    top: 205px;
+    right: 90px;
+    display: flex;
+    flex-direction: column;
+    gap: 52px;
+  }
+  .rail div {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .rail div::before {
+    content: "";
+    width: 34px;
+    height: 1px;
+    background: #2b2b2b;
+  }
+  .rail span {
+    font-family: 'Geist Mono', monospace;
+    font-size: 14px;
     font-weight: 500;
     letter-spacing: 0.12em;
-    color: #f5a623;
-    margin-bottom: 18px;
+    color: #7a7a7a;
   }
+  .footer {
+    position: absolute;
+    left: 90px;
+    bottom: 56px;
+    font-family: 'Geist Mono', monospace;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    color: #525252;
+  }
+  .footer .sep { color: #2b2b2b; margin: 0 10px; }
 </style>
 </head>
 <body>
   <div class="wrap">
     <div class="glow"></div>
     <div class="logo">
-      <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
-        <circle cx="12" cy="12" r="9" stroke="#f5f5f0" stroke-width="1.6"/>
-        <circle cx="12" cy="12" r="2.75" fill="#f5a623"/>
+      <svg width="34" height="34" viewBox="0 0 24 24" aria-hidden="true">
+        <defs>
+          <linearGradient id="fh-mark-og" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#b9c8ff"/>
+            <stop offset="1" stop-color="#2f5bff"/>
+          </linearGradient>
+        </defs>
+        <rect x="1.5" y="1.5" width="13.5" height="13.5" rx="4.2" fill="#fafafa"/>
+        <rect x="9" y="9" width="13.5" height="13.5" rx="4.2" fill="url(#fh-mark-og)" fill-opacity=".92"/>
+        <path d="M9 13.2A4.2 4.2 0 0 1 13.2 9H15v1.8a4.2 4.2 0 0 1-4.2 4.2H9z" fill="#dfe6ff"/>
       </svg>
       <span>FuncHole</span>
     </div>
-    <p class="eyebrow">MCP-NATIVE PLATFORM</p>
-    <h1>Describe it.<br><span>Your agent ships it.</span></h1>
-    <p>The platform built for AI coding agents — connect Claude Code, Codex, or any MCP client, and it creates, deploys, and fixes your backend itself.</p>
+    <p class="eyebrow">AGENT-BUILT APP WORK</p>
+    <h1>Where coding agents<br><span>build and launch app work</span></h1>
+    <p>Connect your coding agent through MCP, let it build and publish product capabilities, then manage the parts that still need human control.</p>
+    <div class="rail">
+      <div><span>MCP</span></div>
+      <div><span>ROUTES</span></div>
+      <div><span>DATA</span></div>
+      <div><span>LOGS</span></div>
+    </div>
+    <div class="footer">BUILD<span class="sep">/</span>LAUNCH<span class="sep">/</span>OPERATE</div>
   </div>
 </body>
 </html>
