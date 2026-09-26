@@ -1,5 +1,11 @@
 @import "tailwindcss";
-@import "tw-animate-css";
+/* A bare "tw-animate-css" specifier fails to resolve through
+   @tailwindcss/postcss's own @import handling: this package's exports map
+   only declares a "style" condition (no "default"/"import"), which
+   Tailwind's resolver doesn't request - so this uses a plain relative
+   filesystem path instead, which bypasses package "exports" resolution
+   entirely (it only applies to bare module specifiers, not literal paths). */
+@import "../node_modules/tw-animate-css/dist/tw-animate.css";
 @import "shadcn/tailwind.css";
 @import "./tokens.css";
 
