@@ -422,6 +422,11 @@ export interface ApiKeyCreateResponse {
   createdAt: string;
 }
 
+export interface ApiKeyRevealResponse {
+  id: string;
+  rawKey: string;
+}
+
 export interface PaginationResponse<T> {
   items: T[];
   page: number;

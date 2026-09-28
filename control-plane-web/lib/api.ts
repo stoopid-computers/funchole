@@ -4,6 +4,7 @@ import type {
   ApiKeyCreateRequest,
   ApiKeyCreateResponse,
   ApiKeyResponse,
+  ApiKeyRevealResponse,
   ApiResponse,
   AuthTokenResponse,
   CustomDomainCreateRequest,
@@ -544,6 +545,10 @@ export const api = {
 
   createApiKey(payload: ApiKeyCreateRequest): Promise<ApiKeyCreateResponse> {
     return request("/api/v1/api-keys", { method: "POST", body: JSON.stringify(payload) });
+  },
+
+  revealApiKey(id: string): Promise<ApiKeyRevealResponse> {
+    return request(`/api/v1/api-keys/${id}/reveal`, { method: "POST" });
   },
 
   revokeApiKey(id: string): Promise<Record<string, string>> {

@@ -3,6 +3,7 @@ package com.funchole.backend.controlplane.controller;
 import com.funchole.backend.controlplane.dto.ApiKeyCreateRequest;
 import com.funchole.backend.controlplane.dto.ApiKeyCreateResponse;
 import com.funchole.backend.controlplane.dto.ApiKeyResponse;
+import com.funchole.backend.controlplane.dto.ApiKeyRevealResponse;
 import com.funchole.backend.controlplane.entity.AppUser;
 import com.funchole.backend.controlplane.mapper.ApiKeyMapper;
 import com.funchole.backend.controlplane.security.AppUserPrincipal;
@@ -65,6 +66,16 @@ public class ApiKeyController {
                 generated.rawKey(),
                 generated.entity().getCreatedAt()
         ));
+    }
+
+    @PostMapping("/{apiKeyId}/reveal")
+    @SecurityRequirement(name = "bearerAuth")
+    public ApiResponse<ApiKeyRevealResponse> revealApiKey(
+            @AuthenticationPrincipal AppUserPrincipal appUserPrincipal,
+            @PathVariable UUID apiKeyId
+    ) {
+        String rawKey = apiKeyService.revealApiKey(appUserPrincipal.getId(), apiKeyId);
+        return ApiResponse.success(new ApiKeyRevealResponse(apiKeyId, rawKey));
     }
 
     @DeleteMapping("/{apiKeyId}")

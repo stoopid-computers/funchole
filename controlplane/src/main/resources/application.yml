@@ -123,6 +123,12 @@ app:
     bootstrap-user:
       username: ${BOOTSTRAP_USERNAME:admin}
       password: ${BOOTSTRAP_PASSWORD:admin12345}
+    api-key:
+      # Encrypts MCP API keys at rest (AES-256-GCM, see EncryptionService) so
+      # a user can view the full key again later, not just once at creation.
+      # Change this before prod - anyone with this secret and DB access can
+      # decrypt every stored key.
+      encryption-secret: ${API_KEY_ENCRYPTION_SECRET:ZGV2LWFwaS1rZXktZW5jcnlwdGlvbi1zZWNyZXQtY2hhbmdlLW1lLWJlZm9yZS1wcm9k}
   google-auth:
     # Unset by default - "Sign in with Google" stays disabled (GoogleAuthService
     # rejects every attempt with a clear "not configured" error) until both of
