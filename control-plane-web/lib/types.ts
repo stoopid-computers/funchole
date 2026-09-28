@@ -78,6 +78,25 @@ export interface GatewayCreateRequest {
 
 export type GatewayUpdateRequest = GatewayCreateRequest;
 
+export type CustomDomainStatus = "PENDING" | "VERIFIED";
+
+export interface CustomDomainResponse {
+  id: string;
+  gatewayId: string;
+  gatewayHostname: string;
+  hostname: string;
+  status: CustomDomainStatus;
+  verificationCode: string | null;
+  certStatus: CertificateStatus;
+  gatewayPublicIp: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CustomDomainCreateRequest {
+  hostname: string;
+}
+
 export interface FlowResponse {
   id: string;
   gatewayId: string;
@@ -401,6 +420,11 @@ export interface ApiKeyCreateResponse {
   keyPrefix: string;
   rawKey: string;
   createdAt: string;
+}
+
+export interface ApiKeyRevealResponse {
+  id: string;
+  rawKey: string;
 }
 
 export interface PaginationResponse<T> {

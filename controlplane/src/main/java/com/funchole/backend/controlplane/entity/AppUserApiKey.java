@@ -13,8 +13,11 @@ import java.util.UUID;
 /**
  * A long-lived credential a user generates for machine clients (the MCP
  * server, eventually the CLI) that can't hold the short-lived browser JWT.
- * Only {@code hashedKey} (SHA-256 of the raw key) is ever stored - the raw
- * key is returned to the caller once, at creation time, and never again.
+ * {@code hashedKey} (SHA-256 of the raw key) is used for fast auth-time
+ * lookups; {@code encryptedKey} (AES-256-GCM via {@code EncryptionService})
+ * is stored separately so the raw key can be decrypted and shown again on
+ * request, not just once at creation. Rows created before that field
+ * existed have a null {@code encryptedKey} and can no longer be revealed.
  */
 @Entity
 @Table(name = "app_user_api_keys")
@@ -35,6 +38,9 @@ public class AppUserApiKey {
 
     @Column(name = "hashed_key", nullable = false, length = 64)
     private String hashedKey;
+
+    @Column(name = "encrypted_key", length = 500)
+    private String encryptedKey;
 
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;
@@ -65,6 +71,10 @@ public class AppUserApiKey {
         return hashedKey;
     }
 
+    public String getEncryptedKey() {
+        return encryptedKey;
+    }
+
     public OffsetDateTime getCreatedAt() {
         return createdAt;
     }
@@ -85,13 +95,14 @@ public class AppUserApiKey {
         this.revokedAt = OffsetDateTime.now();
     }
 
-    public static AppUserApiKey create(AppUser appUser, String name, String keyPrefix, String hashedKey) {
+    public static AppUserApiKey create(AppUser appUser, String name, String keyPrefix, String hashedKey, String encryptedKey) {
         AppUserApiKey apiKey = new AppUserApiKey();
         apiKey.id = UUID.randomUUID();
         apiKey.appUser = appUser;
         apiKey.name = name;
         apiKey.keyPrefix = keyPrefix;
         apiKey.hashedKey = hashedKey;
+        apiKey.encryptedKey = encryptedKey;
         apiKey.createdAt = OffsetDateTime.now();
         return apiKey;
     }

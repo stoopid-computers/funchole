@@ -4,8 +4,11 @@ import type {
   ApiKeyCreateRequest,
   ApiKeyCreateResponse,
   ApiKeyResponse,
+  ApiKeyRevealResponse,
   ApiResponse,
   AuthTokenResponse,
+  CustomDomainCreateRequest,
+  CustomDomainResponse,
   DatabaseCreateRequest,
   DatabasePasswordResponse,
   DatabaseResponse,
@@ -169,6 +172,29 @@ export const api = {
 
   deleteGateway(id: string): Promise<Record<string, string>> {
     return request(`/api/v1/gateways/${id}`, { method: "DELETE" });
+  },
+
+  getGateway(id: string): Promise<GatewayResponse> {
+    return request(`/api/v1/gateways/${id}`);
+  },
+
+  listGatewayCustomDomains(gatewayId: string): Promise<CustomDomainResponse[]> {
+    return request(`/api/v1/gateways/${gatewayId}/custom-domains`);
+  },
+
+  createGatewayCustomDomain(gatewayId: string, payload: CustomDomainCreateRequest): Promise<CustomDomainResponse> {
+    return request(`/api/v1/gateways/${gatewayId}/custom-domains`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  initiateCustomDomainVerification(id: string): Promise<CustomDomainResponse> {
+    return request(`/api/v1/custom-domains/${id}/verification`, { method: "POST" });
+  },
+
+  deleteCustomDomain(id: string): Promise<Record<string, string>> {
+    return request(`/api/v1/custom-domains/${id}`, { method: "DELETE" });
   },
 
   listFlows(page: number, size: number): Promise<PaginationResponse<FlowResponse>> {
@@ -519,6 +545,10 @@ export const api = {
 
   createApiKey(payload: ApiKeyCreateRequest): Promise<ApiKeyCreateResponse> {
     return request("/api/v1/api-keys", { method: "POST", body: JSON.stringify(payload) });
+  },
+
+  revealApiKey(id: string): Promise<ApiKeyRevealResponse> {
+    return request(`/api/v1/api-keys/${id}/reveal`, { method: "POST" });
   },
 
   revokeApiKey(id: string): Promise<Record<string, string>> {

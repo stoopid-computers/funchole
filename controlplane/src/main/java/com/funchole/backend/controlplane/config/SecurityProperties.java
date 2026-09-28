@@ -9,7 +9,8 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties(prefix = "app.security")
 public record SecurityProperties(
         Jwt jwt,
-        BootstrapUser bootstrapUser
+        BootstrapUser bootstrapUser,
+        ApiKey apiKey
 ) {
 
     public record Jwt(
@@ -21,6 +22,11 @@ public record SecurityProperties(
     public record BootstrapUser(
             @NotBlank String username,
             @NotBlank String password
+    ) {
+    }
+
+    public record ApiKey(
+            @NotBlank String encryptionSecret
     ) {
     }
 }

@@ -106,6 +106,12 @@ app:
     acme-server-uri: ${CERTIFICATE_ACME_SERVER_URI:https://acme-v02.api.letsencrypt.org/directory}
     acme-poll-interval-seconds: ${CERTIFICATE_ACME_POLL_INTERVAL_SECONDS:3}
     acme-max-poll-attempts: ${CERTIFICATE_ACME_MAX_POLL_ATTEMPTS:20}
+  gateway-network:
+    # Optional - the Gateway container's own public IPv4 address, shown to
+    # users as the target for an apex-domain (A record) custom domain. Leave
+    # unset if you don't support apex custom domains yet (CNAME-based
+    # subdomain custom domains work regardless).
+    public-ip: ${GATEWAY_PUBLIC_IP:}
   security:
     jwt:
       secret: ${JWT_SECRET:ZGV2LXNlY3JldC1mb3ItZnVuY2hvbGUtYmFja2VuZC1jaGFuZ2UtbWUtYmVmb3JlLXByb2QteHl6MTIzNDU2Nzg5MDEyMw==}
@@ -117,6 +123,12 @@ app:
     bootstrap-user:
       username: ${BOOTSTRAP_USERNAME:admin}
       password: ${BOOTSTRAP_PASSWORD:admin12345}
+    api-key:
+      # Encrypts MCP API keys at rest (AES-256-GCM, see EncryptionService) so
+      # a user can view the full key again later, not just once at creation.
+      # Change this before prod - anyone with this secret and DB access can
+      # decrypt every stored key.
+      encryption-secret: ${API_KEY_ENCRYPTION_SECRET:ZGV2LWFwaS1rZXktZW5jcnlwdGlvbi1zZWNyZXQtY2hhbmdlLW1lLWJlZm9yZS1wcm9k}
   google-auth:
     # Unset by default - "Sign in with Google" stays disabled (GoogleAuthService
     # rejects every attempt with a clear "not configured" error) until both of

@@ -11,6 +11,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import {
   PlusIcon,
   TrashIcon,
+  TerminalIcon,
   AnthropicIcon,
   OpenAIIcon,
   OpencodeIcon,
@@ -79,6 +80,37 @@ const AGENT_COMMANDS: AgentCommand[] = [
   },
 ];
 
+function AgentCommandTabs({ token }: { token: string }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const agent = AGENT_COMMANDS[activeIndex];
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-nowrap gap-1.5 overflow-x-auto border-b border-border pb-3">
+        {AGENT_COMMANDS.map((item, index) => (
+          <button
+            key={item.name}
+            type="button"
+            onClick={() => setActiveIndex(index)}
+            className={`flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+              index === activeIndex
+                ? "bg-secondary text-foreground"
+                : "text-muted-foreground hover:bg-white/[0.04] hover:text-foreground"
+            }`}
+          >
+            <item.icon className="h-4 w-4" />
+            {item.name}
+          </button>
+        ))}
+      </div>
+      <div className="flex flex-col gap-1.5">
+        {agent.note && <span className="font-mono text-xs text-muted-foreground">{agent.note}</span>}
+        <CopyableCommand value={agent.command(token)} />
+      </div>
+    </div>
+  );
+}
+
 export default function ApiKeysPage() {
   const [keys, setKeys] = useState<ApiKeyResponse[] | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
@@ -88,6 +120,9 @@ export default function ApiKeysPage() {
   const [error, setError] = useState<string | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
   const [revealedKey, setRevealedKey] = useState<string | null>(null);
+  const [viewingKey, setViewingKey] = useState<ApiKeyResponse | null>(null);
+  const [viewingToken, setViewingToken] = useState<string | null>(null);
+  const [viewingError, setViewingError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -135,6 +170,24 @@ export default function ApiKeysPage() {
     }
   }
 
+  async function openViewing(key: ApiKeyResponse) {
+    setViewingKey(key);
+    setViewingToken(null);
+    setViewingError(null);
+    try {
+      const revealed = await api.revealApiKey(key.id);
+      setViewingToken(revealed.rawKey);
+    } catch (err) {
+      setViewingError(err instanceof ApiError ? err.message : "Failed to load key");
+    }
+  }
+
+  function closeViewing() {
+    setViewingKey(null);
+    setViewingToken(null);
+    setViewingError(null);
+  }
+
   async function handleRevoke(key: ApiKeyResponse) {
     if (!await confirmAction(`Revoke "${key.name}"? Anything using it (e.g. an MCP client) will stop working immediately.`)) {
       return;
@@ -167,26 +220,47 @@ export default function ApiKeysPage() {
           <div className="flex flex-col gap-5">
             <div className="flex flex-col gap-2">
               <p className="text-sm font-medium text-foreground">
-                Copy this key now - it won&apos;t be shown again.
+                Your key - you can view it again anytime from the list below.
               </p>
               <CopyableCommand value={revealedKey} />
             </div>
 
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
               <p className="text-sm font-medium text-foreground">Or paste the ready-to-run command for your agent:</p>
-              {AGENT_COMMANDS.map((agent) => (
-                <div key={agent.name} className="flex flex-col gap-1.5">
-                  <div className="flex items-center gap-1.5 text-sm font-medium text-foreground">
-                    <agent.icon className="h-4 w-4" />
-                    {agent.name}
-                    {agent.note && <span className="font-mono text-xs font-normal text-muted-foreground">{agent.note}</span>}
-                  </div>
-                  <CopyableCommand value={agent.command(revealedKey)} />
-                </div>
-              ))}
+              <AgentCommandTabs token={revealedKey} />
             </div>
 
             <Button variant="secondary" className="self-end" onClick={() => setRevealedKey(null)}>
+              Done
+            </Button>
+          </div>
+        </Modal>
+      )}
+
+      {viewingKey && (
+        <Modal
+          title={`Connect "${viewingKey.name}"`}
+          onClose={closeViewing}
+          widthClassName="max-w-xl"
+        >
+          <div className="flex flex-col gap-5">
+            {viewingError && <FormError>{viewingError}</FormError>}
+            {!viewingError && !viewingToken && (
+              <ResourceListState>Loading key…</ResourceListState>
+            )}
+            {viewingToken && (
+              <>
+                <div className="flex flex-col gap-2">
+                  <p className="text-sm font-medium text-foreground">Full key</p>
+                  <CopyableCommand value={viewingToken} />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <p className="text-sm font-medium text-foreground">Or paste the ready-to-run command for your agent:</p>
+                  <AgentCommandTabs token={viewingToken} />
+                </div>
+              </>
+            )}
+            <Button variant="secondary" className="self-end" onClick={closeViewing}>
               Done
             </Button>
           </div>
@@ -252,6 +326,9 @@ export default function ApiKeysPage() {
               </div>
             </div>
             <div className="flex items-center gap-2 lg:justify-end">
+              <Button variant="secondary" size="icon" title="Connect an agent" onClick={() => openViewing(key)}>
+                <TerminalIcon className="h-4 w-4" />
+              </Button>
               {!key.revokedAt && (
                 <Button variant="danger" size="icon" title="Revoke" onClick={() => handleRevoke(key)}>
                   <TrashIcon className="h-4 w-4" />

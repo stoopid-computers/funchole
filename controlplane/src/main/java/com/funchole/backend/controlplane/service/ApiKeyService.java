@@ -17,10 +17,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Long-lived credentials for machine clients (currently the MCP server) that
- * can't hold the short-lived browser JWT. The raw key is generated here and
- * returned to the caller exactly once - only its SHA-256 hash is persisted,
- * matching how {@code OpenBaoFunctionSecretStore} never stores a plaintext
- * secret either, just a reference/hash a caller can't reverse.
+ * can't hold the short-lived browser JWT. The raw key is generated here;
+ * its SHA-256 hash is persisted for fast auth-time lookups, and it is also
+ * kept AES-encrypted (via {@link EncryptionService}) so it can be decrypted
+ * and shown again later through {@link #revealApiKey}, not just once at
+ * creation.
  */
 @Service
 public class ApiKeyService {
@@ -30,9 +31,11 @@ public class ApiKeyService {
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final AppUserApiKeyRepository apiKeyRepository;
+    private final EncryptionService encryptionService;
 
-    public ApiKeyService(AppUserApiKeyRepository apiKeyRepository) {
+    public ApiKeyService(AppUserApiKeyRepository apiKeyRepository, EncryptionService encryptionService) {
         this.apiKeyRepository = apiKeyRepository;
+        this.encryptionService = encryptionService;
     }
 
     public record GeneratedApiKey(AppUserApiKey entity, String rawKey) {
@@ -44,9 +47,26 @@ public class ApiKeyService {
         SECURE_RANDOM.nextBytes(secretBytes);
         String rawKey = KEY_PREFIX + Base64.getUrlEncoder().withoutPadding().encodeToString(secretBytes);
 
-        AppUserApiKey apiKey = AppUserApiKey.create(appUser, name, displayPrefix(rawKey), hash(rawKey));
+        AppUserApiKey apiKey = AppUserApiKey.create(
+                appUser, name, displayPrefix(rawKey), hash(rawKey), encryptionService.encrypt(rawKey));
         apiKeyRepository.save(apiKey);
         return new GeneratedApiKey(apiKey, rawKey);
+    }
+
+    /**
+     * Decrypts and returns the full raw key so it can be shown again after
+     * creation. Keys created before {@code encryptedKey} existed have none
+     * on record and can't be recovered - the caller gets a clear error
+     * rather than a null/garbled value.
+     */
+    @Transactional(readOnly = true)
+    public String revealApiKey(UUID appUserId, UUID apiKeyId) {
+        AppUserApiKey apiKey = apiKeyRepository.findByIdAndAppUser_Id(apiKeyId, appUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("API key not found: " + apiKeyId));
+        if (apiKey.getEncryptedKey() == null) {
+            throw new ResourceNotFoundException("This key was created before viewing was supported and can't be shown again");
+        }
+        return encryptionService.decrypt(apiKey.getEncryptedKey());
     }
 
     @Transactional(readOnly = true)
