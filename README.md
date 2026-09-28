@@ -1,6 +1,6 @@
 # FuncHole 
 
-FuncHole is an open-source, self-hosted serverless platform: create Functions, compose them into Flows, and expose those Flows as HTTP routes through a Gateway. A Flow can run backend logic (a Node.js Function) or serve a frontend directly (a pre-built static site), and the entire lifecycle - create, build, deploy, wire into a Flow, invoke, inspect - is reachable through an MCP server, so a coding agent can manage a FuncHole app on your behalf without ever touching the REST API by hand.
+FuncHole is a self-hosted serverless platform: create Functions, compose them into Flows, and expose those Flows as HTTP routes through a Gateway. A Flow can run backend logic (a Node.js Function) or serve a frontend directly (a pre-built static site), and the entire lifecycle - create, build, deploy, wire into a Flow, invoke, inspect - is reachable through an MCP server, so a coding agent can manage a FuncHole app on your behalf without ever touching the REST API by hand.
 
 ![FuncHole wireframe](./image.png)
 
@@ -325,7 +325,11 @@ Please read [CONTRIBUTING.md](CONTRIBUTING.md) before making architectural or pe
 
 ## License
 
-FuncHole is licensed under the [Apache License 2.0](LICENSE).
+FuncHole is licensed under the [Functional Source License 1.1 with Apache 2.0 Future License](LICENSE.md) (`FSL-1.1-Apache-2.0`).
+
+In plain English, you may self-host FuncHole, use it personally, use it internally at a company, run production workloads for your own applications, inspect and modify the source, and build commercial products that merely use FuncHole as infrastructure. During the FSL period, you may not offer FuncHole itself, or a substantially similar derivative, as a competing commercial hosted product or service.
+
+Each version becomes available under Apache License 2.0 on the second anniversary of the date that version is made available, following the standard FSL 1.1 future-license mechanism. Versions of FuncHole that were previously distributed under Apache License 2.0 keep the Apache 2.0 rights already granted for those versions. If this summary conflicts with [LICENSE.md](LICENSE.md), `LICENSE.md` controls.
 
 ## Project Direction
 

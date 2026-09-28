@@ -185,7 +185,7 @@ export default function LoginPage() {
         </div>
         <p className="mt-8 flex items-center justify-center gap-2 font-mono text-[11px] text-white/60">
           <span className="live-dot text-success" aria-hidden="true" />
-          Open source · Apache 2.0
+          Licensed under FSL 1.1
         </p>
       </div>
     </div>
