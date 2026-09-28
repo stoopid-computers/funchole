@@ -12,6 +12,7 @@ import { PlusIcon } from "@/components/icons";
 import { api, ApiError } from "@/lib/api";
 import type { DomainResponse, PaginationResponse } from "@/lib/types";
 import { FormError } from "@/components/FormError";
+import { CopyableLink } from "@/components/CopyableLink";
 
 const PAGE_SIZE = 10;
 
@@ -108,7 +109,9 @@ export default function DomainsPage() {
           <div key={domain.id} className="grid gap-4 px-5 py-4 transition-colors hover:bg-white/[0.03] lg:grid-cols-[1fr_auto]">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <code className="font-mono text-base font-semibold text-foreground">{domain.domainName}</code>
+                <code className="font-mono text-base font-semibold text-foreground">
+                  <CopyableLink href={`https://${domain.domainName}`}>{domain.domainName}</CopyableLink>
+                </code>
                 <StatusBadge status={domain.status} />
               </div>
               <p className="mt-2 text-xs text-muted-foreground">Verification TXT</p>

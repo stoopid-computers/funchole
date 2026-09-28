@@ -6,6 +6,8 @@ import type {
   ApiKeyResponse,
   ApiResponse,
   AuthTokenResponse,
+  CustomDomainCreateRequest,
+  CustomDomainResponse,
   DatabaseCreateRequest,
   DatabasePasswordResponse,
   DatabaseResponse,
@@ -169,6 +171,29 @@ export const api = {
 
   deleteGateway(id: string): Promise<Record<string, string>> {
     return request(`/api/v1/gateways/${id}`, { method: "DELETE" });
+  },
+
+  getGateway(id: string): Promise<GatewayResponse> {
+    return request(`/api/v1/gateways/${id}`);
+  },
+
+  listGatewayCustomDomains(gatewayId: string): Promise<CustomDomainResponse[]> {
+    return request(`/api/v1/gateways/${gatewayId}/custom-domains`);
+  },
+
+  createGatewayCustomDomain(gatewayId: string, payload: CustomDomainCreateRequest): Promise<CustomDomainResponse> {
+    return request(`/api/v1/gateways/${gatewayId}/custom-domains`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  initiateCustomDomainVerification(id: string): Promise<CustomDomainResponse> {
+    return request(`/api/v1/custom-domains/${id}/verification`, { method: "POST" });
+  },
+
+  deleteCustomDomain(id: string): Promise<Record<string, string>> {
+    return request(`/api/v1/custom-domains/${id}`, { method: "DELETE" });
   },
 
   listFlows(page: number, size: number): Promise<PaginationResponse<FlowResponse>> {

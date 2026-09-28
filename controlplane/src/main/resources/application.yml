@@ -106,6 +106,12 @@ app:
     acme-server-uri: ${CERTIFICATE_ACME_SERVER_URI:https://acme-v02.api.letsencrypt.org/directory}
     acme-poll-interval-seconds: ${CERTIFICATE_ACME_POLL_INTERVAL_SECONDS:3}
     acme-max-poll-attempts: ${CERTIFICATE_ACME_MAX_POLL_ATTEMPTS:20}
+  gateway-network:
+    # Optional - the Gateway container's own public IPv4 address, shown to
+    # users as the target for an apex-domain (A record) custom domain. Leave
+    # unset if you don't support apex custom domains yet (CNAME-based
+    # subdomain custom domains work regardless).
+    public-ip: ${GATEWAY_PUBLIC_IP:}
   security:
     jwt:
       secret: ${JWT_SECRET:ZGV2LXNlY3JldC1mb3ItZnVuY2hvbGUtYmFja2VuZC1jaGFuZ2UtbWUtYmVmb3JlLXByb2QteHl6MTIzNDU2Nzg5MDEyMw==}

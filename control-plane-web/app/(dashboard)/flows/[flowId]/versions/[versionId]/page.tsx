@@ -26,6 +26,7 @@ import { Button } from "@/components/Button";
 import { inputClass, labelClass, fieldClass } from "@/components/Input";
 import { JsonEditor } from "@/components/CodeEditor";
 import { OutputLog } from "@/components/OutputLog";
+import { CopyableLink } from "@/components/CopyableLink";
 import {
   ArrowLeftIcon,
   ChevronRightIcon,
@@ -130,6 +131,7 @@ function FlowVersionCanvas() {
   const { flowId, versionId } = params;
 
   const [flow, setFlow] = useState<FlowResponse | null>(null);
+  const [gatewayHostname, setGatewayHostname] = useState<string | null>(null);
   const [version, setVersion] = useState<FlowVersionResponse | null>(null);
   const [versionList, setVersionList] = useState<FlowVersionResponse[]>([]);
   const [reloadKey, setReloadKey] = useState(0);
@@ -147,6 +149,12 @@ function FlowVersionCanvas() {
       try {
         const flowData = await api.getFlow(flowId);
         if (!cancelled) setFlow(flowData);
+        try {
+          const gatewayData = await api.getGateway(flowData.gatewayId);
+          if (!cancelled) setGatewayHostname(`${gatewayData.uniqueKey}.${gatewayData.domainName}`);
+        } catch {
+          if (!cancelled) setGatewayHostname(null);
+        }
       } catch {
         if (!cancelled) setError("Failed to load flow");
       }
@@ -294,7 +302,12 @@ function FlowVersionCanvas() {
             className="hidden items-center gap-1 font-mono text-xs text-muted-foreground sm:flex"
           >
             <ExternalLinkIcon className="h-3.5 w-3.5" />
-            {flow.httpMethod} {flow.path}
+            {flow.httpMethod}{" "}
+            {gatewayHostname ? (
+              <CopyableLink href={`https://${gatewayHostname}${flow.path}`}>{flow.path}</CopyableLink>
+            ) : (
+              flow.path
+            )}
           </span>
           {version.status !== "ARCHIVED" && (
             <Button

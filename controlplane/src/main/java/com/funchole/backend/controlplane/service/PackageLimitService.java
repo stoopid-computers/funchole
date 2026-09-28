@@ -98,6 +98,7 @@ public class PackageLimitService {
             case MAX_FUNCTIONS -> "function(s)";
             case MAX_DOMAINS -> "domain(s)";
             case MAX_DATABASES -> "database(s)";
+            case MAX_CUSTOM_DOMAINS -> "custom domain(s)";
         };
     }
 }

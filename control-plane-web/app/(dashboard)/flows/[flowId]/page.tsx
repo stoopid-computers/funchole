@@ -11,6 +11,7 @@ import { panelClass, Panel } from "@/components/Panel";
 import { Button, buttonClasses } from "@/components/Button";
 import { inputClass, labelClass, fieldClass } from "@/components/Input";
 import { ArrowLeftIcon, ChevronRightIcon, PlusIcon, PencilIcon, TrashIcon, PlayIcon, ArchiveIcon, KeyIcon, DatabaseIcon } from "@/components/icons";
+import { CopyableLink } from "@/components/CopyableLink";
 import { api, ApiError } from "@/lib/api";
 import type {
   DatabaseResponse,
@@ -245,6 +246,8 @@ export default function FlowDetailPage() {
   }
 
   const sortedVersions = [...versions].sort((a, b) => b.version - a.version);
+  const flowGateway = gateways.find((gateway) => gateway.id === flow.gatewayId);
+  const flowRouteUrl = flowGateway ? `https://${flowGateway.uniqueKey}.${flowGateway.domainName}${flow.path}` : null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -268,7 +271,7 @@ export default function FlowDetailPage() {
             <h1 className="text-2xl font-medium tracking-tight text-foreground">{flow.name}</h1>
             <p className="mt-1 flex items-center gap-2 font-mono text-xs text-muted-foreground">
               <span className="text-muted-strong">{flow.httpMethod}</span>
-              {flow.path}
+              {flowRouteUrl ? <CopyableLink href={flowRouteUrl}>{flow.path}</CopyableLink> : flow.path}
               <span className="text-border-strong">&middot;</span>
               {flow.flowKey}
             </p>

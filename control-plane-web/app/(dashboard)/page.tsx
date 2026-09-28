@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { ComponentType } from "react";
 import { useEffect, useMemo, useState } from "react";
+import { CopyableLink } from "@/components/CopyableLink";
 import { api } from "@/lib/api";
 import type { FlowResponse, GatewayResponse, ProfileResponse } from "@/lib/types";
 import { Panel } from "@/components/Panel";
@@ -31,6 +33,7 @@ interface AttentionItem {
 }
 
 export default function OverviewPage() {
+  const router = useRouter();
   const [profile, setProfile] = useState<ProfileResponse | null>(null);
   const [domainCount, setDomainCount] = useState<number | null>(null);
   const [gatewayCount, setGatewayCount] = useState<number | null>(null);
@@ -152,16 +155,30 @@ export default function OverviewPage() {
               {activeRoutes.map((flow) => {
                 const gateway = gatewayById.get(flow.gatewayId);
                 const hostname = gateway ? `${gateway.uniqueKey}.${gateway.domainName}` : flow.gatewayName;
+                const routeUrl = `https://${hostname}${flow.path}`;
                 return (
-                  <Link key={flow.id} href={`/flows/${flow.id}`} className="group grid gap-3 px-5 py-4 transition-colors hover:bg-white/[0.02] lg:grid-cols-[1fr_auto]">
+                  // A plain div (not Link) wrapping the row: the route text
+                  // below is a real external <a>, and an <a> can't legally
+                  // nest inside another <a> - clicking anywhere else in the
+                  // row still navigates internally via this onClick.
+                  <div
+                    key={flow.id}
+                    role="link"
+                    tabIndex={0}
+                    onClick={() => router.push(`/flows/${flow.id}`)}
+                    onKeyDown={(e) => e.key === "Enter" && router.push(`/flows/${flow.id}`)}
+                    className="group grid cursor-pointer gap-3 px-5 py-4 transition-colors hover:bg-white/[0.02] lg:grid-cols-[1fr_auto]"
+                  >
                     <div className="min-w-0">
                       <div className="flex min-w-0 items-center gap-2">
                         <span className="shrink-0 rounded-md bg-secondary px-1.5 py-0.5 font-mono text-[11px] text-muted-strong">
                           {flow.httpMethod}
                         </span>
                         <code className="truncate font-mono text-[13px] text-foreground">
-                          <span className="text-subtle">https://{hostname}</span>
-                          {flow.path}
+                          <CopyableLink href={routeUrl}>
+                            <span className="text-subtle">https://{hostname}</span>
+                            {flow.path}
+                          </CopyableLink>
                         </code>
                       </div>
                       <p className="mt-2 text-sm font-medium text-foreground">{flow.name}</p>
@@ -171,7 +188,7 @@ export default function OverviewPage() {
                       <StatusBadge status={flow.activeFlowVersionStatus ?? "DRAFT"} />
                       <span className="text-xs text-subtle transition-colors group-hover:text-foreground">Open →</span>
                     </div>
-                  </Link>
+                  </div>
                 );
               })}
             </div>
@@ -246,15 +263,29 @@ export default function OverviewPage() {
             {draftRoutes.length === 0 ? (
               <p className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">No work-in-progress URLs in the latest snapshot.</p>
             ) : (
-              draftRoutes.map((flow) => (
-                <Link key={flow.id} href={`/flows/${flow.id}`} className="flex items-center justify-between gap-3 rounded-xl border border-border p-3 transition-colors hover:border-border-strong hover:bg-white/[0.02]">
-                  <span className="min-w-0">
-                    <span className="block truncate text-sm font-medium text-foreground">{flow.name}</span>
-                    <span className="block truncate font-mono text-xs text-subtle">{flow.httpMethod} {flow.path}</span>
-                  </span>
-                  <StatusBadge status={flow.activeFlowVersionStatus ?? "DRAFT"} />
-                </Link>
-              ))
+              draftRoutes.map((flow) => {
+                const gateway = gatewayById.get(flow.gatewayId);
+                const routeUrl = gateway ? `https://${gateway.uniqueKey}.${gateway.domainName}${flow.path}` : null;
+                return (
+                  <div
+                    key={flow.id}
+                    role="link"
+                    tabIndex={0}
+                    onClick={() => router.push(`/flows/${flow.id}`)}
+                    onKeyDown={(e) => e.key === "Enter" && router.push(`/flows/${flow.id}`)}
+                    className="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-border p-3 transition-colors hover:border-border-strong hover:bg-white/[0.02]"
+                  >
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-medium text-foreground">{flow.name}</span>
+                      <span className="block truncate font-mono text-xs text-subtle">
+                        {flow.httpMethod}{" "}
+                        {routeUrl ? <CopyableLink href={routeUrl}>{flow.path}</CopyableLink> : flow.path}
+                      </span>
+                    </span>
+                    <StatusBadge status={flow.activeFlowVersionStatus ?? "DRAFT"} />
+                  </div>
+                );
+              })
             )}
           </div>
         </Panel>

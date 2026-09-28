@@ -7,12 +7,13 @@ import { confirmAction } from "@/components/ConfirmDialog";
 import { useEffect, useState, type FormEvent } from "react";
 import { Pagination } from "@/components/Pagination";
 import { StatusBadge } from "@/components/StatusBadge";
-import { Button } from "@/components/Button";
+import { Button, buttonClasses } from "@/components/Button";
 import { inputClass, labelClass, fieldClass } from "@/components/Input";
 import { PageHeader } from "@/components/PageHeader";
 import { ResourceList, ResourceListState } from "@/components/ResourceList";
 import { PlusIcon, PencilIcon, TrashIcon, GlobeIcon } from "@/components/icons";
 import { EmptyState } from "@/components/EmptyState";
+import { CopyableLink } from "@/components/CopyableLink";
 import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import type {
@@ -289,16 +290,23 @@ export default function GatewaysPage() {
           <div key={gateway.id} className="grid gap-4 px-5 py-4 transition-colors hover:bg-white/[0.03] lg:grid-cols-[1fr_auto]">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <p className="text-base font-semibold text-foreground">{gateway.name}</p>
+                <Link href={`/gateways/${gateway.id}`} className="text-base font-semibold text-foreground hover:text-muted-strong">
+                  {gateway.name}
+                </Link>
                 <StatusBadge status={gateway.status} />
                 {gateway.certificate ? <StatusBadge status={gateway.certificate.status} /> : <span className="rounded-md border border-border px-1.5 py-0.5 text-xs text-muted-foreground">No certificate</span>}
               </div>
               <code className="mt-3 block truncate font-mono text-sm text-foreground">
-                {gateway.uniqueKey}.{gateway.domainName}
+                <CopyableLink href={`https://${gateway.uniqueKey}.${gateway.domainName}`}>
+                  {gateway.uniqueKey}.{gateway.domainName}
+                </CopyableLink>
               </code>
               {gateway.description && <p className="mt-2 text-sm leading-6 text-muted-foreground">{gateway.description}</p>}
             </div>
             <div className="flex items-center gap-2 lg:justify-end">
+              <Link href={`/gateways/${gateway.id}`} className={buttonClasses("secondary", "sm")}>
+                Open
+              </Link>
               <Button variant="secondary" size="sm" onClick={() => openEdit(gateway)}>
                 <PencilIcon className="h-3.5 w-3.5" />
                 Edit

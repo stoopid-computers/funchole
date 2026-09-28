@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Pagination } from "@/components/Pagination";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button, buttonClasses } from "@/components/Button";
@@ -10,6 +10,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { ResourceList, ResourceListState } from "@/components/ResourceList";
 import { PlusIcon, TrashIcon, ServerIcon } from "@/components/icons";
 import { EmptyState } from "@/components/EmptyState";
+import { CopyableLink } from "@/components/CopyableLink";
 import { api, ApiError } from "@/lib/api";
 import type { FlowResponse, GatewayResponse, PaginationResponse } from "@/lib/types";
 import { FormError } from "@/components/FormError";
@@ -72,6 +73,8 @@ export default function FlowsPage() {
       cancelled = true;
     };
   }, [page, reloadKey]);
+
+  const gatewayById = useMemo(() => new Map(gateways.map((gateway) => [gateway.id, gateway])), [gateways]);
 
   function refresh() {
     setReloadKey((key) => key + 1);
@@ -300,12 +303,17 @@ export default function FlowsPage() {
             />
           )
         )}
-        {flows?.items.map((flow) => (
+        {flows?.items.map((flow) => {
+          const flowGateway = gatewayById.get(flow.gatewayId);
+          const routeUrl = flowGateway ? `https://${flowGateway.uniqueKey}.${flowGateway.domainName}${flow.path}` : null;
+          return (
           <div key={flow.id} className="grid gap-4 px-5 py-4 transition-colors hover:bg-white/[0.03] xl:grid-cols-[1fr_auto]">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="rounded-md bg-secondary px-1.5 py-0.5 font-mono text-[11px] text-muted-strong">{flow.httpMethod}</span>
-                <code className="truncate font-mono text-sm text-foreground">{flow.path}</code>
+                <code className="truncate font-mono text-sm text-foreground">
+                  {routeUrl ? <CopyableLink href={routeUrl}>{flow.path}</CopyableLink> : flow.path}
+                </code>
                 {flow.activeFlowVersionStatus ? <StatusBadge status={flow.activeFlowVersionStatus} /> : <StatusBadge status="DRAFT" />}
               </div>
               <Link href={`/flows/${flow.id}`} className="mt-3 block text-base font-semibold text-foreground hover:text-muted-strong">
@@ -326,7 +334,8 @@ export default function FlowsPage() {
               </Button>
             </div>
           </div>
-        ))}
+          );
+        })}
       </ResourceList>
 
       {flows && (

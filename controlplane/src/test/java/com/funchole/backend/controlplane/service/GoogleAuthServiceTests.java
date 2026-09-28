@@ -273,7 +273,7 @@ class GoogleAuthServiceTests {
         return new CloudSignupService(
                 appUserRepository, userPackageRepository, packageRepository, databaseRepository,
                 scopedGatewayService, databaseService, tenantDatabaseProvisioningService, tenantDatabaseProperties,
-                passwordEncoder);
+                passwordEncoder, applicationEventPublisher);
     }
 
     private AppDomain verifiedPlatformDomain() {

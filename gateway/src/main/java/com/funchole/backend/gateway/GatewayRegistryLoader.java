@@ -196,7 +196,60 @@ public final class GatewayRegistryLoader {
                 }
             }
         }
+        loadCustomDomainEntries(entries);
         return entries;
+    }
+
+    /**
+     * Appends one extra {@link GatewayRuntimeEntry} per verified, active
+     * custom domain - each carries the same {@code gatewayId} as its owning
+     * gateway's own hostname entry above, so {@link GatewayRegistry#routingFor}
+     * resolves it identically with no further change. A second query rather
+     * than a UNION with the gateway-hostname query above: different join
+     * shape (a custom domain's cert columns live on {@code custom_domains}
+     * itself, no join to {@code certificates}), and keeps each query
+     * independently readable.
+     */
+    private void loadCustomDomainEntries(Map<String, GatewayRuntimeEntry> entries) throws SQLException {
+        try (
+                Connection connection = dataSource.getConnection();
+                PreparedStatement statement = connection.prepareStatement("""
+                        select
+                            cd.hostname,
+                            cd.cert_secret_ref,
+                            cd.cert_provider,
+                            g.id as gateway_id,
+                            g.name as gateway_name,
+                            g.unique_key
+                        from custom_domains cd
+                        join gateways g on g.id = cd.gateway_id
+                        where cd.status = 'VERIFIED'
+                          and cd.cert_status = 'ACTIVE'
+                          and cd.cert_secret_ref is not null
+                          and g.status = 'ACTIVE'
+                        """)
+        ) {
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    String hostname = normalizeHostname(resultSet.getString("hostname"));
+                    GatewayCertificateRecord record = new GatewayCertificateRecord(
+                            UUID.fromString(resultSet.getString("gateway_id")),
+                            resultSet.getString("gateway_name"),
+                            resultSet.getString("unique_key"),
+                            null,
+                            hostname,
+                            resultSet.getString("cert_secret_ref"),
+                            Enum.valueOf(com.funchole.backend.certificate.CertificateProvider.class, resultSet.getString("cert_provider"))
+                    );
+                    try {
+                        GatewayRuntimeEntry entry = toRuntimeEntry(record);
+                        entries.put(entry.hostname(), entry);
+                    } catch (IllegalStateException exception) {
+                        logger.warn("Skipping custom domain hostname {} for gateway {} because TLS material could not be loaded", hostname, record.gatewayId(), exception);
+                    }
+                }
+            }
+        }
     }
 
     private GatewayRuntimeEntry toRuntimeEntry(GatewayCertificateRecord record) {
