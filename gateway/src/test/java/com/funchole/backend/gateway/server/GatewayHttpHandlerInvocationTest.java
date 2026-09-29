@@ -98,6 +98,49 @@ class GatewayHttpHandlerInvocationTest {
     }
 
     @Test
+    void invocationInputCarriesRequestHeadersAndParsedCookies() throws Exception {
+        CountingFlowResolver flowResolver = flowResolver();
+        CapturingInvocationRegistry invocationRegistry = new CapturingInvocationRegistry();
+        PendingInvocationResponseRegistry pendingRegistry = pendingRegistry(Duration.ofSeconds(10));
+        EmbeddedChannel channel = channel(flowResolver, invocationRegistry, pendingRegistry);
+
+        DefaultFullHttpRequest request = checkoutRequest();
+        request.headers().add("X-Custom-Header", "abc");
+        request.headers().add(HttpHeaderNames.COOKIE, "session=xyz; theme=dark");
+        request.headers().add(HttpHeaderNames.CONNECTION, "keep-alive");
+
+        channel.writeInbound(request);
+        channel.runPendingTasks();
+
+        JsonNode input = OBJECT_MAPPER.readTree(invocationRegistry.request.inputPayload());
+        assertEquals("abc", input.at("/headers/X-Custom-Header/0").asText());
+        assertEquals("xyz", input.at("/cookies/session").asText());
+        assertEquals("dark", input.at("/cookies/theme").asText());
+        // Hop-by-hop headers are meaningful only for this one connection and
+        // must never reach invocation-level code.
+        assertTrue(input.at("/headers/Connection").isMissingNode());
+    }
+
+    @Test
+    void invocationInputPreservesMultipleValuesForARepeatedHeader() throws Exception {
+        CountingFlowResolver flowResolver = flowResolver();
+        CapturingInvocationRegistry invocationRegistry = new CapturingInvocationRegistry();
+        PendingInvocationResponseRegistry pendingRegistry = pendingRegistry(Duration.ofSeconds(10));
+        EmbeddedChannel channel = channel(flowResolver, invocationRegistry, pendingRegistry);
+
+        DefaultFullHttpRequest request = checkoutRequest();
+        request.headers().add("X-Trace", "first");
+        request.headers().add("X-Trace", "second");
+
+        channel.writeInbound(request);
+        channel.runPendingTasks();
+
+        JsonNode input = OBJECT_MAPPER.readTree(invocationRegistry.request.inputPayload());
+        assertEquals("first", input.at("/headers/X-Trace/0").asText());
+        assertEquals("second", input.at("/headers/X-Trace/1").asText());
+    }
+
+    @Test
     void writesFinalResponseWhenInvocationCompletes() throws Exception {
         CapturingInvocationRegistry invocationRegistry = new CapturingInvocationRegistry();
         PendingInvocationResponseRegistry pendingRegistry = pendingRegistry(Duration.ofSeconds(10));
@@ -113,6 +156,64 @@ class GatewayHttpHandlerInvocationTest {
         assertEquals(HttpResponseStatus.CREATED, response.status());
         JsonNode body = OBJECT_MAPPER.readTree(response.content().toString(StandardCharsets.UTF_8));
         assertTrue(body.at("/ok").asBoolean());
+    }
+
+    @Test
+    void writesEachSetCookieValueAsItsOwnHeaderLineNotOneCommaJoinedHeader() throws Exception {
+        CapturingInvocationRegistry invocationRegistry = new CapturingInvocationRegistry();
+        PendingInvocationResponseRegistry pendingRegistry = pendingRegistry(Duration.ofSeconds(10));
+        EmbeddedChannel channel = channel(flowResolver(), invocationRegistry, pendingRegistry);
+        channel.writeInbound(checkoutRequest());
+        channel.runPendingTasks();
+
+        invocationRegistry.completeWith(
+                "{\"status\":200,\"body\":{\"ok\":true},"
+                        + "\"headers\":{\"Set-Cookie\":[\"a=1; Path=/\",\"b=2; Path=/\"]}}");
+        pendingRegistry.complete(INVOCATION_ID);
+        channel.runPendingTasks();
+
+        FullHttpResponse response = channel.readOutbound();
+        java.util.List<String> setCookies = response.headers().getAll(HttpHeaderNames.SET_COOKIE);
+        assertEquals(2, setCookies.size());
+        assertTrue(setCookies.contains("a=1; Path=/"));
+        assertTrue(setCookies.contains("b=2; Path=/"));
+    }
+
+    @Test
+    void functionSuppliedHeaderOverridesTheDefaultContentType() throws Exception {
+        CapturingInvocationRegistry invocationRegistry = new CapturingInvocationRegistry();
+        PendingInvocationResponseRegistry pendingRegistry = pendingRegistry(Duration.ofSeconds(10));
+        EmbeddedChannel channel = channel(flowResolver(), invocationRegistry, pendingRegistry);
+        channel.writeInbound(checkoutRequest());
+        channel.runPendingTasks();
+
+        invocationRegistry.completeWith(
+                "{\"status\":200,\"body\":\"<h1>hi</h1>\",\"headers\":{\"Content-Type\":\"text/html\"}}");
+        pendingRegistry.complete(INVOCATION_ID);
+        channel.runPendingTasks();
+
+        FullHttpResponse response = channel.readOutbound();
+        assertEquals("text/html", response.headers().get(HttpHeaderNames.CONTENT_TYPE));
+    }
+
+    @Test
+    void functionCannotOverrideContentLengthOrTransferEncoding() throws Exception {
+        CapturingInvocationRegistry invocationRegistry = new CapturingInvocationRegistry();
+        PendingInvocationResponseRegistry pendingRegistry = pendingRegistry(Duration.ofSeconds(10));
+        EmbeddedChannel channel = channel(flowResolver(), invocationRegistry, pendingRegistry);
+        channel.writeInbound(checkoutRequest());
+        channel.runPendingTasks();
+
+        invocationRegistry.completeWith(
+                "{\"status\":200,\"body\":{\"ok\":true},"
+                        + "\"headers\":{\"Content-Length\":\"999999\",\"Transfer-Encoding\":\"chunked\"}}");
+        pendingRegistry.complete(INVOCATION_ID);
+        channel.runPendingTasks();
+
+        FullHttpResponse response = channel.readOutbound();
+        int actualBodyLength = response.content().readableBytes();
+        assertEquals(String.valueOf(actualBodyLength), response.headers().get(HttpHeaderNames.CONTENT_LENGTH));
+        assertNull(response.headers().get(HttpHeaderNames.TRANSFER_ENCODING));
     }
 
     @Test

@@ -27,12 +27,20 @@ import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.cookie.Cookie;
+import io.netty.handler.codec.http.cookie.ServerCookieDecoder;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -452,9 +460,21 @@ public final class GatewayHttpHandler extends SimpleChannelInboundHandler<FullHt
         ));
     }
 
+    // A Function's own response headers can't be allowed to override these -
+    // Content-Length must reflect the body this method actually serializes,
+    // and a fixed-length FullHttpResponse is never chunked, so a
+    // Function-supplied Transfer-Encoding would just be a lie about framing.
+    private static final Set<String> RESPONSE_HEADERS_NOT_OVERRIDABLE = Set.of(
+            "content-length", "transfer-encoding");
+
     /**
      * Builds the client-facing HTTP response from the durable RESPONSE step
-     * output persisted on the Invocation: {"status": &lt;int&gt;, "body": &lt;any&gt;}.
+     * output persisted on the Invocation: {"status": &lt;int&gt;, "body": &lt;any&gt;,
+     * "headers": &lt;optional object&gt;}. A header's value may be a single
+     * string or an array of strings - the latter is required for a
+     * Function that needs to set multiple {@code Set-Cookie} values, since
+     * folding them into one comma-joined header would break every cookie
+     * after the first.
      */
     private void writeFinalResponse(ChannelHandlerContext context, Invocation invocation) {
         try {
@@ -470,10 +490,36 @@ public final class GatewayHttpHandler extends SimpleChannelInboundHandler<FullHt
                     Unpooled.wrappedBuffer(responseBody)
             );
             response.headers().set(HttpHeaderNames.CONTENT_TYPE, "application/json");
+            if (responseNode != null) {
+                applyFunctionResponseHeaders(response.headers(), responseNode.get("headers"));
+            }
             response.headers().setInt(HttpHeaderNames.CONTENT_LENGTH, responseBody.length);
             context.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
         } catch (Exception exception) {
             writeText(context, HttpResponseStatus.INTERNAL_SERVER_ERROR, "Failed to build final response: " + exception.getMessage());
+        }
+    }
+
+    private void applyFunctionResponseHeaders(HttpHeaders target, JsonNode headersNode) {
+        if (headersNode == null || !headersNode.isObject()) {
+            return;
+        }
+        var fields = headersNode.fields();
+        while (fields.hasNext()) {
+            var field = fields.next();
+            String name = field.getKey();
+            if (RESPONSE_HEADERS_NOT_OVERRIDABLE.contains(name.toLowerCase(Locale.ROOT))) {
+                continue;
+            }
+            JsonNode value = field.getValue();
+            target.remove(name);
+            if (value.isArray()) {
+                for (JsonNode element : value) {
+                    target.add(name, element.asText());
+                }
+            } else if (!value.isNull()) {
+                target.add(name, value.asText());
+            }
         }
     }
 
@@ -512,18 +558,65 @@ public final class GatewayHttpHandler extends SimpleChannelInboundHandler<FullHt
         return colonIndex >= 0 ? normalized.substring(0, colonIndex) : normalized;
     }
 
+    // Hop-by-hop headers (RFC 7230 6.1) are meaningful only for the single
+    // connection they were received on - a Function has no use for them and
+    // they should never be handed to invocation-level code, same reasoning
+    // FixedHostProxyForwarder already applies to its own header copy.
+    private static final Set<String> HOP_BY_HOP_HEADERS = Set.of(
+            "connection", "keep-alive", "transfer-encoding", "upgrade",
+            "proxy-authenticate", "proxy-authorization", "te", "trailer");
+
     private String buildInvocationInput(
             FullHttpRequest request, GatewayRequestContext requestContext, Map<String, String> pathParameters
     ) throws Exception {
         String body = request.content().toString(StandardCharsets.UTF_8);
-        return objectMapper.writeValueAsString(Map.of(
-                "method", requestContext.method(),
-                "hostname", requestContext.hostname(),
-                "path", requestContext.path(),
-                "rawUri", requestContext.rawUri(),
-                "body", body,
-                "pathParameters", pathParameters
-        ));
+        Map<String, Object> input = new LinkedHashMap<>();
+        input.put("method", requestContext.method());
+        input.put("hostname", requestContext.hostname());
+        input.put("path", requestContext.path());
+        input.put("rawUri", requestContext.rawUri());
+        input.put("body", body);
+        input.put("pathParameters", pathParameters);
+        input.put("headers", extractHeaders(request.headers()));
+        input.put("cookies", extractCookies(request.headers()));
+        return objectMapper.writeValueAsString(input);
+    }
+
+    /**
+     * Every request header, grouped by name into its full ordered set of
+     * values - a {@code Map<String, List<String>>}, not
+     * {@code Map<String, String>}, so a header that legitimately repeats
+     * (including {@code Cookie}, which by spec is usually one value but is
+     * still treated uniformly here) is never silently collapsed into one.
+     */
+    private Map<String, List<String>> extractHeaders(HttpHeaders headers) {
+        Map<String, List<String>> result = new LinkedHashMap<>();
+        for (Map.Entry<String, String> header : headers) {
+            String name = header.getKey();
+            if (HOP_BY_HOP_HEADERS.contains(name.toLowerCase(Locale.ROOT))) {
+                continue;
+            }
+            result.computeIfAbsent(name, unused -> new ArrayList<>()).add(header.getValue());
+        }
+        return result;
+    }
+
+    /**
+     * The {@code Cookie} header's {@code name=value; name2=value2} pairs,
+     * parsed into a plain name/value map for convenience - a Function can
+     * still read the raw header itself from {@code headers.Cookie}. A
+     * request can carry the {@code Cookie} header more than once (each
+     * itself possibly multi-pair); every pair from every occurrence is
+     * decoded, later ones overwriting earlier ones on a name collision.
+     */
+    private Map<String, String> extractCookies(HttpHeaders headers) {
+        Map<String, String> cookies = new LinkedHashMap<>();
+        for (String cookieHeader : headers.getAll(HttpHeaderNames.COOKIE)) {
+            for (Cookie cookie : ServerCookieDecoder.LAX.decodeAll(cookieHeader)) {
+                cookies.put(cookie.name(), cookie.value());
+            }
+        }
+        return cookies;
     }
 
     private void writeJson(ChannelHandlerContext context, HttpResponseStatus status, Object payload) {
