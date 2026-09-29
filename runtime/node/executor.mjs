@@ -15,6 +15,7 @@ import { existsSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import { inspect } from "node:util";
 import pg from "pg";
+import { DatabasePoolCache } from "./database-pool-cache.mjs";
 
 const rl = createInterface({ input: process.stdin, terminal: false });
 let executionQueue = Promise.resolve();
@@ -23,26 +24,15 @@ let executionQueue = Promise.resolve();
 // the life of this process (see the module header comment) and reused across
 // every execution that attaches the same Database - this is what lets
 // function authors get a ready client from context.db(name) without paying a
-// per-invocation connection cost.
-const databasePoolCache = new Map();
-
-function databasePoolKey(database) {
-  return `${database.type}:${database.host}:${database.port}:${database.databaseName}:${database.username}`;
-}
-
-function getOrCreateDatabasePool(database) {
-  const key = databasePoolKey(database);
-  let pool = databasePoolCache.get(key);
-  if (pool) {
-    return pool;
-  }
-
+// per-invocation connection cost. See DatabasePoolCache for why a config
+// change (sslEnabled, password) still gets a fresh pool.
+const databasePools = new DatabasePoolCache((database) => {
   const type = String(database.type || "").toUpperCase();
   if (type !== "POSTGRES") {
     throw new Error(`Unsupported database type: ${database.type}`);
   }
 
-  pool = new pg.Pool({
+  return new pg.Pool({
     host: database.host,
     port: database.port,
     database: database.databaseName,
@@ -50,9 +40,7 @@ function getOrCreateDatabasePool(database) {
     password: database.password,
     ssl: database.sslEnabled ? { rejectUnauthorized: false } : false,
   });
-  databasePoolCache.set(key, pool);
-  return pool;
-}
+});
 
 function buildInvocationContext(databases) {
   const byName = new Map(databases.map((database) => [database.name, database]));
@@ -62,7 +50,7 @@ function buildInvocationContext(databases) {
       if (!database) {
         throw new Error(`No database attached with name: ${name}`);
       }
-      return getOrCreateDatabasePool(database);
+      return databasePools.getOrCreate(database);
     },
   };
 }

@@ -2,6 +2,9 @@
   "name": "funchole-runtime-node-executor",
   "private": true,
   "type": "module",
+  "scripts": {
+    "test": "node --test"
+  },
   "dependencies": {
     "pg": "^8.13.1"
   }
