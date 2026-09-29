@@ -36,14 +36,19 @@ public class FunctionExampleMcpTools {
                     + "expected shape from prose alone. Each example's content is asserted directly by a "
                     + "currently-passing test in this repo, so it cannot silently drift out of sync with actual "
                     + "runtime behavior. Call this before writing a NODE RESPONSE handler, a Database-backed "
-                    + "handler, or a multi-page STATIC site for the first time - or any time a deploy fails and "
-                    + "you are not sure why, since build failure messages point back here."
+                    + "handler, a handler that needs config/secrets, or a multi-page STATIC site for the first "
+                    + "time - or any time a deploy fails and you are not sure why, since build failure messages "
+                    + "point back here."
     )
     public FunctionExampleResponse getFunctionExample(
             @McpToolParam(description = "Which example to return: NODE_BASIC (a NODE RESPONSE step returning the "
                     + "correct {status, body} contract and echoing its input back), NODE_DATABASE (a NODE handler "
                     + "that creates a table, inserts a row, and reads it back via an attached Database's "
-                    + "context.db(name)), or STATIC_MULTIPAGE (a real multi-page static site's file layout, with "
+                    + "context.db(name)), NODE_ENV_VARS (a NODE handler reading a plain config value or secret set "
+                    + "via set_function_version_env_var/set_environment_env_var - there is no context.env; every "
+                    + "value from an attached EnvironmentProfile and the FunctionVersion's own config is merged "
+                    + "into process.env right before this invocation runs, read it as process.env.KEY_NAME like "
+                    + "any Node process), or STATIC_MULTIPAGE (a real multi-page static site's file layout, with "
                     + "package.json build script)") String scenario
     ) {
         String normalized = scenario == null ? "" : scenario.trim().toUpperCase(Locale.ROOT);
@@ -72,6 +77,23 @@ public class FunctionExampleMcpTools {
                     FunctionExampleFixtures.NODE_DATABASE_HANDLER,
                     List.of(new ExampleFile(FunctionExampleFixtures.NODE_DATABASE_ENTRYPOINT, FunctionExampleFixtures.NODE_DATABASE_SOURCE))
             );
+            case "NODE_ENV_VARS" -> new FunctionExampleResponse(
+                    "NODE_ENV_VARS",
+                    "NODE",
+                    "A NODE-runtime Function reading a config value from process.env. There is no context.env - "
+                            + "every FunctionVersion env var/secret (set via set_function_version_env_var/"
+                            + "set_function_version_secret) and every var/secret from an EnvironmentProfile "
+                            + "attached to the Flow (attach_flow_environment) is merged into a single map and set "
+                            + "onto process.env immediately before this specific invocation runs, then restored "
+                            + "afterward - read it exactly like this example does. Precedence on a key collision, "
+                            + "highest wins: FunctionVersion secret > FunctionVersion env var > attached "
+                            + "EnvironmentProfile secret > attached EnvironmentProfile env var (and between two "
+                            + "attached profiles, the one with the higher attach_flow_environment priority wins). "
+                            + "Set GREETING with set_function_version_env_var before invoking.",
+                    FunctionExampleFixtures.NODE_ENV_VARS_ENTRYPOINT,
+                    FunctionExampleFixtures.NODE_ENV_VARS_HANDLER,
+                    List.of(new ExampleFile(FunctionExampleFixtures.NODE_ENV_VARS_ENTRYPOINT, FunctionExampleFixtures.NODE_ENV_VARS_SOURCE))
+            );
             case "STATIC_MULTIPAGE" -> new FunctionExampleResponse(
                     "STATIC_MULTIPAGE",
                     "STATIC",
@@ -87,7 +109,7 @@ public class FunctionExampleMcpTools {
                     FunctionExampleFixtures.staticMultipageFiles()
             );
             default -> throw new IllegalArgumentException(
-                    "Unknown scenario: '" + scenario + "' - expected one of NODE_BASIC, NODE_DATABASE, STATIC_MULTIPAGE");
+                    "Unknown scenario: '" + scenario + "' - expected one of NODE_BASIC, NODE_DATABASE, NODE_ENV_VARS, STATIC_MULTIPAGE");
         };
     }
 }
