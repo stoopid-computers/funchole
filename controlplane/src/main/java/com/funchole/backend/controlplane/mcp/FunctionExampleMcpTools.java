@@ -36,9 +36,9 @@ public class FunctionExampleMcpTools {
                     + "expected shape from prose alone. Each example's content is asserted directly by a "
                     + "currently-passing test in this repo, so it cannot silently drift out of sync with actual "
                     + "runtime behavior. Call this before writing a NODE RESPONSE handler, a Database-backed "
-                    + "handler, a handler that needs config/secrets, or a multi-page STATIC site for the first "
-                    + "time - or any time a deploy fails and you are not sure why, since build failure messages "
-                    + "point back here."
+                    + "handler, a handler that needs config/secrets, a handler that reads request headers/cookies "
+                    + "or sets response ones, or a multi-page STATIC site for the first time - or any time a "
+                    + "deploy fails and you are not sure why, since build failure messages point back here."
     )
     public FunctionExampleResponse getFunctionExample(
             @McpToolParam(description = "Which example to return: NODE_BASIC (a NODE RESPONSE step returning the "
@@ -48,7 +48,11 @@ public class FunctionExampleMcpTools {
                     + "via set_function_version_env_var/set_environment_env_var - there is no context.env; every "
                     + "value from an attached EnvironmentProfile and the FunctionVersion's own config is merged "
                     + "into process.env right before this invocation runs, read it as process.env.KEY_NAME like "
-                    + "any Node process), or STATIC_MULTIPAGE (a real multi-page static site's file layout, with "
+                    + "any Node process), NODE_REQUEST_HEADERS (a NODE RESPONSE step reading the incoming request's "
+                    + "headers/cookies and setting response ones - only meaningful for a Flow reached through the "
+                    + "Gateway over real HTTP, not a direct invoke_flow_version/invoke_function_version call, since "
+                    + "those pass whatever raw payload the caller supplies as input instead of a real HTTP "
+                    + "request's envelope), or STATIC_MULTIPAGE (a real multi-page static site's file layout, with "
                     + "package.json build script)") String scenario
     ) {
         String normalized = scenario == null ? "" : scenario.trim().toUpperCase(Locale.ROOT);
@@ -94,6 +98,26 @@ public class FunctionExampleMcpTools {
                     FunctionExampleFixtures.NODE_ENV_VARS_HANDLER,
                     List.of(new ExampleFile(FunctionExampleFixtures.NODE_ENV_VARS_ENTRYPOINT, FunctionExampleFixtures.NODE_ENV_VARS_SOURCE))
             );
+            case "NODE_REQUEST_HEADERS" -> new FunctionExampleResponse(
+                    "NODE_REQUEST_HEADERS",
+                    "NODE",
+                    "A NODE RESPONSE step reading the incoming request's headers/cookies and setting response "
+                            + "ones. input.headers is every request header as {name: [value, ...]} (a header can "
+                            + "legitimately repeat, so it's always an array, even for one value) with hop-by-hop "
+                            + "headers already stripped; input.cookies is the Cookie header pre-parsed into a plain "
+                            + "{name: value} map for convenience - the raw header is still in input.headers.Cookie "
+                            + "too. To set response headers, add a headers field alongside status/body in the "
+                            + "return value: a value can be a single string or an array of strings, and an array is "
+                            + "required for Set-Cookie if you need more than one - joining multiple cookies into "
+                            + "one comma-separated string breaks every cookie after the first. Content-Length and "
+                            + "Transfer-Encoding can't be overridden this way (the Gateway always computes them "
+                            + "itself); every other header, including Content-Type, can be. Only meaningful for a "
+                            + "Flow reached through the Gateway over real HTTP - see this tool's own scenario "
+                            + "description for why direct invocation doesn't apply here.",
+                    FunctionExampleFixtures.NODE_REQUEST_HEADERS_ENTRYPOINT,
+                    FunctionExampleFixtures.NODE_REQUEST_HEADERS_HANDLER,
+                    List.of(new ExampleFile(FunctionExampleFixtures.NODE_REQUEST_HEADERS_ENTRYPOINT, FunctionExampleFixtures.NODE_REQUEST_HEADERS_SOURCE))
+            );
             case "STATIC_MULTIPAGE" -> new FunctionExampleResponse(
                     "STATIC_MULTIPAGE",
                     "STATIC",
@@ -109,7 +133,8 @@ public class FunctionExampleMcpTools {
                     FunctionExampleFixtures.staticMultipageFiles()
             );
             default -> throw new IllegalArgumentException(
-                    "Unknown scenario: '" + scenario + "' - expected one of NODE_BASIC, NODE_DATABASE, NODE_ENV_VARS, STATIC_MULTIPAGE");
+                    "Unknown scenario: '" + scenario + "' - expected one of NODE_BASIC, NODE_DATABASE, NODE_ENV_VARS, "
+                            + "NODE_REQUEST_HEADERS, STATIC_MULTIPAGE");
         };
     }
 }

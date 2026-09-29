@@ -9,7 +9,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
 /**
- * Confirms {@code get_function_example}'s four scenarios return exactly
+ * Confirms {@code get_function_example}'s five scenarios return exactly
  * {@link FunctionExampleFixtures}'s constants - the same constants the integration/e2e tests
  * listed on that class's own javadoc independently prove are real, working source. This test
  * exercises the tool bean's own scenario-selection logic; MCP transport-level discoverability
@@ -54,6 +54,18 @@ class FunctionExampleMcpToolsTests {
         assertThat(response.files()).hasSize(1);
         assertThat(response.files().get(0).content()).isEqualTo(FunctionExampleFixtures.NODE_ENV_VARS_SOURCE);
         assertThat(response.files().get(0).content()).contains("process.env");
+    }
+
+    @Test
+    void returnsTheNodeRequestHeadersExample() {
+        var response = tools.getFunctionExample("NODE_REQUEST_HEADERS");
+
+        assertThat(response.runtime()).isEqualTo("NODE");
+        assertThat(response.entrypoint()).isEqualTo(FunctionExampleFixtures.NODE_REQUEST_HEADERS_ENTRYPOINT);
+        assertThat(response.handler()).isEqualTo(FunctionExampleFixtures.NODE_REQUEST_HEADERS_HANDLER);
+        assertThat(response.files()).hasSize(1);
+        assertThat(response.files().get(0).content()).isEqualTo(FunctionExampleFixtures.NODE_REQUEST_HEADERS_SOURCE);
+        assertThat(response.files().get(0).content()).contains("input.headers").contains("input.cookies").contains("Set-Cookie");
     }
 
     @Test

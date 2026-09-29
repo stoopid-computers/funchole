@@ -13,6 +13,7 @@ import java.util.List;
  *   <li>{@code NODE_BASIC_SOURCE} - {@code FlowVersionInvocationIntegrationTests#invokesADraftFlowVersionWithoutRequiringAdoption}</li>
  *   <li>{@code NODE_DATABASE_SOURCE} - {@code FunctionExampleFixturesE2ETests#nodeDatabaseExampleReadsAndWritesARealAttachedDatabase}</li>
  *   <li>{@code NODE_ENV_VARS_SOURCE} - {@code NodeEnvVarsExampleE2ETest#nodeEnvVarsExampleReadsARealFunctionVersionEnvVar}</li>
+ *   <li>{@code NODE_REQUEST_HEADERS_SOURCE} - {@code NodeRequestHeadersExampleE2ETest#nodeRequestHeadersExampleReadsRequestHeadersAndCookiesAndSetsResponseOnes}</li>
  *   <li>{@code staticMultipageFiles()} - {@code FunctionExampleFixturesIntegrationTests#staticMultipageExampleRoundTripsThroughSubmitAndRead}</li>
  * </ul>
  */
@@ -51,6 +52,23 @@ public final class FunctionExampleFixtures {
                 return { status: 500, body: { error: "GREETING env var is not set" } };
               }
               return { status: 200, body: { greeting } };
+            }
+            """;
+
+    public static final String NODE_REQUEST_HEADERS_ENTRYPOINT = "index.mjs";
+    public static final String NODE_REQUEST_HEADERS_HANDLER = "handler";
+    public static final String NODE_REQUEST_HEADERS_SOURCE = """
+            export async function handler(input) {
+              const customHeaderValues = input.headers["X-Custom-Header"] || [];
+              const sessionCookie = input.cookies.session || null;
+              return {
+                status: 200,
+                body: { customHeader: customHeaderValues[0] || null, sessionCookie },
+                headers: {
+                  "X-Response-Header": "from-function",
+                  "Set-Cookie": ["greeted=true; Path=/", "visits=1; Path=/"]
+                }
+              };
             }
             """;
 
