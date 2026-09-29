@@ -52,23 +52,22 @@ correctly, stripping hop-by-hop headers - see `copyHeaders()`, tested by
 `GatewayHttpHandlerFixedHostProxyTest.java`. That pattern was never wired
 into the Flow/Function invocation path.
 
-## Fix sketch (not yet implemented)
+## Fix sketch (implemented as described - see the update at the top)
 
-No Dispatcher/Runtime IPC DTO changes needed - `input`/`output` already
-travel as opaque JSON strings end-to-end. Only these need to change:
+No Dispatcher/Runtime IPC DTO changes were needed - `input`/`output` already
+travel as opaque JSON strings end-to-end. The two Gateway methods below were
+the only production-code change:
 
-1. `GatewayHttpHandler.buildInvocationInput()` - add a `headers` field as
-   `Map<String, List<String>>` (not `Map<String,String>` - that would
-   collapse multiple `Set-Cookie` values into one comma-joined header).
-2. `GatewayHttpHandler.writeFinalResponse()` - read `headers` back out of
-   the Function's response and apply each value individually via
+1. `GatewayHttpHandler.buildInvocationInput()` - adds a `headers` field as
+   `Map<String, List<String>>` (not `Map<String,String>` - that would have
+   collapsed multiple `Set-Cookie` values into one comma-joined header).
+2. `GatewayHttpHandler.writeFinalResponse()` - reads `headers` back out of
+   the Function's response and applies each value individually via
    `response.headers().add(name, value)`.
-3. `runtime/node/executor.mjs` - expose `request.headers` (and optionally a
-   parsed `request.cookies` convenience) to Function authors.
-4. Tests mirroring `GatewayHttpHandlerFixedHostProxyTest`, but against the
-   actual Flow-invocation path, including a multi-`Set-Cookie` case to guard
-   against the comma-join collapse bug.
-
-No existing tests cover header/cookie passthrough on the invocation path
-today (`GatewayHttpHandlerInvocationTest.java` only asserts on
-flow id/status/body).
+3. `runtime/node/executor.mjs` needed no change - the first step's `input`
+   flows through unmodified all the way to `handler(input, context)`, so
+   `input.headers`/`input.cookies` are already there for a Function to read.
+4. New tests in `GatewayHttpHandlerInvocationTest.java`, plus a real
+   end-to-end test (`NodeRequestHeadersExampleE2ETest`) through a real
+   Gateway/TLS/spawned-node process, including a multi-`Set-Cookie` case
+   that guards against the comma-join collapse bug.
