@@ -11,6 +11,9 @@ import com.funchole.backend.controlplane.dto.FlowVersionResponse;
 import com.funchole.backend.controlplane.dto.FunctionResponse;
 import com.funchole.backend.controlplane.dto.FunctionVersionConfigResponse;
 import com.funchole.backend.controlplane.dto.FunctionVersionResponse;
+import com.funchole.backend.controlplane.entity.SourceFile;
+import com.funchole.backend.controlplane.service.workflow.BuildFunctionUseCase;
+import com.funchole.backend.controlplane.service.workflow.ComposeFlowUseCase;
 import jakarta.annotation.Nullable;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -51,12 +54,15 @@ public class McpWorkflowTools {
     private final GatewayMcpTools gateways;
     private final InvocationMcpTools invocations;
     private final McpFlowPublication publication;
+    private final BuildFunctionUseCase buildFunctionUseCase;
+    private final ComposeFlowUseCase composeFlowUseCase;
     private final ObjectMapper json = new ObjectMapper();
 
     public McpWorkflowTools(FunctionMcpTools functions, FunctionVersionMcpTools versions,
                             FlowMcpTools flows, FlowVersionMcpTools flowVersions,
                             DatabaseMcpTools databases, GatewayMcpTools gateways,
-                            InvocationMcpTools invocations, McpFlowPublication publication) {
+                            InvocationMcpTools invocations, McpFlowPublication publication,
+                            BuildFunctionUseCase buildFunctionUseCase, ComposeFlowUseCase composeFlowUseCase) {
         this.functions = functions;
         this.versions = versions;
         this.flows = flows;
@@ -65,6 +71,8 @@ public class McpWorkflowTools {
         this.gateways = gateways;
         this.invocations = invocations;
         this.publication = publication;
+        this.buildFunctionUseCase = buildFunctionUseCase;
+        this.composeFlowUseCase = composeFlowUseCase;
     }
 
     @McpTool(name = "build_function", description = "Replace complete source on a new revision and start an asynchronous build. Existing Functions require an explicit owned base, including FAILED bases. Omitted config is inherited; database additions are additive. Trusted code only: builds have unsandboxed host access. Does not publish live traffic.", generateOutputSchema = true,
@@ -75,62 +83,23 @@ public class McpWorkflowTools {
 
     private McpOperationResult build(BuildRequest r) throws Exception {
         require(r != null);
-        validateFiles(r);
-        validateConfig(r.env());
-        validateConfig(r.secrets());
-        require(Collections.disjoint(keys(r.env()), keys(r.secrets())));
-        List<McpReference> add = databaseRefs(r.databases());
-        List<McpReference> remove = databaseRefs(r.removeDatabases());
-        require(Collections.disjoint(add, remove));
-        McpReference function = null;
-        McpReference base = null;
-        Runtime runtime = r.runtime();
-        if (r.functionRef() == null) {
-            require(r.baseVersionRef() == null && runtime != null);
-            identity(r.key(), r.name());
-            require(remove.isEmpty());
-        } else {
-            require(r.key() == null && r.name() == null);
-            function = McpReference.parse(r.functionRef()).require("functions");
-            base = McpReference.parse(r.baseVersionRef()).require("function-versions");
-            require(function.id().equals(base.parentId()));
-            functions.getFunction(function.id().toString());
-            FunctionVersionResponse existing = versions.getFunctionVersion(base.parentId().toString(), base.id().toString());
-            if (runtime == null) runtime = Runtime.valueOf(existing.runtime());
-            FunctionVersionConfigResponse config = versions.getFunctionVersionConfig(base.parentId().toString(), base.id().toString());
-            require(config.secrets().stream().noneMatch(s -> keys(r.env()).contains(s.key())));
-            require(config.envVars().stream().noneMatch(e -> keys(r.secrets()).contains(e.key())));
-        }
-        if (runtime == Runtime.STATIC) require("package.json".equals(r.entrypoint()) && r.handler() == null);
-        if (r.handler() != null) require(r.handler().matches("[A-Za-z_$][A-Za-z0-9_$]*"));
-        // Check all resource ownership before creating an identity or draft.
-        for (McpReference db : add) databases.getDatabase(db.id().toString());
-        for (McpReference db : remove) databases.getDatabase(db.id().toString());
-        String survivor = null;
-        try {
-            if (function == null) {
-                FunctionResponse created = functions.createFunction(r.key(), r.name(), null, runtime.name());
-                function = new McpReference("functions", null, created.id());
-                survivor = McpReference.of("functions", function.id());
-            }
-            String fid = function.id().toString();
-            FunctionVersionResponse draft = versions.createFunctionVersion(fid, runtime.name(), null,
-                    base == null ? null : base.id().toString(), base == null);
-            survivor = McpReference.version("function-versions", function.id(), draft.id());
-            String vid = draft.id().toString();
-            versions.submitFunctionVersionSource(fid, vid, r.files(), r.entrypoint(), r.handler());
-            if (r.env() != null) for (var e : r.env().entrySet()) versions.setFunctionVersionEnvVar(fid, vid, e.getKey(), e.getValue());
-            if (r.secrets() != null) for (var e : r.secrets().entrySet()) versions.setFunctionVersionSecret(fid, vid, e.getKey(), e.getValue());
-            for (McpReference db : remove) versions.detachFunctionVersionDatabase(fid, vid, db.id().toString());
-            for (McpReference db : add) versions.attachFunctionVersionDatabase(fid, vid, db.id().toString());
-            FunctionVersionResponse receipt = versions.deployFunctionVersion(fid, vid);
-            return new McpOperationResult(true, "OK", "Build started; read state until READY or FAILED. Read the buildLogs reference with view=logs for diagnostics.", survivor, receipt,
-                    Map.of("state", survivor, "buildLogs", survivor, "guide", "funchole://guides/" + runtime.name().toLowerCase(Locale.ROOT)),
-                    List.of("Builds and handlers have unsandboxed host access. Submit trusted code only."));
-        } catch (Exception exception) {
-            if (survivor == null) throw exception;
-            return McpOperationResult.failure("PARTIAL_FAILURE", "Preparation failed after creating state. Read the surviving resource before retrying.", survivor);
-        }
+        require(r.files() == null || r.files().stream().noneMatch(java.util.Objects::isNull));
+        McpReference function = r.functionRef() == null ? null : McpReference.parse(r.functionRef()).require("functions");
+        McpReference base = r.baseVersionRef() == null ? null : McpReference.parse(r.baseVersionRef()).require("function-versions");
+        require(base == null || function != null && function.id().equals(base.parentId()));
+        var result = buildFunctionUseCase.execute(CurrentMcpUser.id(), new BuildFunctionUseCase.Command(
+                function == null ? null : function.id(), base == null ? null : base.id(), r.key(), r.name(),
+                r.runtime() == null ? null : r.runtime().name(), r.entrypoint(), r.handler(),
+                r.files() == null ? null : r.files().stream().map(f -> new SourceFile(f.path(), f.content())).toList(),
+                r.env(), r.secrets(), databaseRefs(r.databases()).stream().map(McpReference::id).toList(),
+                databaseRefs(r.removeDatabases()).stream().map(McpReference::id).toList()));
+        String survivor = result.versionId() == null ? McpReference.of("functions", result.functionId())
+                : McpReference.version("function-versions", result.functionId(), result.versionId());
+        if (result.partialFailure()) return McpOperationResult.failure("PARTIAL_FAILURE",
+                "Preparation failed after creating state. Read the surviving resource before retrying.", survivor);
+        return new McpOperationResult(true, "OK", "Build started; read state until READY or FAILED. Read the buildLogs reference with view=logs for diagnostics.", survivor, result.version(),
+                Map.of("state", survivor, "buildLogs", survivor, "guide", "funchole://guides/" + result.version().runtime().toLowerCase(Locale.ROOT)),
+                List.of("Builds and handlers have unsandboxed host access. Submit trusted code only."));
     }
 
     @McpTool(name = "compose_flow", description = "Create a complete transactional draft from pinned READY Functions or ADOPTED subflows. Exactly one componentRef or ordered steps is required. Single NODE uses RESPONSE; single STATIC uses FUNCTION. Existing routes and shared bindings remain unchanged.", generateOutputSchema = true,
@@ -162,7 +131,14 @@ public class McpWorkflowTools {
             }
             require(runtime != null);
             validateSteps(runtime, steps, new HashSet<>());
-            FlowVersionResponse receipt = publication.compose(request, flow == null ? null : flow.id(), gatewayId, runtime.name(), steps);
+            List<ComposeFlowUseCase.Step> commandSteps = steps.stream().map(step -> {
+                McpReference ref = McpReference.parse(step.reference());
+                return new ComposeFlowUseCase.Step(step.key(), step.type(), ref.parentId(), ref.id(), step.metadata());
+            }).toList();
+            var composed = composeFlowUseCase.execute(CurrentMcpUser.id(), new ComposeFlowUseCase.Command(
+                    flow == null ? null : flow.id(), request.key(), request.name(), gatewayId,
+                    request.httpMethod(), request.path(), request.priority(), runtime.name(), commandSteps));
+            FlowVersionResponse receipt = flowVersions.getFlowVersion(composed.flowId().toString(), composed.versionId().toString());
             String ref = McpReference.version("flow-versions", receipt.flowId(), receipt.id());
             return new McpOperationResult(true, "OK", "Draft prepared; no live revision was adopted.", ref, receipt,
                     Map.of("state", ref, "flow", McpReference.of("flows", receipt.flowId()), "guide", "funchole://guides/flows"), List.of());
@@ -195,15 +171,14 @@ public class McpWorkflowTools {
         });
     }
 
-    @McpTool(name = "publish_flow", description = "Adopt an exact draft for live traffic with an explicit expected active revision, or 'none'. Optional route edits occur atomically with adoption. Stale expectations fail without mutation. Serializes MCP publications, not REST writers. Verify real HTTPS afterward.", generateOutputSchema = true,
+    @McpTool(name = "publish_flow", description = "Adopt an exact draft for live traffic. Set expectedActiveVersionRef to null when there is no active revision; otherwise provide its exact flow-version reference. Optional route edits occur atomically with adoption. Stale expectations fail without mutation. Verify real HTTPS afterward.", generateOutputSchema = true,
             annotations = @McpTool.McpAnnotations(readOnlyHint = false, destructiveHint = true, idempotentHint = false, openWorldHint = true))
-    public McpOperationResult publishFlow(@McpToolParam(description = "Exact draft, explicit active-version expectation, optional route", required = true) PublishRequest request) {
+    public McpOperationResult publishFlow(@McpToolParam(description = "Exact draft, expectedActiveVersionRef null for no active revision or exact reference otherwise, optional route", required = true) PublishRequest request) {
         return McpOperationResult.run(() -> {
             require(request != null);
             McpReference target = McpReference.parse(request.reference()).require("flow-versions");
-            require(request.expectedActiveVersionRef() != null);
             UUID expected = null;
-            if (!"none".equals(request.expectedActiveVersionRef())) {
+            if (request.expectedActiveVersionRef() != null) {
                 McpReference prior = McpReference.parse(request.expectedActiveVersionRef()).require("flow-versions");
                 require(prior.parentId().equals(target.parentId()));
                 flowVersions.getFlowVersion(prior.parentId().toString(), prior.id().toString());

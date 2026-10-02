@@ -57,6 +57,21 @@ public class McpGuidanceConfig {
             input = new java.util.LinkedHashMap<>(input);
             input.put("properties", properties);
         }
+        if (tool.name().equals("publish_flow")) {
+            var properties = new java.util.LinkedHashMap<>((Map<String, Object>) input.get("properties"));
+            var request = new java.util.LinkedHashMap<>((Map<String, Object>) properties.get("request"));
+            var requestProperties = new java.util.LinkedHashMap<>((Map<String, Object>) request.get("properties"));
+            var expected = new java.util.LinkedHashMap<>((Map<String, Object>) requestProperties.get("expectedActiveVersionRef"));
+            expected.put("type", List.of("string", "null"));
+            requestProperties.put("expectedActiveVersionRef", expected);
+            request.put("properties", requestProperties);
+            var required = new java.util.ArrayList<>((List<String>) request.getOrDefault("required", List.of()));
+            if (!required.contains("expectedActiveVersionRef")) required.add("expectedActiveVersionRef");
+            request.put("required", required);
+            properties.put("request", request);
+            input = new java.util.LinkedHashMap<>(input);
+            input.put("properties", properties);
+        }
         // Spring's generator marks Nullable fields optional but not nullable. The SDK
         // validates serialized nulls, so publish the actual shared receipt contract.
         Map<String, Object> output = Map.of("type", "object", "additionalProperties", false,

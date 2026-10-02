@@ -14,6 +14,7 @@ import com.funchole.backend.controlplane.dto.EnvironmentProfileResponse;
 import com.funchole.backend.controlplane.mapper.CustomDomainMapper;
 import com.funchole.backend.controlplane.service.CustomDomainService;
 import com.funchole.backend.controlplane.service.GatewayCertificateService;
+import com.funchole.backend.controlplane.service.workflow.ConfigureUseCase;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -29,52 +30,41 @@ class McpInfrastructureToolsTests {
     private final FunctionMcpTools functions = mock(FunctionMcpTools.class);
     private final FlowMcpTools flows = mock(FlowMcpTools.class);
     private final FlowVersionMcpTools versions = mock(FlowVersionMcpTools.class);
+    private final ConfigureUseCase configureUseCase = mock(ConfigureUseCase.class);
     private final McpInfrastructureTools tools = new McpInfrastructureTools(environments, bindings, databases,
             gateways, domains, customDomains, mock(CustomDomainService.class), mock(CustomDomainMapper.class),
-            mock(GatewayCertificateService.class), mock(GatewayNetworkProperties.class), functions, flows, versions);
+            mock(GatewayCertificateService.class), mock(GatewayNetworkProperties.class), functions, flows, versions, configureUseCase);
     private final UUID target = UUID.randomUUID();
 
     @Test
-    void rejectsConflictingBindingsBeforeAnyFacadeCall() {
+    void mapsBindingReferencesToTypedCommand() throws Exception {
         String environment = McpReference.of("environments", target);
+        UUID flowId = UUID.randomUUID();
         var request = new McpInfrastructureTools.ConfigRequest(null, null, null, null, null, null,
-                McpReference.of("flows", UUID.randomUUID()),
-                List.of(new McpInfrastructureTools.EnvironmentBinding(environment, 100)), List.of(environment), null, null, true);
-        assertThat(tools.configure(request).code()).isEqualTo("INVALID_INPUT");
-        verifyNoInteractions(environments, bindings, flows, databases);
+                McpReference.of("flows", flowId),
+                List.of(new McpInfrastructureTools.EnvironmentBinding(environment, 100)), null, null, null, true);
+        when(configureUseCase.execute(any(), any())).thenReturn(new ConfigureUseCase.Result(flowId, true, false, List.of(), List.of()));
+        try (var current = mockStatic(CurrentMcpUser.class)) {
+            current.when(CurrentMcpUser::id).thenReturn(UUID.randomUUID());
+            assertThat(tools.configure(request).ok()).isTrue();
+        }
+        var command = org.mockito.ArgumentCaptor.forClass(ConfigureUseCase.Command.class);
+        verify(configureUseCase).execute(any(), command.capture());
+        assertThat(command.getValue().addEnvironments()).containsExactly(new ConfigureUseCase.EnvironmentBinding(target, 100));
+        assertThat(command.getValue().flowId()).isEqualTo(flowId);
     }
 
     @Test
-    void validatesEveryConfigKeyBeforeCreatingProfile() {
-        var request = profile(null, "prod", "Production", Map.of("GOOD", "ok", "bad-key", "no"), null, null);
-        assertThat(tools.configure(request).code()).isEqualTo("INVALID_INPUT");
-        verifyNoInteractions(environments);
-    }
-
-    @Test
-    void rejectsEnvSecretCollisionBeforeCreatingProfile() {
-        var request = profile(null, "prod", "Production", Map.of("TOKEN", "public"), Map.of("TOKEN", "secret"), null);
-        assertThat(tools.configure(request).code()).isEqualTo("INVALID_INPUT");
-        verifyNoInteractions(environments);
-    }
-
-    @Test
-    void omittedConfigurationIsUnchanged() {
+    void profileReceiptExcludesSecretValues() throws Exception {
         String reference = McpReference.of("environments", target);
-        when(environments.getEnvironment(target.toString())).thenReturn(new EnvironmentProfileResponse(target,
-                "prod", "Production", "Keep description", null, null));
-        when(environments.getEnvironmentConfig(target.toString())).thenReturn(new EnvironmentProfileConfigResponse(target, List.of(), List.of()));
-        assertThat(tools.configure(profile(reference, null, null, null, null, true)).ok()).isTrue();
-        verify(environments, never()).updateEnvironment(anyString(), anyString(), any());
-        verify(environments, never()).setEnvironmentEnvVar(anyString(), anyString(), anyString());
-        verify(environments, never()).setEnvironmentSecret(anyString(), anyString(), anyString());
-    }
-
-    @Test
-    void existingProfilesRequireExplicitLiveGuard() {
-        assertThat(tools.configure(profile(McpReference.of("environments", target), null, null,
-                Map.of("MODE", "prod"), null, null)).code()).isEqualTo("INVALID_INPUT");
-        verifyNoInteractions(environments);
+        when(configureUseCase.execute(any(), any())).thenReturn(new ConfigureUseCase.Result(target, false, false,
+                List.of(), List.of("TOKEN")));
+        try (var current = mockStatic(CurrentMcpUser.class)) {
+            current.when(CurrentMcpUser::id).thenReturn(UUID.randomUUID());
+            var result = tools.configure(profile(reference, null, null, null, Map.of("TOKEN", "secret-value"), true));
+            assertThat(result.ok()).isTrue();
+            assertThat(new ObjectMapper().writeValueAsString(result)).doesNotContain("secret-value");
+        }
     }
 
     @Test
@@ -148,13 +138,15 @@ class McpInfrastructureToolsTests {
 
     @Test
     void partialConfigFailureKeepsSurvivingReferenceAndNeverEchoesSecret() throws Exception {
-        when(environments.createEnvironment("prod", "Production", null)).thenReturn(new EnvironmentProfileResponse(target, "prod", "Production", null, null, null));
-        when(environments.setEnvironmentSecret(target.toString(), "TOKEN", "secret-value"))
-                .thenThrow(new IllegalStateException("secret-value"));
-        var result = tools.configure(profile(null, "prod", "Production", null, Map.of("TOKEN", "secret-value"), null));
-        assertThat(result.code()).isEqualTo("PARTIAL_FAILURE");
-        assertThat(result.reference()).isEqualTo(McpReference.of("environments", target));
-        assertThat(new ObjectMapper().writeValueAsString(result)).doesNotContain("secret-value");
+        when(configureUseCase.execute(any(), any())).thenReturn(new ConfigureUseCase.Result(target, false, true,
+                List.of(), List.of("TOKEN")));
+        try (var current = mockStatic(CurrentMcpUser.class)) {
+            current.when(CurrentMcpUser::id).thenReturn(UUID.randomUUID());
+            var result = tools.configure(profile(null, "prod", "Production", null, Map.of("TOKEN", "secret-value"), null));
+            assertThat(result.code()).isEqualTo("PARTIAL_FAILURE");
+            assertThat(result.reference()).isEqualTo(McpReference.of("environments", target));
+            assertThat(new ObjectMapper().writeValueAsString(result)).doesNotContain("secret-value");
+        }
     }
 
     private static McpInfrastructureTools.ConfigRequest profile(String reference, String key, String name,

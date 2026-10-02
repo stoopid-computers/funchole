@@ -14,6 +14,7 @@ import com.funchole.backend.controlplane.config.GatewayNetworkProperties;
 import com.funchole.backend.controlplane.mapper.CustomDomainMapper;
 import com.funchole.backend.controlplane.service.CustomDomainService;
 import com.funchole.backend.controlplane.service.GatewayCertificateService;
+import com.funchole.backend.controlplane.service.workflow.ConfigureUseCase;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -40,12 +41,14 @@ public class McpInfrastructureTools {
     private final FunctionMcpTools functions;
     private final FlowMcpTools flows;
     private final FlowVersionMcpTools versions;
+    private final ConfigureUseCase configureUseCase;
 
     public McpInfrastructureTools(EnvironmentProfileMcpTools environments, FlowConfigurationMcpTools bindings,
             DatabaseMcpTools databases, GatewayMcpTools gateways, DomainMcpTools domains,
             CustomDomainMcpTools customDomains, CustomDomainService customDomainService,
             CustomDomainMapper customDomainMapper, GatewayCertificateService certificates, GatewayNetworkProperties network,
-            FunctionMcpTools functions, FlowMcpTools flows, FlowVersionMcpTools versions) {
+            FunctionMcpTools functions, FlowMcpTools flows, FlowVersionMcpTools versions,
+            ConfigureUseCase configureUseCase) {
         this.environments = environments;
         this.bindings = bindings;
         this.databases = databases;
@@ -59,6 +62,7 @@ public class McpInfrastructureTools {
         this.functions = functions;
         this.flows = flows;
         this.versions = versions;
+        this.configureUseCase = configureUseCase;
     }
 
     public record EnvironmentBinding(String reference, @Nullable Integer priority) { }
@@ -83,79 +87,29 @@ public class McpInfrastructureTools {
     public McpOperationResult configure(@McpToolParam(description = "Exactly one profile mode or Flow-binding mode") ConfigRequest request) {
         return McpOperationResult.run(() -> {
             require(request != null);
-            boolean flowMode = request.flowRef() != null;
-            boolean profileMode = request.profileRef() != null || request.key() != null;
-            require(flowMode != profileMode);
-            validateConfig(request.env());
-            validateConfig(request.secrets());
-            require(disjoint(keys(request.env()), keys(request.secrets())));
-            optionalText(request.description(), 1000);
-            if (flowMode) {
-                require(request.name() == null && request.description() == null && request.env() == null && request.secrets() == null);
-                live(request.allowLiveChanges());
-                String flowId = id(request.flowRef(), "flows");
-                List<EnvironmentBinding> add = list(request.addEnvironments());
-                List<String> remove = list(request.removeEnvironments());
-                List<String> addDb = list(request.addDatabases());
-                List<String> removeDb = list(request.removeDatabases());
-                Set<String> addIds = new HashSet<>();
-                for (EnvironmentBinding binding : add) {
-                    require(binding != null);
-                    require(addIds.add(id(binding.reference(), "environments")));
-                }
-                Set<String> removeIds = referenceIds(remove, "environments");
-                Set<String> addDbIds = referenceIds(addDb, "databases");
-                Set<String> removeDbIds = referenceIds(removeDb, "databases");
-                require(disjoint(addIds, removeIds) && disjoint(addDbIds, removeDbIds));
-                flows.getFlow(flowId);
-                for (String value : union(addIds, removeIds)) environments.getEnvironment(value);
-                for (String value : union(addDbIds, removeDbIds)) databases.getDatabase(value);
-                return writes(request.flowRef(), () -> {
-                    for (EnvironmentBinding binding : add) bindings.attachFlowEnvironment(flowId,
-                            id(binding.reference(), "environments"), binding.priority());
-                    for (String value : remove) bindings.detachFlowEnvironment(flowId, id(value, "environments"));
-                    for (String value : addDb) bindings.attachFlowDatabase(flowId, id(value, "databases"));
-                    for (String value : removeDb) bindings.detachFlowDatabase(flowId, id(value, "databases"));
-                    return changed(request.flowRef(), Map.of("status", "BINDINGS_APPLIED"),
-                            "Shared bindings can affect live traffic. Omitted bindings were not removed.");
-                });
-            }
-            require(request.addEnvironments() == null && request.removeEnvironments() == null
-                    && request.addDatabases() == null && request.removeDatabases() == null);
-            String profileId;
-            String reference;
-            if (request.profileRef() != null) {
-                require(request.key() == null);
-                live(request.allowLiveChanges());
-                profileId = id(request.profileRef(), "environments");
-                EnvironmentProfileResponse current = environments.getEnvironment(profileId);
-                EnvironmentProfileConfigResponse config = environments.getEnvironmentConfig(profileId);
-                require(config.envVars().stream().noneMatch(entry -> keys(request.secrets()).contains(entry.key())));
-                require(config.secrets().stream().noneMatch(entry -> keys(request.env()).contains(entry.key())));
-                if (request.name() != null) text(request.name(), 255);
-                reference = request.profileRef();
-                final String target = profileId;
-                return writes(reference, () -> {
-                    if (request.name() != null || request.description() != null) {
-                        environments.updateEnvironment(target, request.name() == null ? current.name() : request.name(),
-                                request.description() == null ? current.description() : request.description());
-                    }
-                    applyConfig(target, request);
-                    return configured(reference, request);
-                });
-            }
-            text(request.key(), 150);
-            require(request.key().matches("[A-Za-z0-9_.-]+"));
-            text(request.name(), 255);
-            EnvironmentProfileResponse created = environments.createEnvironment(request.key(), request.name(), request.description());
-            profileId = created.id().toString();
-            reference = McpReference.of("environments", created.id());
-            final String target = profileId;
-            return writes(reference, () -> {
-                applyConfig(target, request);
-                return configured(reference, request);
-            });
+            require(request.addEnvironments() == null || request.addEnvironments().stream().noneMatch(java.util.Objects::isNull));
+            var add = request.addEnvironments() == null ? null : request.addEnvironments().stream()
+                    .map(binding -> new ConfigureUseCase.EnvironmentBinding(
+                            McpReference.parse(binding.reference()).require("environments").id(), binding.priority())).toList();
+            var result = configureUseCase.execute(CurrentMcpUser.id(), new ConfigureUseCase.Command(
+                    request.profileRef() == null ? null : McpReference.parse(request.profileRef()).require("environments").id(),
+                    request.key(), request.name(), request.description(), request.env(), request.secrets(),
+                    request.flowRef() == null ? null : McpReference.parse(request.flowRef()).require("flows").id(),
+                    add, referenceIdsList(request.removeEnvironments(), "environments"),
+                    referenceIdsList(request.addDatabases(), "databases"), referenceIdsList(request.removeDatabases(), "databases"),
+                    Boolean.TRUE.equals(request.allowLiveChanges())));
+            String reference = McpReference.of(result.flow() ? "flows" : "environments", result.resourceId());
+            if (result.partialFailure()) return McpOperationResult.failure("PARTIAL_FAILURE",
+                    "Changes may have been applied. Read the surviving target before retrying; no automatic rollback was attempted.", reference);
+            if (result.flow()) return changed(reference, Map.of("status", "BINDINGS_APPLIED"),
+                    "Shared bindings can affect live traffic. Omitted bindings were not removed.");
+            return changed(reference, new ConfigurationReceipt(result.envKeys(), result.secretKeys()),
+                    "Shared profile changes can affect attached live Flows. Omitted keys remain unchanged. Secret values are excluded.");
         });
+    }
+
+    private static List<java.util.UUID> referenceIdsList(List<String> references, String kind) {
+        return references == null ? null : references.stream().map(ref -> McpReference.parse(ref).require(kind).id()).toList();
     }
 
     @McpTool(name = "connect_database", description = "Register a supplied Postgres connection, not provision a database. Updating an owned connection requires allowLiveChanges=true. Password is write-only; omit only on update. SSL defaults to true.", generateOutputSchema = true,

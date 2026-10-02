@@ -2,6 +2,9 @@ package com.funchole.backend.controlplane.mcp;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.funchole.backend.controlplane.constant.DomainStatus;
 import com.funchole.backend.controlplane.constant.FlowStepComponentType;
@@ -16,26 +19,37 @@ import com.funchole.backend.controlplane.entity.FunctionVersion;
 import com.funchole.backend.controlplane.entity.Gateway;
 import com.funchole.backend.controlplane.repository.*;
 import com.funchole.backend.controlplane.security.AppUserPrincipal;
+import com.funchole.backend.controlplane.service.FlowPublicationConflictException;
+import com.funchole.backend.controlplane.service.FlowPublicationService;
+import com.funchole.backend.core.base.exception.ResourceNotFoundException;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /** Real Postgres transactions, references and ownership. No mocked authoring services. */
 @SpringBootTest
+@AutoConfigureMockMvc
 @ActiveProfiles("test")
 class McpWorkflowIntegrationTests {
     @Autowired McpWorkflowTools tools;
     @Autowired McpReadTools reads;
     @Autowired McpFlowPublication publication;
+    @Autowired FlowPublicationService sharedPublication;
     @Autowired FlowMcpTools flows;
     @Autowired FlowVersionMcpTools versions;
     @Autowired AppUserRepository users;
@@ -45,6 +59,7 @@ class McpWorkflowIntegrationTests {
     @Autowired FunctionVersionRepository functionVersions;
     @Autowired FlowRepository flowRepository;
     @Autowired PlatformTransactionManager transactions;
+    @Autowired MockMvc mockMvc;
     private String gatewayRef;
     private String componentRef;
     private AppUserPrincipal owner;
@@ -76,7 +91,7 @@ class McpWorkflowIntegrationTests {
     @Test
     void prepareReplacementLeavesLiveRouteAndBindingsAloneThenExplicitPublishChangesRoute() {
         String first = composeNew();
-        assertThat(tools.publishFlow(new McpWorkflowTools.PublishRequest(first, "none", null)).ok()).isTrue();
+        assertThat(tools.publishFlow(new McpWorkflowTools.PublishRequest(first, null, null)).ok()).isTrue();
         String flowRef = flowRef(first);
         var draft = tools.composeFlow(new McpWorkflowTools.ComposeRequest(flowRef, null, null, null, null, null, null,
                 null, componentRef, null));
@@ -96,15 +111,104 @@ class McpWorkflowIntegrationTests {
     @Test
     void stalePublicationCannotChangeLiveRevisionOrRoute() {
         String first = composeNew();
-        assertThat(tools.publishFlow(new McpWorkflowTools.PublishRequest(first, "none", null)).ok()).isTrue();
+        assertThat(tools.publishFlow(new McpWorkflowTools.PublishRequest(first, null, null)).ok()).isTrue();
         var draft = tools.composeFlow(new McpWorkflowTools.ComposeRequest(flowRef(first), null, null, null, null, null, null,
                 null, componentRef, null));
-        var result = tools.publishFlow(new McpWorkflowTools.PublishRequest(draft.reference(), "none",
+        var result = tools.publishFlow(new McpWorkflowTools.PublishRequest(draft.reference(), null,
                 new McpWorkflowTools.RouteInput(gatewayRef, "POST", "/must-not-appear", 9)));
         assertThat(result.code()).isEqualTo("CONFLICT");
         assertThat(flowState(first).path()).isEqualTo("/before");
         assertThat(flowState(first).activeFlowVersionId()).isEqualTo(McpReference.parse(first).id());
         assertThat(versionState(draft.reference()).status()).isEqualTo(FlowVersionStatus.DRAFT);
+    }
+
+    @Test
+    void restPublicationMakesAnMcpExpectationStale() {
+        String first = composeNew();
+        var firstRef = McpReference.parse(first);
+        sharedPublication.publish(owner.getId(), firstRef.parentId(), firstRef.id(), null, null);
+
+        var draft = tools.composeFlow(new McpWorkflowTools.ComposeRequest(flowRef(first), null, null, null, null, null, null,
+                null, componentRef, null));
+        assertThat(draft.ok()).isTrue();
+        assertThat(tools.publishFlow(new McpWorkflowTools.PublishRequest(draft.reference(), null, null)).code())
+                .isEqualTo("CONFLICT");
+        assertThat(flowState(first).activeFlowVersionId()).isEqualTo(firstRef.id());
+        assertThat(versionState(draft.reference()).status()).isEqualTo(FlowVersionStatus.DRAFT);
+    }
+
+    @Test
+    void guardedRestPublishReturnsConflictForStaleExpectation() throws Exception {
+        String first = composeNew();
+        var firstRef = McpReference.parse(first);
+        sharedPublication.publish(owner.getId(), firstRef.parentId(), firstRef.id(), null, null);
+        var draft = tools.composeFlow(new McpWorkflowTools.ComposeRequest(flowRef(first), null, null, null, null, null, null,
+                null, componentRef, null));
+        assertThat(draft.ok()).isTrue();
+
+        mockMvc.perform(post("/api/v1/flows/{flowId}/versions/{versionId}/publish",
+                        firstRef.parentId(), McpReference.parse(draft.reference()).id())
+                        .with(authentication(new UsernamePasswordAuthenticationToken(owner, null, owner.getAuthorities())))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isConflict());
+        authenticate(owner);
+        assertThat(versionState(draft.reference()).status()).isEqualTo(FlowVersionStatus.DRAFT);
+    }
+
+    @Test
+    void concurrentRestAndMcpPublishersWithTheSameExpectationCannotBothWin() throws Exception {
+        String first = composeNew();
+        var firstRef = McpReference.parse(first);
+        sharedPublication.publish(owner.getId(), firstRef.parentId(), firstRef.id(), null, null);
+        var second = tools.composeFlow(new McpWorkflowTools.ComposeRequest(flowRef(first), null, null, null, null, null, null,
+                null, componentRef, null));
+        var third = tools.composeFlow(new McpWorkflowTools.ComposeRequest(flowRef(first), null, null, null, null, null, null,
+                null, componentRef, null));
+        assertThat(second.ok()).isTrue();
+        assertThat(third.ok()).isTrue();
+        UUID secondId = McpReference.parse(second.reference()).id();
+        UUID thirdId = McpReference.parse(third.reference()).id();
+
+        CountDownLatch start = new CountDownLatch(1);
+        try (var executor = Executors.newFixedThreadPool(2)) {
+            Future<Object> a = executor.submit(() -> attemptPublish(start, firstRef.parentId(), secondId, firstRef.id()));
+            Future<Object> b = executor.submit(() -> {
+                start.await();
+                authenticate(owner);
+                try {
+                    var result = publication.publish(McpReference.parse(third.reference()), firstRef.id(), null, null);
+                    return result.ok() ? "published" : "conflict";
+                } finally {
+                    SecurityContextHolder.clearContext();
+                }
+            });
+            start.countDown();
+            assertThat(List.of(a.get(), b.get())).containsExactlyInAnyOrder("published", "conflict");
+        }
+        assertThat(flowState(first).activeFlowVersionId()).isIn(secondId, thirdId);
+        assertThat(List.of(versionState(second.reference()).status(), versionState(third.reference()).status()))
+                .containsExactlyInAnyOrder(FlowVersionStatus.ADOPTED, FlowVersionStatus.DRAFT);
+    }
+
+    @Test
+    void publicationRejectsAnotherTenantBeforeChangingTheDraft() {
+        String draft = composeNew();
+        var target = McpReference.parse(draft);
+        assertThatThrownBy(() -> sharedPublication.publish(stranger.getId(), target.parentId(), target.id(), null, null))
+                .isInstanceOf(ResourceNotFoundException.class);
+        assertThat(flowState(draft).activeFlowVersionId()).isNull();
+        assertThat(versionState(draft).status()).isEqualTo(FlowVersionStatus.DRAFT);
+    }
+
+    private Object attemptPublish(CountDownLatch start, UUID flowId, UUID draftId, UUID expected) throws Exception {
+        start.await();
+        try {
+            sharedPublication.publish(owner.getId(), flowId, draftId, expected, null);
+            return "published";
+        } catch (FlowPublicationConflictException conflict) {
+            return "conflict";
+        }
     }
 
     @Test
@@ -129,7 +233,7 @@ class McpWorkflowIntegrationTests {
             assertThat(reads.read(reference, null, null, null, null).code()).isEqualTo("NOT_FOUND");
         }
         assertThat(tools.invoke(componentRef, "{}").code()).isEqualTo("NOT_FOUND");
-        assertThat(tools.publishFlow(new McpWorkflowTools.PublishRequest(draft, "none", null)).code()).isEqualTo("NOT_FOUND");
+        assertThat(tools.publishFlow(new McpWorkflowTools.PublishRequest(draft, null, null)).code()).isEqualTo("NOT_FOUND");
         assertThat(tools.composeFlow(new McpWorkflowTools.ComposeRequest(flowRef(draft), null, null, null, null, null, null,
                 null, componentRef, null)).code()).isEqualTo("NOT_FOUND");
         assertThat(flowRepository.count()).isEqualTo(before);
@@ -140,7 +244,7 @@ class McpWorkflowIntegrationTests {
     @Test
     void readyComponentCanBeReusedInAdvancedAndSubflowCompositions() {
         String child = composeNew();
-        assertThat(tools.publishFlow(new McpWorkflowTools.PublishRequest(child, "none", null)).ok()).isTrue();
+        assertThat(tools.publishFlow(new McpWorkflowTools.PublishRequest(child, null, null)).ok()).isTrue();
         String key = "advanced-" + UUID.randomUUID();
         var result = tools.composeFlow(new McpWorkflowTools.ComposeRequest(null, key, key, gatewayRef, "GET", "/advanced", 0,
                 McpWorkflowTools.Runtime.NODE, null, List.of(
@@ -148,7 +252,7 @@ class McpWorkflowIntegrationTests {
                 new McpWorkflowTools.StepInput("nested", FlowStepComponentType.SUB_FLOW, child, null))));
         assertThat(result.ok()).isTrue();
         assertThat(((FlowVersionResponse) result.data()).steps()).hasSize(2);
-        assertThat(tools.publishFlow(new McpWorkflowTools.PublishRequest(result.reference(), "none", null)).ok()).isTrue();
+        assertThat(tools.publishFlow(new McpWorkflowTools.PublishRequest(result.reference(), null, null)).ok()).isTrue();
     }
 
     private String composeNew() {

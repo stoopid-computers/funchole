@@ -26,11 +26,14 @@ public class FlowService {
     private final FlowRepository flowRepository;
     private final GatewayRepository gatewayRepository;
     private final PackageLimitService packageLimitService;
+    private final FlowWriteLock flowWriteLock;
 
-    public FlowService(FlowRepository flowRepository, GatewayRepository gatewayRepository, PackageLimitService packageLimitService) {
+    public FlowService(FlowRepository flowRepository, GatewayRepository gatewayRepository, PackageLimitService packageLimitService,
+                       FlowWriteLock flowWriteLock) {
         this.flowRepository = flowRepository;
         this.gatewayRepository = gatewayRepository;
         this.packageLimitService = packageLimitService;
+        this.flowWriteLock = flowWriteLock;
     }
 
     public Page<Flow> listFlows(UUID appUserId, int page, int size) {
@@ -75,7 +78,7 @@ public class FlowService {
     @Transactional
     public Flow updateFlow(UUID appUserId, UUID flowId, FlowUpdateRequest request) {
         validatePath(request.path());
-        Flow flow = getFlowById(appUserId, flowId);
+        Flow flow = flowWriteLock.lock(appUserId, flowId);
         Gateway gateway = getOwnedGateway(appUserId, request.gatewayId());
 
         flow.update(
@@ -92,7 +95,7 @@ public class FlowService {
 
     @Transactional
     public void deleteFlow(UUID appUserId, UUID flowId) {
-        Flow flow = getFlowById(appUserId, flowId);
+        Flow flow = flowWriteLock.lock(appUserId, flowId);
         flow.softDelete();
         flowRepository.save(flow);
     }

@@ -37,6 +37,7 @@ public class FlowVersionService {
     private final FlowService flowService;
     private final FlowStepReferenceValidator flowStepReferenceValidator;
     private final FunctionVersionRepository functionVersionRepository;
+    private final FlowWriteLock flowWriteLock;
 
     public FlowVersionService(
             FlowVersionRepository flowVersionRepository,
@@ -44,7 +45,8 @@ public class FlowVersionService {
             FlowRepository flowRepository,
             FlowService flowService,
             FlowStepReferenceValidator flowStepReferenceValidator,
-            FunctionVersionRepository functionVersionRepository
+            FunctionVersionRepository functionVersionRepository,
+            FlowWriteLock flowWriteLock
     ) {
         this.flowVersionRepository = flowVersionRepository;
         this.flowStepRepository = flowStepRepository;
@@ -52,6 +54,7 @@ public class FlowVersionService {
         this.flowService = flowService;
         this.flowStepReferenceValidator = flowStepReferenceValidator;
         this.functionVersionRepository = functionVersionRepository;
+        this.flowWriteLock = flowWriteLock;
     }
 
     public Page<FlowVersion> listVersions(UUID appUserId, UUID flowId, int page, int size) {
@@ -82,7 +85,7 @@ public class FlowVersionService {
 
     @Transactional
     public FlowVersion adoptVersion(UUID appUserId, UUID flowId, UUID versionId) {
-        Flow flow = flowService.getFlowById(appUserId, flowId);
+        Flow flow = flowWriteLock.lock(appUserId, flowId);
         FlowVersion flowVersion = getVersionById(appUserId, flowId, versionId);
 
         if (flowVersion.getStatus() != FlowVersionStatus.DRAFT) {
@@ -161,7 +164,7 @@ public class FlowVersionService {
 
     @Transactional
     public FlowVersion archiveVersion(UUID appUserId, UUID flowId, UUID versionId) {
-        Flow flow = flowService.getFlowById(appUserId, flowId);
+        Flow flow = flowWriteLock.lock(appUserId, flowId);
         FlowVersion flowVersion = getVersionById(appUserId, flowId, versionId);
 
         if (flowVersion.getStatus() != FlowVersionStatus.ADOPTED) {
@@ -179,6 +182,7 @@ public class FlowVersionService {
 
     @Transactional
     public void deleteDraftVersion(UUID appUserId, UUID flowId, UUID versionId) {
+        flowWriteLock.lock(appUserId, flowId);
         FlowVersion flowVersion = getVersionById(appUserId, flowId, versionId);
 
         if (flowVersion.getStatus() != FlowVersionStatus.DRAFT) {

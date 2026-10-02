@@ -235,10 +235,11 @@ function FlowVersionCanvas() {
   }
 
   async function handleAdopt() {
+    if (!flow) return;
     setError(null);
     setBusy(true);
     try {
-      await api.adoptFlowVersion(flowId, versionId);
+      await api.adoptFlowVersion(flowId, versionId, flow.activeFlowVersionId);
       refresh();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to adopt version");
