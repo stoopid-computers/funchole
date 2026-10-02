@@ -99,7 +99,6 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.MinIOContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -143,7 +142,7 @@ class NodeRequestHeadersExampleE2ETest {
             .withCommand("-js", "-sd", "/tmp/nats/jetstream");
 
     @Container
-    static MinIOContainer minio = new MinIOContainer("minio/minio");
+    static S3TestContainer minio = new S3TestContainer();
 
     @TempDir
     static Path artifactCacheRoot;

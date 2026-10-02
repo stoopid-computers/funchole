@@ -239,8 +239,11 @@ export const api = {
     });
   },
 
-  adoptFlowVersion(flowId: string, versionId: string): Promise<FlowVersionResponse> {
-    return request(`/api/v1/flows/${flowId}/versions/${versionId}/adopt`, { method: "POST" });
+  adoptFlowVersion(flowId: string, versionId: string, expectedActiveVersionId: string | null): Promise<FlowVersionResponse> {
+    return request(`/api/v1/flows/${flowId}/versions/${versionId}/publish`, {
+      method: "POST",
+      body: JSON.stringify({ expectedActiveVersionId }),
+    });
   },
 
   archiveFlowVersion(flowId: string, versionId: string): Promise<FlowVersionResponse> {

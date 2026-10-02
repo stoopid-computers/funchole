@@ -31,11 +31,23 @@ spring:
         protocol: STREAMABLE
         name: funchole-mcp-server
         version: ${APP_VERSION:0.1.0-SNAPSHOT}
+        annotation-scanner:
+          enabled: false
         instructions: >
-          FuncHole lets you create Functions, compose them into Flows, expose
-          Flows as HTTP routes through a Gateway, and attach shared
-          environment/secret/database resources - all through these tools
-          instead of the REST API directly.
+          Build and ship websites, Node APIs, and shared-state apps with FuncHole.
+          Before app work, read funchole://guides/start with resources/read or
+          read(reference='funchole://guides/start'). Use discover for task guides,
+          contracts and owned components. Read only matching guides.
+          Inspect existing components; reuse pinned versions and shared resources.
+          Read a tested funchole://examples/ template before first source submission.
+          build_function replaces all files and is async: read to READY or FAILED,
+          inspect logs on failure, then fix forward in a new DRAFT. Adoption changes
+          live traffic. Verify real HTTPS, not just direct Invocations. Builds and
+          handlers are not sandboxed; submit trusted code and keep secrets out of
+          source/logs. Native WebSockets, automatic retries, and branching are not
+          supplied. Ask for missing external prerequisites rather than inventing
+          infrastructure. See funchole://guides/evolve for reuse and project-local
+          learning; project notes do not change server security.
         streamable-http:
           mcp-endpoint: /api/mcp
 
@@ -77,6 +89,8 @@ logging:
     org.springframework.security: INFO
 
 app:
+  mcp:
+    tool-calls-per-minute: ${MCP_TOOL_CALLS_PER_MINUTE:120}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
   nats:

@@ -38,6 +38,7 @@ Optional, safe defaults if left unset: `S3_ARTIFACT_BUCKET` (`funchole-artifacts
 | `TENANT_DB_ADMIN_USERNAME` | `tenant_admin` | Maintenance-only role controlplane connects as to run `CREATE ROLE`/`CREATE DATABASE` - never used for tenant traffic itself. |
 | `TENANT_DB_ADMIN_PASSWORD` | `tenant_admin` | Password for that role. **Production must set this** (see `TENANT_DB_ADMIN_PASSWORD` in `.env.example`) - the default only works for local dev. |
 | `APP_VERSION` | `0.1.0-SNAPSHOT` | reported app/MCP server version |
+| `MCP_TOOL_CALLS_PER_MINUTE` | `120` | Positive per-user MCP tool-call budget per controlplane process. Applies to modern and legacy clients; exhausted budgets return 429 with Retry-After. Set on the controlplane service, not just in the host shell. See [MCP compatibility](mcp.md). |
 | `SERVER_PORT` | `7080` | HTTP listen port |
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:3000` | comma-separated browser origin(s) allowed to call this API cross-origin. **Production must set this** to the real public web origin (e.g. `https://app.funchole.dev`) - the default only works for local dev, and an unset/wrong value fails every browser request with a CORS preflight error, not a clear auth error. Not read by the frontend - set directly on `controlplane`, not `control-plane-web`. |
 | `NATS_URL` | `nats://localhost:4222` | NATS broker URL |

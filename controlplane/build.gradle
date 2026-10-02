@@ -4,6 +4,16 @@ plugins {
 
 description = 'Runnable Spring Boot controlplane application.'
 
+// Spring AI 2.0.1's BOM still pins SDK 2.0.0. Pick up 2.0.1's bounded reads
+// and callback/pagination fixes without changing the Spring integration API.
+dependencyManagement {
+    dependencies {
+        dependency 'io.modelcontextprotocol.sdk:mcp:2.0.1'
+        dependency 'io.modelcontextprotocol.sdk:mcp-core:2.0.1'
+        dependency 'io.modelcontextprotocol.sdk:mcp-json-jackson3:2.0.1'
+    }
+}
+
 dependencies {
     implementation project(':certificate')
     implementation project(':core')
@@ -107,6 +117,8 @@ dependencies {
 }
 
 tasks.named('test') {
+    inputs.property('mcpSmokeEnabled', providers.environmentVariable('FUNCHOLE_TEST_MCP_SMOKE').getOrElse('false'))
+    inputs.file(rootProject.file('scripts/dev/mcp-smoke.py'))
     useJUnitPlatform {
         excludeTags 'e2e'
     }

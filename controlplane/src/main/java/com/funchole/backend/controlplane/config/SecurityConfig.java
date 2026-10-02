@@ -1,8 +1,10 @@
 package com.funchole.backend.controlplane.config;
 
+import com.funchole.backend.controlplane.mcp.McpProtocolFilter;
 import com.funchole.backend.controlplane.security.ApiKeyAuthenticationFilter;
 import com.funchole.backend.controlplane.security.JwtAuthenticationFilter;
 import java.util.List;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -21,6 +23,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
@@ -53,7 +56,9 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(corsProperties.allowedOrigins());
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "MCP-Protocol-Version",
+                "Mcp-Method", "Mcp-Name", "Mcp-Session-Id", "Last-Event-ID"));
+        configuration.setExposedHeaders(List.of("Mcp-Session-Id", "MCP-Protocol-Version"));
         configuration.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
@@ -65,7 +70,8 @@ public class SecurityConfig {
             HttpSecurity http,
             ApiKeyAuthenticationFilter apiKeyAuthenticationFilter,
             JwtAuthenticationFilter jwtAuthenticationFilter,
-            AuthenticationProvider authenticationProvider
+            AuthenticationProvider authenticationProvider,
+            McpProtocolFilter mcpProtocolFilter
     ) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
@@ -94,9 +100,18 @@ public class SecurityConfig {
                 // "already authenticated?" guards for why both being tried
                 // must not be ambiguous about which one wins.
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(apiKeyAuthenticationFilter, JwtAuthenticationFilter.class);
+                .addFilterBefore(apiKeyAuthenticationFilter, JwtAuthenticationFilter.class)
+                .addFilterAfter(mcpProtocolFilter, AuthorizationFilter.class);
 
         return http.build();
+    }
+
+    @Bean
+    public FilterRegistrationBean<McpProtocolFilter> mcpProtocolFilterRegistration(McpProtocolFilter filter) {
+        FilterRegistrationBean<McpProtocolFilter> registration = new FilterRegistrationBean<>(filter);
+        // Only the security chain runs it, after authentication/authorization and CORS.
+        registration.setEnabled(false);
+        return registration;
     }
 
     @Bean

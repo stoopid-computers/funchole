@@ -106,4 +106,9 @@ public class CustomDomainMcpTools {
         String gatewayHostname = gatewayCertificateService.buildHostname(customDomain.getGateway());
         return customDomainMapper.toResponse(customDomain, gatewayHostname, gatewayNetworkProperties.publicIp());
     }
+
+    /** Internal projection for the curated read operation; not an exported tool. */
+    public CustomDomainResponse getCustomDomain(String id) {
+        return toResponse(customDomainService.getCustomDomainById(CurrentMcpUser.id(), UUID.fromString(id)));
+    }
 }

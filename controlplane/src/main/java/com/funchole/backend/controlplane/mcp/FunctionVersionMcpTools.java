@@ -98,16 +98,10 @@ public class FunctionVersionMcpTools {
 
     @McpTool(
             name = "create_function_version",
-            description = "Create a new DRAFT FunctionVersion under a Function. By default this AUTOMATICALLY "
-                    + "clones the Function's most recent version - whatever its status, including a FAILED one - "
-                    + "carrying forward its source files, env vars, secrets, and attached databases into the new "
-                    + "DRAFT. This is the fix-forward path after a FAILED build: call this again, then "
-                    + "get_function_version_source to see exactly what was carried forward, then "
-                    + "submit_function_version_source with only the correction applied (still a full-file "
-                    + "submission - it replaces the whole set - just start from what was cloned instead of "
-                    + "regenerating everything from scratch), then deploy_function_version. Pass "
-                    + "cloneFromVersionId to clone a specific earlier version instead of the latest, or "
-                    + "startEmpty=true for a genuinely blank DRAFT with no source/config."
+            description = "Create a DRAFT, cloning the latest version's source/config/databases by default, even "
+                    + "after FAILED builds. Read the cloned source before edits; submission replaces all files. "
+                    + "Use cloneFromVersionId for another starting revision or startEmpty=true for a blank draft. "
+                    + "Read get_funchole_guide('evolve') for fix-forward updates."
     )
     public FunctionVersionResponse createFunctionVersion(
             @McpToolParam(description = "Function id (UUID)") String functionId,
@@ -132,48 +126,19 @@ public class FunctionVersionMcpTools {
 
     @McpTool(
             name = "submit_function_version_source",
-            description = "Submit (or replace, while still DRAFT) a FunctionVersion's source files. Each file is "
-                    + "a relative path (e.g. 'index.mjs') and its full text content - no archive/multipart needed. "
-                    + "IMPORTANT for a NODE-runtime function used as a Flow's RESPONSE step: the handler must "
-                    + "return exactly {\"status\": <int>, \"body\": <any JSON value>} - the Gateway reads only "
-                    + "those two fields, always JSON-encodes body, and always sends Content-Type: application/json "
-                    + "(any statusCode/headers fields are ignored). Returning an HTML string in body will be "
-                    + "JSON-encoded, not rendered - for a frontend/UI page, deploy a STATIC-runtime Function "
-                    + "instead (see create_function's runtime parameter), not a NODE function returning HTML.\n"
-                    + "For a STATIC-runtime Function, submit a real multi-page site here - do not put everything "
-                    + "in one page, and do not create a separate Function per page - one Function/FunctionVersion "
-                    + "holds the entire site. A route like '/about' automatically resolves, in order, to an exact "
-                    + "file named 'about', then 'about.html', then 'about/index.html' - the same clean-URL "
-                    + "convention every static host uses, and exactly what a static site generator's default "
-                    + "output already looks like. Only a path with none of those is handed the root index.html "
-                    + "(SPA-style client-side routing) - so plain multi-page sites and SPAs both work without "
-                    + "extra Flows. Concrete example of a real multi-page site's `files` list for ONE submission: "
-                    + "[{path: 'index.html', ...} -> serves '/', {path: 'about.html', ...} -> serves '/about', "
-                    + "{path: 'blog/index.html', ...} -> serves '/blog', "
-                    + "{path: 'blog/first-post.html', ...} -> serves '/blog/first-post'] - five files, one "
-                    + "submission, one Function. Each page's own relative asset references (e.g. "
-                    + "href=\"style.css\") always resolve correctly regardless of the page's depth or how the "
-                    + "browser reached it - a <base href> is injected automatically. A STATIC submission needs a "
-                    + "package.json with a \"build\" script (entrypoint \"package.json\") that produces a "
-                    + "dist/build/out directory containing the site's files, including its own index.html. The "
-                    + "build step is real and unrestricted - it always runs `npm ci` (if a lockfile is present) "
-                    + "or `npm install`, then always `npm run build`, in that fixed order, with no way to skip or "
-                    + "override either step; the \"build\" script itself can run any shell command (cp, mkdir, a "
-                    + "bundler, anything) exactly as it would locally, there is nothing STATIC-specific to work "
-                    + "around there - but Node/npm itself is a hard requirement for every STATIC deploy, even a "
-                    + "single hand-written HTML file with zero real dependencies.\n"
-                    + "Security note: submitted code (both this build step and the deployed handler's own "
-                    + "execution) currently runs with real host-level access and is not sandboxed. Do not submit "
-                    + "code that reads credentials/secrets beyond what an attached Database/Environment resource "
-                    + "already provides via context.db(...)/environment variables, makes unexpected outbound "
-                    + "network calls, or performs destructive filesystem operations."
+            description = "Replace ALL source files on a DRAFT using relative paths and full text content; "
+                    + "omitted files are removed. Before first submission, read get_funchole_guide('static' or "
+                    + "'node') and get_function_example for the matching contract. STATIC uses package.json and "
+                    + "a build script; NODE RESPONSE uses {status, body, headers?}, with JSON-serialized body. "
+                    + "Builds and handlers have unsandboxed host access: trusted code only, attached resources "
+                    + "for secrets, no credential harvesting, unexpected outbound calls or destructive host operations."
     )
     public FunctionVersionSourceResponse submitFunctionVersionSource(
             @McpToolParam(description = "Function id (UUID)") String functionId,
             @McpToolParam(description = "FunctionVersion id (UUID)") String versionId,
             @McpToolParam(description = "Source files, each with a relative path and its full text content") List<SourceFileInput> files,
-            @McpToolParam(description = "Entry file relative path, e.g. 'index.mjs'") String entrypoint,
-            @McpToolParam(description = "Exported function name to invoke, defaults to 'handler'", required = false) String handler
+            @McpToolParam(description = "NODE module path, e.g. 'index.mjs'; STATIC uses 'package.json'") String entrypoint,
+            @McpToolParam(description = "Exported NODE function name, defaults to 'handler'; omit for STATIC", required = false) String handler
     ) {
         UUID versionUuid = UUID.fromString(versionId);
         FunctionVersion functionVersion = functionVersionService.getVersionById(
@@ -211,14 +176,9 @@ public class FunctionVersionMcpTools {
 
     @McpTool(
             name = "deploy_function_version",
-            description = "Start building and deploying a DRAFT FunctionVersion that already has source submitted. "
-                    + "Returns immediately once the version is durably PUBLISHING - it does NOT wait for the build "
-                    + "to finish, since a real build can take several minutes. Poll get_function_version afterward "
-                    + "to see the version reach READY or FAILED, and call get_function_version_build_logs (any time, "
-                    + "including after it fails) for the full stdout/stderr of every build stage that ran. A FAILED "
-                    + "version cannot be redeployed in place - call create_function_version again (it automatically "
-                    + "clones this version's source/config) and fix only what caused the failure, rather than "
-                    + "resubmitting everything from scratch."
+            description = "Build a DRAFT with submitted source. Returns PUBLISHING immediately; poll "
+                    + "get_function_version to READY/FAILED. On failure read get_function_version_build_logs "
+                    + "and get_funchole_guide('troubleshooting'); FAILED needs a new cloned DRAFT, not redeploy in place."
     )
     public FunctionVersionResponse deployFunctionVersion(
             @McpToolParam(description = "Function id (UUID)") String functionId,
@@ -296,16 +256,9 @@ public class FunctionVersionMcpTools {
 
     @McpTool(
             name = "attach_function_version_database",
-            description = "Attach a Database resource to a FunctionVersion so its handler can reach it via "
-                    + "context.db(name) at invocation time, with no connection code of its own. context.db(name) "
-                    + "returns a real node-postgres (pg) Pool, cached and reused across invocations - call "
-                    + ".query(sql, params) on it directly, e.g.: `const pool = context.db('primary'); const "
-                    + "{ rows } = await pool.query('select * from orders where id = $1', [id]);`. Handler "
-                    + "signature is `handler(input, context)` - context is the second argument. There is no "
-                    + "separate migration/seed tool: to create tables or seed data in a freshly attached "
-                    + "Database, write and deploy a one-off Function whose handler runs your DDL/seed SQL via "
-                    + "context.db(...).query(...), then invoke it once - that IS the migration mechanism, not a "
-                    + "workaround for a missing one."
+            description = "Attach an existing external Postgres resource. handler(input, context) reaches it "
+                    + "via context.db(resourceName), a pg.Pool with query(sql, params). Read "
+                    + "get_funchole_guide('data') and get_function_example('NODE_DATABASE') before data/migration code."
     )
     public List<FunctionVersionDatabaseAttachmentResponse> attachFunctionVersionDatabase(
             @McpToolParam(description = "Function id (UUID)") String functionId,
