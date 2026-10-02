@@ -3,12 +3,19 @@ package com.funchole.backend.controlplane.mcp;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.UUID;
+import java.util.Map;
+import com.funchole.backend.controlplane.constant.FlowVersionStatus;
+import com.funchole.backend.controlplane.constant.FunctionVersionStatus;
+import com.funchole.backend.controlplane.dto.FlowVersionResponse;
+import com.funchole.backend.controlplane.dto.FlowFullSourceResponse;
+import com.funchole.backend.controlplane.dto.FunctionVersionResponse;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
@@ -162,5 +169,147 @@ class McpGuidanceTests {
         var second = (McpReadTools.Chunk) McpReadTools.bound(text, first.nextOffset(), 20000);
         assertThat(first.text() + second.text()).isEqualTo(text);
         assertThat(second.nextOffset()).isNull();
+    }
+
+    @Test
+    void taskAliasesFindCuratedGuidesAndExposeTheirTags() {
+        try (var context = new AnnotationConfigApplicationContext(Fixture.class)) {
+            var reads = context.getBean(McpReadTools.class);
+            Map<String, String> targets = Map.of("html", "static", "frontend", "static", "api", "node",
+                    "credentials", "data", "update", "evolve", "cookie", "node");
+            targets.forEach((query, guide) -> {
+                var page = (McpReadTools.Page) reads.discover(null, query, null, 0, 20).data();
+                assertThat(page.items()).anySatisfy(item -> {
+                    if (item instanceof McpReadTools.Knowledge knowledge
+                            && knowledge.pointer().equals("funchole://guides/" + guide)) {
+                        assertThat(knowledge.tags()).contains(query);
+                    } else throw new AssertionError("Not the matching guide");
+                });
+            });
+            var login = (McpReadTools.Page) reads.discover(null, "login", null, 0, 20).data();
+            assertThat(login.items().stream().map(item -> ((McpReadTools.Knowledge) item).pointer()))
+                    .contains("funchole://guides/node", "funchole://guides/multiplayer");
+        }
+    }
+
+    @Test
+    void continuationsNameExactToolArgumentsAndDisappearAtExhaustion() {
+        try (var context = new AnnotationConfigApplicationContext(Fixture.class)) {
+            var reads = context.getBean(McpReadTools.class);
+            var first = reads.discover(null, null, null, 0, 2);
+            assertThat(first.continuation().tool()).isEqualTo("discover");
+            assertThat(first.continuation().unit()).isEqualTo("items");
+            assertThat(first.continuation().nextArguments()).containsEntry("scope", "knowledge")
+                    .containsEntry("offset", 2).containsEntry("limit", 2);
+            var done = reads.discover(null, "xyzunmatchable123", null, 0, 2);
+            assertThat(done.continuation()).isNull();
+
+            var chunked = reads.read("funchole://guides/start", McpReadTools.View.state, 0, 100, null);
+            var chunk = (McpReadTools.Chunk) chunked.data();
+            assertThat(chunked.continuation().tool()).isEqualTo("read");
+            assertThat(chunked.continuation().unit()).isEqualTo("characters");
+            assertThat(chunked.continuation().nextArguments()).containsEntry("reference", "funchole://guides/start")
+                    .containsEntry("view", "state").containsEntry("offset", chunk.nextOffset())
+                    .containsEntry("maxChars", 100);
+            var end = reads.read("funchole://guides/start", McpReadTools.View.state, chunk.totalChars(), 100, null);
+            assertThat(((McpReadTools.Chunk) end.data()).nextOffset()).isNull();
+            assertThat(end.continuation()).isNull();
+        }
+    }
+
+    @Test
+    void receiptActionsDescribeInspectionPollingAndManualHttpsProof() {
+        String ref = McpReference.of("functions", UUID.randomUUID());
+        var version = new FunctionVersionResponse(UUID.randomUUID(), UUID.randomUUID(), 1,
+                FunctionVersionStatus.PUBLISHING, "NODE", null, null, null, null, null, null, null, null);
+        var build = new McpOperationResult(true, "OK", "Build started; read state until READY or FAILED.", ref,
+                version, Map.of("state", ref), List.of());
+        assertThat(build.nextActions()).singleElement().satisfies(action -> {
+            assertThat(action.kind()).isEqualTo("tool");
+            assertThat(action.tool()).isEqualTo("read");
+            assertThat(action.reference()).isEqualTo(ref);
+            assertThat(action.view()).isEqualTo("state");
+        });
+        assertThat(McpOperationResult.failure("PARTIAL_FAILURE", "Inspect", ref).nextActions())
+                .singleElement().extracting(McpOperationResult.NextAction::reference).isEqualTo(ref);
+        var adopted = new FlowVersionResponse(UUID.randomUUID(), UUID.randomUUID(), 1,
+                FlowVersionStatus.ADOPTED, "NODE", null, List.of(), null, null, null, null);
+        var published = new McpOperationResult(true, "OK", "Revision adopted. External HTTPS remains unverified.", ref,
+                adopted, Map.of("state", ref), List.of());
+        assertThat(published.nextActions()).singleElement().satisfies(action -> {
+            assertThat(action.kind()).isEqualTo("manual");
+            assertThat(action.tool()).isNull();
+            assertThat(action.message()).contains("external HTTPS");
+        });
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void publishedSchemasValidateNullableContinuationActionsAndExplicitNullExpectation() {
+        try (var context = new AnnotationConfigApplicationContext(Fixture.class)) {
+            var catalog = context.getBean(McpToolCatalog.class);
+            var validator = io.modelcontextprotocol.json.McpJsonDefaults.getSchemaValidator();
+            var buildSchema = catalog.get("build_function").tool().outputSchema();
+            var receipt = McpOperationResult.failure("PARTIAL_FAILURE", "Inspect current state", McpReference.of("functions", UUID.randomUUID()));
+            Map<String, Object> encoded = io.modelcontextprotocol.json.McpJsonDefaults.getMapper().convertValue(receipt,
+                    new io.modelcontextprotocol.json.TypeRef<Map<String, Object>>() { });
+            assertThat(validator.validate(buildSchema, encoded).valid()).isTrue();
+            var safeFailure = McpIdempotency.call("build_function", null, Map.of(), null, () -> { throw new AssertionError(); });
+            assertThat(validator.validate(buildSchema, safeFailure.structuredContent()).valid()).isTrue();
+
+            var publish = catalog.get("publish_flow").tool();
+            Map<String, Object> request = (Map<String, Object>) ((Map<String, Object>) publish.inputSchema().get("properties")).get("request");
+            assertThat(validator.validate(request, Map.of("reference", "funchole://flow-versions/x/y",
+                    "expectedActiveVersionRef", "none")).valid()).isTrue();
+            var explicitNull = new java.util.LinkedHashMap<String, Object>();
+            explicitNull.put("reference", "funchole://flow-versions/x/y");
+            explicitNull.put("expectedActiveVersionRef", null);
+            assertThat(validator.validate(request, explicitNull).valid()).isTrue();
+            assertThat(validator.validate(request, Map.of("reference", "funchole://flow-versions/x/y")).valid()).isFalse();
+        }
+    }
+
+    @Test
+    void sourceLogsAndDependenciesContinueWithTheSameProjectionAndFile() {
+        var versions = mock(FunctionVersionMcpTools.class);
+        var flowVersions = mock(FlowVersionMcpTools.class);
+        var reads = new McpReadTools(mock(McpGuideCatalog.class), mock(McpToolCatalog.class), new FunctionExampleMcpTools(),
+                mock(FunctionMcpTools.class), versions, mock(FlowMcpTools.class), flowVersions,
+                mock(GatewayMcpTools.class), mock(DomainMcpTools.class), mock(CustomDomainMcpTools.class),
+                mock(DatabaseMcpTools.class), mock(EnvironmentProfileMcpTools.class), mock(FlowConfigurationMcpTools.class),
+                mock(InvocationMcpTools.class));
+        UUID parent = UUID.randomUUID();
+        UUID id = UUID.randomUUID();
+        String sourceRef = McpReference.version("function-versions", parent, id);
+        String dependencyRef = McpReference.version("flow-versions", parent, id);
+        when(versions.getFunctionVersionSource(parent.toString(), id.toString())).thenReturn(
+                new com.funchole.backend.controlplane.dto.FunctionVersionFullSourceResponse("index.mjs", "handler",
+                        List.of(new com.funchole.backend.controlplane.dto.FunctionVersionSourceFileResponse("index.mjs", "x".repeat(260)))));
+        when(versions.getFunctionVersionBuildLogs(parent.toString(), id.toString())).thenReturn(List.of(
+                new com.funchole.backend.controlplane.dto.FunctionVersionBuildLogResponse("build", "npm run build", 0,
+                        true, false, "x".repeat(260), "", null)));
+        when(flowVersions.getFlowFullSource(parent.toString(), id.toString())).thenReturn(
+                new FlowFullSourceResponse(parent, "x".repeat(260), id, 1, "DRAFT", List.of()));
+
+        for (var view : List.of(McpReadTools.View.source, McpReadTools.View.logs, McpReadTools.View.dependencies)) {
+            String ref = view == McpReadTools.View.dependencies ? dependencyRef : sourceRef;
+            String file = view == McpReadTools.View.source ? "index.mjs" : null;
+            var first = reads.read(ref, view, 0, 100, file);
+            assertThat(first.ok()).isTrue();
+            assertThat(first.continuation().unit()).isEqualTo("characters");
+            assertThat(first.continuation().nextArguments()).containsEntry("reference", ref)
+                    .containsEntry("view", view.name()).containsEntry("maxChars", 100);
+            if (file != null) assertThat(first.continuation().nextArguments()).containsEntry("file", file);
+            else assertThat(first.continuation().nextArguments()).doesNotContainKey("file");
+            StringBuilder resumed = new StringBuilder();
+            McpOperationResult page = first;
+            while (page.continuation() != null) {
+                resumed.append(((McpReadTools.Chunk) page.data()).text());
+                int next = (int) page.continuation().nextArguments().get("offset");
+                page = reads.read(ref, view, next, 100, file);
+            }
+            resumed.append(((McpReadTools.Chunk) page.data()).text());
+            assertThat(resumed.toString()).contains("x".repeat(260));
+        }
     }
 }
