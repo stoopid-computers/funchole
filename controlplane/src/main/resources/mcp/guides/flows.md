@@ -9,7 +9,7 @@ A Gateway is the HTTP entry point. A Flow is a logical composition; its Flow Rou
 3. For one component, pass a single READY Function Version reference as `componentRef`. This creates a terminal RESPONSE for NODE or a FUNCTION step for STATIC.
 4. For ordered compositions use `steps` instead, following the exact `funchole://tools/compose_flow` schema. Pin READY Function Versions and ADOPTED sub-Flow Versions. References are returned resource URIs, not unique keys.
 5. For NODE, `invoke` the returned `funchole://flow-versions/{flowId}/{id}` reference and inspect the Invocation with `read`. End with RESPONSE or an adopted SUB_FLOW. For STATIC, the Gateway serves the READY artifact without invocation.
-6. `publish_flow` with request `reference` and `expectedActiveVersionRef="none"` for initial publication, or the exact same-Flow active version reference on updates. It makes the route live and archives the previous adopted revision. A stale expectation is a conflict; inspect state rather than overwriting another update. Check real HTTP afterward.
+6. `publish_flow` with request `reference` and explicit `expectedActiveVersionRef: null` for initial publication, or the exact same-Flow active version reference on updates. It makes the route live and archives the previous adopted revision. A stale expectation is a conflict; inspect state rather than overwriting another update. Check real HTTP afterward.
 
 For an existing Flow, `compose_flow` takes `flowRef` and no route fields. Ordinary publication preserves the route. Supply an explicit `publish_flow.request.route` only when the user requested a route change; read that contract before doing so.
 

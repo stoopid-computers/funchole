@@ -18,7 +18,9 @@ You assemble existing building blocks. Users describe the app; you handle platfo
 | Build/runtime/HTTP failure | Logs and a fix-forward revision | funchole://guides/troubleshooting |
 | Extend an existing app or retain a proven procedure | Reuse components, inspect source, project-local notes | funchole://guides/evolve |
 
-The public tools are exactly `discover`, `read`, `build_function`, `compose_flow`, `invoke`, `publish_flow`, `configure`, `connect_database`, `configure_gateway`, `claim_domain`, and `retire`.
+The current public tools are `discover`, `read`, `build_function`, `compose_flow`, `invoke`, `publish_flow`, `configure`, `connect_database`, `configure_gateway`, `claim_domain`, and `retire`. Tool boundaries follow intent; the count is not a platform constraint.
+
+Mutating calls accept optional top-level `clientOperationId`. Keep the same ID and arguments when a response is lost; a completed receipt is replayed without repeating the mutation. Changed arguments or uncertain in-progress operations conflict. Inspect surviving state before deciding how to continue. Receipts include structured `nextActions`, and paged discovery/reads include `continuation.nextArguments` for the next call.
 
 `discover` defaults to `scope="knowledge"`; optional `query` searches guidance and contracts only in that scope. Follow each returned pointer with `read(reference)`. `read("funchole://tools/build_function")` returns the actual tool schema in receipt `data`. `read("funchole://guides/start")` returns the same Markdown string as native `resources/read`.
 
@@ -38,7 +40,7 @@ A Gateway needs a verified base domain and usable DNS/TLS. Reuse a hosted defaul
 4. Poll `read` on the returned `funchole://function-versions/{functionId}/{id}` reference. Continue only when `data.status` is READY. On FAILED use `view="logs"` and read the troubleshooting guide. Bound polling and report timeout.
 5. `compose_flow(request)` with the route and matching runtime, pinning a READY Function Version via `componentRef` or explicit `steps`. Retain the returned Flow Version reference. See funchole://guides/flows.
 6. Test a draft NODE Flow with `invoke(reference, input)` using a raw JSON string, then poll `read` on the returned Invocation reference. Inspect results and logs. STATIC is tested over HTTP after publication.
-7. Confirm live-traffic changes fit the user's request, then `publish_flow(request)` with the Flow Version `reference` and `expectedActiveVersionRef="none"` initially, or the exact active version reference for that same Flow on updates.
+7. Confirm live-traffic changes fit the user's request, then `publish_flow(request)` with the Flow Version `reference` and explicit `expectedActiveVersionRef: null` initially, or the exact active version reference for that same Flow on updates. Omission and the string `"none"` are invalid.
 8. Check the real HTTPS URL with the host's HTTP/browser tools. Test nested pages/assets for STATIC, and status/body/headers/cookies/invalid inputs for NODE. Direct Invocation success does not verify DNS, TLS, routing, or browser behavior.
 
 Done means a tested URL and observed behavior, not merely an ADOPTED row. Report checked URLs, identifiers needed to resume, and remaining blockers. If the host has no HTTP/browser access, state that live HTTP verification is still pending.

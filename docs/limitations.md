@@ -28,6 +28,11 @@ in-process map) - tracked as future work, not attempted in the current architect
 
 ## Other known limitations
 
+- Build subprocesses and NODE handlers share host access. Tenant ownership checks in the Control Plane do not isolate filesystem access, network egress, host credentials, memory, CPU, or process creation. A multi-tenant cloud release requires enforced build/runtime isolation, resource budgets, filesystem boundaries, egress policy, and secret delivery boundaries. These are separate platform work, not guarantees provided by the guided MCP tools.
+- MCP's per-user rate limiter is in-memory per Control Plane process. It is a protective request limit, not a replicated SaaS quota or billing model. Replicated deployments need shared quota accounting.
+- MCP source submission fully buffers an HTTP request bounded at 8 MiB. Large source workflows need a tenant-owned blob/upload reference with size and ownership validation before this limit changes.
+- Flow publication serializes writers for one Flow. Multi-Flow releases and an independent monotonic publication revision are not implemented. Active-version comparisons do not replace a future publication revision contract.
+
 - Gateway terminal delivery currently uses a core NATS subscription and has no durable per-Gateway redelivery.
 - There is currently a registration race between Invocation creation/READY publication and Gateway pending-response registration; a very fast Invocation may complete before its pending HTTP correlation is registered.
 - Invocation state transition and JetStream terminal-event publication are not atomic. A terminal DB update may succeed while event publication fails.

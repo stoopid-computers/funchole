@@ -87,7 +87,7 @@ def publish(connection, gateway, runtime, files, entrypoint, database=None):
         else:
             raise RuntimeError("Draft NODE invocation did not complete")
         print("PASS draft NODE invocation: schema initialized, no move inserted")
-    tool(connection, "publish_flow", request={"reference": flow_ref, "expectedActiveVersionRef": "none"})
+    tool(connection, "publish_flow", request={"reference": flow_ref, "expectedActiveVersionRef": None})
     time.sleep(6)
     return {"functionVersion": version_ref, "flowVersion": flow_ref}
 
@@ -270,7 +270,7 @@ def main():
                   tool(connection, "read", reference=static_flow_ref, view="config")["data"] == bindings_before,
                   "Preparation changed live route, version or shared bindings")
     conflict = connection.call("tools/call", {"name": "publish_flow", "arguments": {"request": {
-        "reference": replacement["reference"], "expectedActiveVersionRef": "none"}}})
+        "reference": replacement["reference"], "expectedActiveVersionRef": None}}})
     smoke.require(conflict.get("isError") and conflict.get("structuredContent", {}).get("code") == "CONFLICT",
                   "Stale publication did not return a typed conflict")
     tool(connection, "publish_flow", request={"reference": replacement["reference"],
@@ -279,12 +279,12 @@ def main():
     reused = tool(connection, "compose_flow", request={"key": reuse_key, "name": reuse_key,
         "gatewayRef": gateway_receipt["reference"], "httpMethod": "GET", "path": "/reuse/*",
         "componentRef": repaired["reference"]})
-    tool(connection, "publish_flow", request={"reference": reused["reference"], "expectedActiveVersionRef": "none"})
+    tool(connection, "publish_flow", request={"reference": reused["reference"], "expectedActiveVersionRef": None})
     nested_key = "vm_nested_" + secrets.token_hex(4)
     nested = tool(connection, "compose_flow", request={"key": nested_key, "name": nested_key,
         "gatewayRef": gateway_receipt["reference"], "httpMethod": "POST", "path": "/nested", "runtime": "NODE",
         "steps": [{"key": "nested", "type": "SUB_FLOW", "reference": node_versions["flowVersion"]}]})
-    tool(connection, "publish_flow", request={"reference": nested["reference"], "expectedActiveVersionRef": "none"})
+    tool(connection, "publish_flow", request={"reference": nested["reference"], "expectedActiveVersionRef": None})
     time.sleep(6)
     with opener_a.open("https://" + hostname + "/reuse/about.html", timeout=20) as response:
         smoke.require(response.status == 200 and "Second page" in response.read().decode(), "Reused STATIC artifact failed")
@@ -305,7 +305,7 @@ def main():
         "Trigger: repeat the STATIC/NODE HTTP and Postgres deployment journey in funchole-test only.\n"
         "Order: discover/read, claim_domain with external TXT and DNS check, configure_gateway, "
         "connect_database, build_function, poll read to READY, compose_flow, draft NODE invoke/read, "
-        "publish_flow with expectedActiveVersionRef=none, then real HTTPS checks.\n"
+        "publish_flow with expectedActiveVersionRef=null, then real HTTPS checks.\n"
         "Contracts: funchole://guides/start, funchole://guides/evolve, funchole://guides/node, "
         "funchole://guides/static, funchole://guides/data.\n"
         f"Gateway: {gateway_receipt['reference']} at https://{hostname}\n"

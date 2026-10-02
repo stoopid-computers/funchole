@@ -205,3 +205,14 @@ A proposed replacement is acceptable only if the agent completes those journeys 
 - At the user's request, the disposable `funchole-test` VM was deleted, including its credentials, test databases, images and build outputs. No other machine or user source files were removed.
 
 Remaining acceptance checks are deliberately unchecked above. In particular, the expanded mutating verification script, custom-domain live setup and a fresh agent using a persisted project-local procedure require a future authorized test deployment with enough disk space. Do not present the current backend tests as that evidence.
+
+## PR 18 review follow-up
+
+2026-10-03:
+
+- Build, compose, and configure now call transport-neutral application use cases with explicit user IDs. Flow publication owns its row lock, expected-active comparison, adoption, and route update below MCP. Guarded REST publication and the web UI use the same service. Legacy unconditional REST adoption also takes the shared lock.
+- Initial MCP publication uses a required nullable expected reference. The string `"none"` is rejected. All nine mutating tools accept tenant/tool-scoped `clientOperationId`; durable reservations replay completed receipts and reject changed or uncertain retries.
+- Knowledge discovery has curated vocabulary tags. Receipts expose exact continuation arguments and structured next actions. Eleven describes the current catalog, not a limit on future intent boundaries.
+- The complete backend suite passed 595 tests with zero failures, errors, or skips. All five E2E tests passed separately, and four Node tests passed. Web route generation, TypeScript checking, focused ESLint, Python client syntax, and diff checks passed.
+- The new golden test covers API-key connection/discovery, build to READY, composition, draft invocation, publication, real HTTPS, changed source, exact-base rebuild, and republishing. Its repeated build request with the same operation ID returns one revision. Application operations traverse authenticated MCP request handling through MockMvc; the Gateway, Dispatcher, Node worker, Postgres, NATS, and S3 storage are real. HTTPS pins the fixture certificate and verifies the hostname.
+- This run used task-specific native containers and processes, not a recreated deployment VM. It does not prove public DNS/ACME, deployed STATIC/cookie-session persistence, custom-domain setup, or a fresh agent reusing a project-local runbook. Distributed quota accounting, source/blob references, publication revisions, and enforced multi-tenant execution boundaries remain separate platform work documented in `docs/limitations.md`.

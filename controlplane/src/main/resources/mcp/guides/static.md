@@ -17,7 +17,7 @@ After the Function Version reaches READY:
 1. `compose_flow` with a request containing new `key`, `name`, `gatewayRef`, `httpMethod="GET"`, a trailing-wildcard `path` such as `/*` or `/app/*`, and `priority`.
 2. Set `runtime="STATIC"` explicitly. Pin the READY Function Version reference in `componentRef`; single-component composition uses FUNCTION for STATIC.
 3. Retain the returned Flow Version reference. Inspect existing routes before making it live.
-4. `publish_flow` with that `reference` and `expectedActiveVersionRef="none"` initially, or the exact current active version reference on updates. The Gateway reads the artifact directly; STATIC does not need a RESPONSE step or runtime Invocation.
+4. `publish_flow` with that `reference` and explicit `expectedActiveVersionRef: null` initially, or the exact current active version reference on updates. The Gateway reads the artifact directly; STATIC does not need a RESPONSE step or runtime Invocation.
 5. Check the real root page, nested page, CSS/JS/images, and a refresh on a nested path. An HTTP 200 alone may be the SPA fallback rather than the requested file.
 
 The Gateway injects a base href scoped to the site for relative assets. For assets shared across sites, deploy one STATIC Function and mount it at an explicit subtree such as `/shared/*`; reference `/shared/style.css` with a leading slash. The same component version can be pinned by multiple Flows. Check route overlaps and priorities before adoption. See funchole://guides/flows.
