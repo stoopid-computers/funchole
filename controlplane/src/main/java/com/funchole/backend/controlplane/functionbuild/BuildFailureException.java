@@ -69,8 +69,8 @@ public abstract class BuildFailureException extends RuntimeException {
     }
 
     private static final String EXAMPLE_TOOL_HINT =
-            " Read get_funchole_guide('troubleshooting') before retrying. Call get_function_example for a "
-                    + "known-working runtime template, or get_function_version_build_logs for this stage's stdout/stderr.";
+            " Read funchole://guides/troubleshooting before retrying. Read a funchole://examples/ runtime "
+                    + "template or the Function Version's logs view for this stage's stdout/stderr.";
 
     protected static String buildMessage(String label, UUID functionVersionId, String stage, List<String> command, Integer exitCode, boolean timedOut) {
         String commandText = String.join(" ", command);

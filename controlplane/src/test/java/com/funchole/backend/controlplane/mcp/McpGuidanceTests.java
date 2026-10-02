@@ -21,26 +21,23 @@ import org.springframework.context.annotation.Import;
 
 class McpGuidanceTests {
     @TestConfiguration(proxyBeanMethods = false)
-    @Import({McpGuideCatalog.class, McpToolCatalog.class, McpDiscoveryTools.class, ApplicationGuidance.class})
+    @Import({McpGuideCatalog.class, McpToolCatalog.class, McpResourceCatalog.class, ApplicationGuidance.class,
+            com.funchole.backend.controlplane.config.McpGuidanceConfig.class, McpTestConfiguration.class})
     static class Fixture {
-        @Bean
-        List<SyncToolSpecification> testToolSpecs(McpDiscoveryTools discovery, ApplicationGuidance guidance) {
-            return new SyncMcpToolProvider(List.of(discovery, guidance, new FunctionExampleMcpTools())).getToolSpecifications();
-        }
     }
 
     @Test
     void everyGuideHasTheSameBodyThroughResourceAndToolAndAllLinksResolve() {
         try (var context = new AnnotationConfigApplicationContext(Fixture.class)) {
             var guides = context.getBean(McpGuideCatalog.class);
-            var discovery = context.getBean(McpDiscoveryTools.class);
+            var discovery = context.getBean(McpReadTools.class);
             var references = Pattern.compile("funchole://guides/([a-z]+)");
             for (var guide : guides.guides()) {
                 assertThat(guide.description()).hasSizeLessThanOrEqualTo(240);
                 String body = guides.read(guide.topic());
                 assertThat(body).startsWith("# ");
-                assertThat(discovery.getGuide(guide.uri())).isEqualTo(body);
-                var resource = guides.readResource(guide.uri()).contents().get(0);
+                assertThat(discovery.read(guide.uri(), null, null, null, null).data()).isEqualTo(body);
+                var resource = context.getBean(McpResourceCatalog.class).read(guide.uri()).contents().get(0);
                 assertThat(resource).isInstanceOfSatisfying(io.modelcontextprotocol.spec.McpSchema.TextResourceContents.class,
                         content -> assertThat(content.text()).isEqualTo(body));
                 references.matcher(body).results().forEach(match -> assertThat(guides.read(match.group(1))).isNotBlank());
@@ -53,24 +50,23 @@ class McpGuidanceTests {
     @Test
     void searchIsBoundedPaginatedAndUsesActualSchemas() {
         try (var context = new AnnotationConfigApplicationContext(Fixture.class)) {
-            var discovery = context.getBean(McpDiscoveryTools.class);
-            var first = discovery.search("", 0, 2);
-            assertThat(first.matches()).hasSize(2);
+            var discovery = context.getBean(McpReadTools.class);
+            var first = (McpReadTools.Page) discovery.discover(null, "", null, 0, 2).data();
+            assertThat(first.items()).hasSize(2);
             assertThat(first.total()).isGreaterThan(2);
             assertThat(first.nextOffset()).isEqualTo(2);
-            var next = discovery.search(null, first.nextOffset(), 2);
-            assertThat(next.matches()).doesNotContainAnyElementsOf(first.matches());
-            assertThat(discovery.search("nothingmatchesxyz", null, null).matches()).isEmpty();
-            assertThat(discovery.search(null, Integer.MAX_VALUE, 20).matches()).isEmpty();
-            assertThat(discovery.search("static", null, null).matches()).anyMatch(m -> m.pointer().equals("funchole://guides/static"));
-            assertThat(discovery.search("scenario", null, null).matches()).anyMatch(m -> m.name().equals("get_function_example"));
-            assertThat(discovery.getTool("get_function_example").inputSchema()).containsKey("properties");
-            assertThatThrownBy(() -> discovery.search(null, -1, 2)).isInstanceOf(IllegalArgumentException.class);
-            assertThatThrownBy(() -> discovery.search(null, 0, 21)).isInstanceOf(IllegalArgumentException.class);
-            assertThatThrownBy(() -> discovery.search("x".repeat(301), 0, 2)).isInstanceOf(IllegalArgumentException.class);
-            assertThatThrownBy(() -> discovery.getTool("invented_tool")).isInstanceOf(IllegalArgumentException.class);
-            assertThat(discovery.search(null, null, 20).matches()).allSatisfy(m ->
-                    assertThat(m.description()).hasSizeLessThanOrEqualTo(240));
+            var next = (McpReadTools.Page) discovery.discover(null, null, null, first.nextOffset(), 2).data();
+            assertThat(next.items().stream().noneMatch(first.items()::contains)).isTrue();
+            assertThat(((McpReadTools.Page) discovery.discover(null, "nothingmatchesxyz", null, null, null).data()).items()).isEmpty();
+            assertThat(((McpReadTools.Page) discovery.discover(null, null, null, Integer.MAX_VALUE, 20).data()).items()).isEmpty();
+            assertThat(discovery.knowledge()).anyMatch(m -> m.pointer().equals("funchole://guides/static"));
+            var schema = (io.modelcontextprotocol.spec.McpSchema.Tool) discovery.read("funchole://tools/build_function", null, null, null, null).data();
+            assertThat(schema.inputSchema()).containsKey("properties");
+            assertThat(discovery.discover(null, null, null, -1, 2).ok()).isFalse();
+            assertThat(discovery.discover(null, null, null, 0, 21).ok()).isFalse();
+            assertThat(discovery.discover(null, "x".repeat(301), null, 0, 2).ok()).isFalse();
+            assertThat(discovery.read("funchole://tools/invented_tool", null, null, null, null).ok()).isFalse();
+            assertThat(discovery.knowledge()).allSatisfy(m -> assertThat(m.description()).hasSizeLessThanOrEqualTo(240));
         }
     }
 
@@ -122,29 +118,49 @@ class McpGuidanceTests {
     @Test
     void everyProductionToolStillGeneratesAUniqueSchemaWithValidGuidePointers() throws Exception {
         try (var context = new AnnotationConfigApplicationContext(Fixture.class)) {
-            var beans = new ArrayList<Object>();
-            for (Class<?> type : List.of(FunctionMcpTools.class, FunctionVersionMcpTools.class, FlowMcpTools.class,
-                    FlowVersionMcpTools.class, GatewayMcpTools.class, DomainMcpTools.class, CustomDomainMcpTools.class,
-                    DatabaseMcpTools.class, EnvironmentProfileMcpTools.class, FlowConfigurationMcpTools.class,
-                    InvocationMcpTools.class, FunctionExampleMcpTools.class)) {
-                var constructor = type.getConstructors()[0];
-                // Generate real annotation schemas, without invoking mocked business dependencies.
-                Object[] dependencies = Arrays.stream(constructor.getParameterTypes()).map(dependency -> mock(dependency)).toArray();
-                beans.add(constructor.newInstance(dependencies));
-            }
-            beans.add(context.getBean(McpDiscoveryTools.class));
-            beans.add(context.getBean(ApplicationGuidance.class));
-            var specs = new SyncMcpToolProvider(beans).getToolSpecifications();
-            assertThat(specs).hasSize(75);
+            var specs = context.getBean(McpToolCatalog.class).specifications();
+            assertThat(specs).hasSize(11);
             assertThat(specs.stream().map(spec -> spec.tool().name()).toList()).doesNotHaveDuplicates()
-                    .contains("get_invocation", "submit_function_version_source", "adopt_flow_version", "get_function_example");
-            var pointers = Pattern.compile("get_funchole_guide\\('([a-z]+)'");
+                    .containsExactlyInAnyOrder("discover", "read", "build_function", "compose_flow", "invoke", "publish_flow",
+                            "configure", "connect_database", "configure_gateway", "claim_domain", "retire");
+            var pointers = Pattern.compile("funchole://guides/([a-z]+)");
             var guides = context.getBean(McpGuideCatalog.class);
             specs.forEach(spec -> {
                 assertThat(spec.tool().inputSchema()).isNotNull();
+                assertThat(spec.tool().outputSchema()).isNotNull();
                 pointers.matcher(spec.tool().description()).results().forEach(match ->
                         assertThat(guides.read(match.group(1))).isNotBlank());
             });
+            assertThat(context.getBean(McpResourceCatalog.class).specifications()).hasSize(24);
+            assertThat(context.getBean(McpResourceCatalog.class).templates()).hasSize(10);
+            String serialized = io.modelcontextprotocol.json.McpJsonDefaults.getMapper()
+                    .writeValueAsString(specs.stream().map(s -> s.tool()).toList());
+            System.out.println("MCP declaration bytes=" + serialized.getBytes(java.nio.charset.StandardCharsets.UTF_8).length);
+            System.out.println("MCP required top-level parameters=" + specs.stream().mapToInt(s ->
+                    ((List<?>) s.tool().inputSchema().getOrDefault("required", List.of())).size()).sum());
+            var discovery = context.getBean(McpToolCatalog.class).get("discover").tool();
+            assertThat(discovery.inputSchema().toString()).contains("custom-domains", "function-versions", "flow-versions")
+                    .doesNotContain("custom_domains", "function_versions", "flow_versions");
         }
+    }
+
+    @Test
+    void referencesRejectAlternateAuthoritiesAndParentShapes() {
+        String id = UUID.randomUUID().toString();
+        for (String value : List.of("https://functions/" + id, "funchole://user@functions/" + id,
+                "funchole://functions/" + id + "?user=other", "funchole://function-versions/" + id,
+                "funchole://functions/" + id + "/extra", "funchole://functions/1-1-1-1-1")) {
+            assertThatThrownBy(() -> McpReference.parse(value)).isInstanceOf(IllegalArgumentException.class);
+        }
+        assertThat(McpReference.parse("funchole://functions/" + id).id().toString()).isEqualTo(id);
+    }
+
+    @Test
+    void boundedTextIsLosslesslyResumable() throws Exception {
+        String text = "x".repeat(35000);
+        var first = (McpReadTools.Chunk) McpReadTools.bound(text, 0, 20000);
+        var second = (McpReadTools.Chunk) McpReadTools.bound(text, first.nextOffset(), 20000);
+        assertThat(first.text() + second.text()).isEqualTo(text);
+        assertThat(second.nextOffset()).isNull();
     }
 }

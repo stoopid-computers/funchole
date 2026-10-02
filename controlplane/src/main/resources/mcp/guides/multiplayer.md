@@ -11,7 +11,7 @@ For turn-based games, shared boards, lobbies, or collaboration where polling lat
 3. Write NODE APIs for joining, reading updates, and applying actions. Authenticate the player and check room membership on every request. Read funchole://guides/node.
 4. Apply actions in a transaction using row locks or version-based optimistic concurrency. Give retryable client actions idempotency keys so a network retry does not apply an action twice.
 5. Poll an HTTP state endpoint from the UI with a revision/sequence. Bound polling frequency and response size. Do not keep a worker busy waiting for future updates.
-6. Test with two independent sessions, concurrent actions, disconnect/rejoin, expired sessions, and unauthorized room access. Adopt only after state and access checks work.
+6. Test with two independent sessions, concurrent actions, disconnect/rejoin, expired sessions, and unauthorized room access. Publish only after state and access checks work. A draft `invoke` receives a raw JSON string, not an automatic HTTP envelope; real cookie sessions still need actual HTTP checks.
 
 For low-latency realtime needs, explain the gap and ask whether an approved external realtime service is acceptable. Integrate that service from NODE using protected credentials and have the STATIC client use only scoped client tokens. Provisioning the external service needs user authorization and is not supplied by FuncHole's MCP. Do not silently replace a requested realtime game with polling.
 

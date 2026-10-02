@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Locale;
 import org.springframework.ai.mcp.annotation.McpArg;
 import org.springframework.ai.mcp.annotation.McpPrompt;
-import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.stereotype.Service;
 
@@ -14,8 +13,6 @@ public class ApplicationGuidance {
     public record ApplicationPlan(String kind, List<String> guideUris, List<String> prerequisites,
                                   List<String> steps, List<String> shippingChecks, List<String> limits) { }
 
-    @McpTool(name = "plan_application", description = "Plan an app before mutations. Choose STATIC for a site, DYNAMIC for site + APIs, or MULTIPLAYER for shared state. Returns prerequisites, ordered building steps and shipping checks; does not provision or deploy anything.", generateOutputSchema = true,
-            annotations = @McpTool.McpAnnotations(readOnlyHint = true, destructiveHint = false, idempotentHint = true, openWorldHint = false))
     public ApplicationPlan plan(
             @McpToolParam(description = "STATIC, DYNAMIC, or MULTIPLAYER") String kind
     ) {
@@ -32,12 +29,12 @@ public class ApplicationGuidance {
                         dynamic ? "If persistence is needed, reuse or supply external Postgres; do not invent credentials."
                                 : "Build tools must provide node/npm even for dependency-free STATIC source."),
                 List.of("Inspect existing components and read the selected guides before authoring.",
-                        "Fetch tested get_function_example scenarios for the chosen contracts.",
-                        "Create Function + DRAFT Function Version; submit all files; deploy and poll to READY.",
+                         "Read tested funchole://examples/ scenarios for the chosen contracts.",
+                         "build_function submits all files on a new revision; read its state to READY.",
                         dynamic ? "Build NODE APIs and STATIC UI separately; attach needed resources and validate draft NODE Invocations."
                                 : "Use one STATIC artifact for all pages; a wildcard Flow Route and STATIC Flow Version with FUNCTION step.",
-                        "Create matching runtime Flow Versions pinning READY components; NODE ends with RESPONSE.",
-                        "Adopt only the tested revision, then verify real HTTPS using the host's HTTP/browser tools."),
+                         "compose_flow pins READY components; NODE ends with RESPONSE.",
+                         "publish_flow adopts only the tested revision, then verify real HTTPS using the host's HTTP/browser tools."),
                 normalized.equals("MULTIPLAYER")
                         ? List.of("Two independent sessions, concurrent actions, idempotency, rejoin, and unauthorized room access.",
                                   "Working HTTPS UI/assets/API with observed shared state; disclose polling latency or external service requirement.")
@@ -53,7 +50,7 @@ public class ApplicationGuidance {
             @McpArg(name = "idea", description = "What the app should do", required = true) String idea
     ) {
         return prompt("Build an application", "App request:\n" + requireText(idea)
-                + "\n\nRead funchole://guides/start via resources/read or get_funchole_guide. Choose a plan_application kind,"
+                + "\n\nRead funchole://guides/start via resources/read or read. Choose STATIC, dynamic or multiplayer guidance,"
                 + " read its matching guides, reuse existing components, and perform the build/test/adopt/HTTP-check loop."
                 + " Ask only for missing prerequisites or product decisions. Report what actually shipped and what is unverified.");
     }

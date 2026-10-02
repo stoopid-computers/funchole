@@ -70,9 +70,8 @@ class McpCompatibilityHttpTests {
     @Configuration(proxyBeanMethods = false)
     @EnableAutoConfiguration
     @Import({SecurityConfig.class, ApiKeyAuthenticationFilter.class, JwtAuthenticationFilter.class,
-            McpGuidanceConfig.class, McpGuideCatalog.class, McpToolCatalog.class, McpDiscoveryTools.class,
-            ApplicationGuidance.class, FunctionExampleMcpTools.class, ModernMcpProtocol.class, McpProtocolFilter.class, McpToolRateLimiter.class,
-            IdentityTool.class})
+            McpGuidanceConfig.class, McpGuideCatalog.class, McpToolCatalog.class, McpResourceCatalog.class,
+            ApplicationGuidance.class, McpTestConfiguration.class, ModernMcpProtocol.class, McpProtocolFilter.class, McpToolRateLimiter.class})
     static class Fixture {
         @Bean CorsProperties corsProperties() { return new CorsProperties(List.of("https://allowed.example")); }
         @Bean ApiKeyService apiKeyService() {
@@ -85,10 +84,13 @@ class McpCompatibilityHttpTests {
         @Bean JwtService jwtService() { return mock(JwtService.class); }
         @Bean UserDetailsService userDetailsService() { return mock(UserDetailsService.class); }
         @Bean List<SyncToolSpecification> paginationFixtureTools() {
-            return IntStream.range(0, 25).mapToObj(i -> SyncToolSpecification.builder()
+            var pages = IntStream.range(0, 25).mapToObj(i -> SyncToolSpecification.builder()
                     .tool(McpSchema.Tool.builder("fixture_page_" + i, Map.of("type", "object")).description("Pagination fixture").build())
                     .callHandler((exchange, request) -> McpSchema.CallToolResult.builder()
                             .content(List.of(McpSchema.TextContent.builder("ok").build())).build()).build()).toList();
+            var all = new java.util.ArrayList<>(pages);
+            all.addAll(new org.springframework.ai.mcp.annotation.provider.tool.SyncMcpToolProvider(List.of(new IdentityTool())).getToolSpecifications());
+            return all;
         }
     }
 
@@ -101,6 +103,35 @@ class McpCompatibilityHttpTests {
         @McpTool(name = "fixture_failure", description = "Test an internal callback exception.")
         public String failure() {
             throw new IllegalStateException("Internal database password=fixture-secret-do-not-leak");
+        }
+    }
+
+    @Test
+    void safeTypedFailuresSurviveAllFourProtocolPaths() throws Exception {
+        for (String version : ModernMcpProtocol.VERSIONS) {
+            Map<String, String> headers = Map.of();
+            if (!version.equals(ModernMcpProtocol.VERSION)) {
+                var init = post(Map.of("jsonrpc", "2.0", "id", 1, "method", "initialize", "params", Map.of(
+                        "protocolVersion", version, "capabilities", Map.of(), "clientInfo", Map.of("name", "receipt-test", "version", "1"))), Map.of(), ALICE_KEY);
+                String session = init.headers().firstValue("Mcp-Session-Id").orElseThrow();
+                headers = Map.of("MCP-Protocol-Version", version, "Mcp-Session-Id", session);
+                post(Map.of("jsonrpc", "2.0", "method", "notifications/initialized"), headers, ALICE_KEY);
+            }
+            var params = Map.<String, Object>of("name", "read", "arguments", Map.of("reference", "funchole://tools/no-such-tool"));
+            var response = version.equals(ModernMcpProtocol.VERSION) ? modern("tools/call", params, ALICE_KEY)
+                    : post(Map.of("jsonrpc", "2.0", "id", 2, "method", "tools/call", "params", params), headers, ALICE_KEY);
+            var result = result(response);
+            assertThat(result.get("isError")).isEqualTo(true);
+            var body = (Map<?, ?>) result.get("structuredContent");
+            assertThat(body.get("ok")).isEqualTo(false);
+            assertThat(body.get("code")).isEqualTo("INVALID_INPUT");
+            assertThat(body.get("links").toString()).contains("funchole://guides/troubleshooting");
+            var inventoryParams = Map.<String, Object>of("name", "discover", "arguments", Map.of("scope", "custom-domains"));
+            var inventoryResponse = version.equals(ModernMcpProtocol.VERSION) ? modern("tools/call", inventoryParams, ALICE_KEY)
+                    : post(Map.of("jsonrpc", "2.0", "id", 3, "method", "tools/call", "params", inventoryParams), headers, ALICE_KEY);
+            var inventory = result(inventoryResponse);
+            assertThat(inventory.get("isError")).isNotEqualTo(true);
+            assertThat(((Map<?, ?>) inventory.get("structuredContent")).get("ok")).isEqualTo(true);
         }
     }
 
@@ -125,15 +156,16 @@ class McpCompatibilityHttpTests {
             tools = result(modern("tools/list", Map.of("cursor", tools.get("nextCursor")), ALICE_KEY));
             allTools += tools.get("tools").toString();
         }
-        assertThat(allTools).contains("get_funchole_guide", "search_funchole", "plan_application");
+        assertThat(allTools).contains("discover", "read", "build_function", "compose_flow", "publish_flow")
+                .doesNotContain("get_funchole_guide", "search_funchole", "plan_application", "reveal_database_password");
         var resource = result(modern("resources/read", Map.of("uri", "funchole://guides/static"), ALICE_KEY));
         assertThat(resource.get("contents").toString()).contains(guides.read("static"));
-        var fallback = result(modern("tools/call", Map.of("name", "get_funchole_guide", "arguments", Map.of("topic", "static")), ALICE_KEY));
-        assertThat(fallback.get("content").toString()).contains(guides.read("static"));
+        var fallback = result(modern("tools/call", Map.of("name", "read", "arguments", Map.of("reference", "funchole://guides/static")), ALICE_KEY));
+        assertThat(fallback.get("structuredContent").toString()).contains(guides.read("static"));
         assertThat(result(modern("prompts/list", Map.of(), ALICE_KEY)).get("prompts").toString()).contains("build_application", "repair_application");
         var prompt = result(modern("prompts/get", Map.of("name", "build_application", "arguments", Map.of("idea", "A blog")), ALICE_KEY));
         assertThat(prompt.get("messages").toString()).contains("A blog", "funchole://guides/start");
-        assertThat(result(modern("resources/templates/list", Map.of(), ALICE_KEY)).get("resourceTemplates")).isEqualTo(List.of());
+        assertThat(result(modern("resources/templates/list", Map.of(), ALICE_KEY)).get("resourceTemplates").toString()).contains("funchole://function-versions/{parent}/{id}");
         assertThat(result(modern("ping", Map.of(), ALICE_KEY)).get("resultType")).isEqualTo("complete");
     }
 
@@ -154,7 +186,7 @@ class McpCompatibilityHttpTests {
     @Test
     void exhaustedUserBudgetReturnsRetryAfterWithoutBlockingOtherUsers() throws Exception {
         for (int i = 0; i < 120; i++) assertThat(rateLimiter.tryAcquire(CAROL.getId())).isTrue();
-        var params = Map.<String, Object>of("name", "get_funchole_guide", "arguments", Map.of("topic", "start"));
+        var params = Map.<String, Object>of("name", "read", "arguments", Map.of("reference", "funchole://guides/start"));
         var limited = modern("tools/call", params, CAROL_KEY);
         assertError(limited, 429, 1001);
         assertThat(limited.headers().firstValue("Retry-After")).contains("60");
@@ -194,16 +226,16 @@ class McpCompatibilityHttpTests {
 
     @Test
     void modernValidatesMirroredHeadersBeforeDispatch() throws Exception {
-        var message = modernMessage("tools/call", Map.of("name", "get_funchole_guide", "arguments", Map.of("topic", "start")));
-        var headers = new LinkedHashMap<>(modernHeaders("tools/call", "get_funchole_guide"));
+        var message = modernMessage("tools/call", Map.of("name", "read", "arguments", Map.of("reference", "funchole://guides/start")));
+        var headers = new LinkedHashMap<>(modernHeaders("tools/call", "read"));
         headers.put("Mcp-Name", "wrong");
         assertError(post(message, headers, ALICE_KEY), 400, -32020);
-        var missingVersion = new LinkedHashMap<>(modernHeaders("tools/call", "get_funchole_guide"));
+        var missingVersion = new LinkedHashMap<>(modernHeaders("tools/call", "read"));
         missingVersion.remove("MCP-Protocol-Version");
         assertError(post(message, missingVersion, ALICE_KEY), 400, -32020);
         headers.remove("Mcp-Name");
         assertError(post(message, headers, ALICE_KEY), 400, -32020);
-        headers.put("Mcp-Name", "=?base64?Z2V0X2Z1bmNob2xlX2d1aWRl?=");
+        headers.put("Mcp-Name", "=?base64?cmVhZA==?=");
         assertThat(post(message, headers, ALICE_KEY).statusCode()).isEqualTo(200);
         headers.put("Mcp-Method", "ping");
         assertError(post(message, headers, ALICE_KEY), 400, -32020);
@@ -287,7 +319,7 @@ class McpCompatibilityHttpTests {
         var notify = post(Map.of("jsonrpc", "2.0", "method", "notifications/initialized"), headers, ALICE_KEY);
         assertThat(notify.statusCode()).isEqualTo(202);
         var toolList = legacy("tools/list", Map.of(), headers);
-        assertThat(toolList.get("tools").toString()).contains("fixture_identity", "get_funchole_guide");
+        assertThat(toolList.get("tools").toString()).contains("fixture_identity", "read").doesNotContain("get_funchole_guide");
         assertThat(toolList).doesNotContainKey("resultType");
         assertThat(legacy("tools/call", Map.of("name", "fixture_identity", "arguments", Map.of("message", "legacy")), headers)
                 .get("structuredContent").toString()).contains(ALICE.getId().toString());

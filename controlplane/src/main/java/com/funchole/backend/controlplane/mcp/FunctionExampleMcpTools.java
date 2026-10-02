@@ -45,7 +45,7 @@ public class FunctionExampleMcpTools {
                     "NODE",
                     "A NODE RESPONSE handler returning {status, body}. The Gateway JSON-serializes body and "
                             + "defaults to application/json. Optional headers work; use NODE_REQUEST_HEADERS for "
-                            + "that example and get_funchole_guide('node') for real HTTP input and response contracts.",
+                            + "that example and read funchole://guides/node for real HTTP input and response contracts.",
                     FunctionExampleFixtures.NODE_BASIC_ENTRYPOINT,
                     FunctionExampleFixtures.NODE_BASIC_HANDLER,
                     List.of(new ExampleFile(FunctionExampleFixtures.NODE_BASIC_ENTRYPOINT, FunctionExampleFixtures.NODE_BASIC_SOURCE))
@@ -53,8 +53,8 @@ public class FunctionExampleMcpTools {
             case "NODE_DATABASE" -> new FunctionExampleResponse(
                     "NODE_DATABASE",
                     "NODE",
-                    "A NODE-runtime Function that reads/writes a Database resource attached via "
-                            + "attach_function_version_database. context.db(name) returns a real node-postgres "
+                    "A NODE-runtime Function that reads/writes a Database resource bound by build_function. "
+                            + "context.db(name) returns a real node-postgres "
                             + "(pg) Pool - call .query(sql, params) on it directly. There is no separate "
                             + "migration/seed tool: this handler's own CREATE TABLE IF NOT EXISTS is the pattern "
                             + "for getting an initial schema into a freshly attached Database - deploy it and "
@@ -67,15 +67,14 @@ public class FunctionExampleMcpTools {
                     "NODE_ENV_VARS",
                     "NODE",
                     "A NODE-runtime Function reading a config value from process.env. There is no context.env - "
-                            + "every FunctionVersion env var/secret (set via set_function_version_env_var/"
-                            + "set_function_version_secret) and every var/secret from an EnvironmentProfile "
-                            + "attached to the Flow (attach_flow_environment) is merged into a single map and set "
+                            + "every Function Version env var/secret supplied to build_function and every var/secret "
+                            + "from an EnvironmentProfile bound to the Flow by configure is merged into a single map and set "
                             + "onto process.env immediately before this specific invocation runs, then restored "
                             + "afterward - read it exactly like this example does. Precedence on a key collision, "
                             + "highest wins: FunctionVersion secret > FunctionVersion env var > attached "
                             + "EnvironmentProfile secret > attached EnvironmentProfile env var (and between two "
-                            + "attached profiles, the one with the higher attach_flow_environment priority wins). "
-                            + "Set GREETING with set_function_version_env_var before invoking.",
+                            + "attached profiles, the one with the higher binding priority wins). "
+                            + "Supply GREETING in build_function's env before invoking.",
                     FunctionExampleFixtures.NODE_ENV_VARS_ENTRYPOINT,
                     FunctionExampleFixtures.NODE_ENV_VARS_HANDLER,
                     List.of(new ExampleFile(FunctionExampleFixtures.NODE_ENV_VARS_ENTRYPOINT, FunctionExampleFixtures.NODE_ENV_VARS_SOURCE))

@@ -32,7 +32,7 @@ public class McpGuideCatalog {
         Guide guide = GUIDES.stream()
                 .filter(g -> g.topic().equals(topicOrUri) || g.uri().equals(topicOrUri))
                 .findFirst().orElseThrow(() -> new IllegalArgumentException(
-                        "Unknown guide. Call search_funchole or get_funchole_guide with topic 'start'."));
+                        "Unknown guide. Use discover or read funchole://guides/start."));
         try {
             return new ClassPathResource("mcp/guides/" + guide.topic() + ".md").getContentAsString(StandardCharsets.UTF_8);
         } catch (IOException exception) {

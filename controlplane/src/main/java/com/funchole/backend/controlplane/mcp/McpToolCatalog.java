@@ -25,6 +25,6 @@ public class McpToolCatalog {
     public SyncToolSpecification get(String name) {
         return specifications().stream().filter(spec -> spec.tool().name().equals(name))
                 .findFirst().orElseThrow(() -> new IllegalArgumentException(
-                        "Unknown tool. Call search_funchole to find the exact tool name."));
+                        "Unknown tool. Use discover to find the exact tool name."));
     }
 }

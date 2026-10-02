@@ -28,18 +28,18 @@ public class ModernMcpProtocol {
     private static final int PAGE_SIZE = 20;
 
     private final McpToolCatalog tools;
-    private final McpGuideCatalog guides;
+    private final McpResourceCatalog resources;
     private final ObjectProvider<List<SyncPromptSpecification>> promptProviders;
     private final String instructions;
     private final Map<String, Object> serverInfo;
     private final McpJsonMapper mapper = McpJsonDefaults.getMapper();
 
-    public ModernMcpProtocol(McpToolCatalog tools, McpGuideCatalog guides, ObjectProvider<List<SyncPromptSpecification>> promptProviders,
+    public ModernMcpProtocol(McpToolCatalog tools, McpResourceCatalog resources, ObjectProvider<List<SyncPromptSpecification>> promptProviders,
             @Value("${spring.ai.mcp.server.instructions}") String instructions,
             @Value("${spring.ai.mcp.server.name}") String name,
             @Value("${spring.ai.mcp.server.version}") String version) {
         this.tools = tools;
-        this.guides = guides;
+        this.resources = resources;
         this.promptProviders = promptProviders;
         this.instructions = instructions;
         this.serverInfo = Map.of("name", name, "version", version);
@@ -67,8 +67,8 @@ public class ModernMcpProtocol {
                 case "ping" -> Map.of();
                 case "tools/list" -> cache(page("tools", tools.specifications().stream().map(s -> s.tool()).toList(), params));
                 case "tools/call" -> callTool(params, meta);
-                case "resources/list" -> cache(page("resources", guides.specifications().stream().map(s -> s.resource()).toList(), params));
-                case "resources/templates/list" -> cache(Map.of("resourceTemplates", List.of()));
+                case "resources/list" -> cache(page("resources", resources.specifications().stream().map(s -> s.resource()).toList(), params));
+                case "resources/templates/list" -> cache(Map.of("resourceTemplates", resources.templates().stream().map(s -> s.resourceTemplate()).toList()));
                 case "resources/read" -> readResource(params);
                 case "prompts/list" -> cache(page("prompts", promptSpecifications().stream().map(s -> s.prompt()).toList(), params));
                 case "prompts/get" -> getPrompt(params);
@@ -94,7 +94,7 @@ public class ModernMcpProtocol {
     private Map<String, Object> callTool(Map<String, Object> params, Map<String, Object> meta) {
         String name = text(params.get("name"), "name");
         var spec = tools.specifications().stream().filter(s -> s.tool().name().equals(name)).findFirst()
-                .orElseThrow(() -> new Fault(400, -32602, "Unknown tool. Use search_funchole.", Map.of()));
+                .orElseThrow(() -> new Fault(400, -32602, "Unknown tool. Use discover.", Map.of()));
         Map<String, Object> arguments = params.containsKey("arguments") ? object(params.get("arguments"), "arguments") : Map.of();
         var invalid = ToolInputValidator.validate(spec.tool(), arguments, true, McpJsonDefaults.getSchemaValidator());
         if (invalid != null) return asMap(invalid);
@@ -104,7 +104,7 @@ public class ModernMcpProtocol {
             var result = spec.callHandler().apply(null, new McpSchema.CallToolRequest(name, arguments, meta));
             // Spring AI converts RuntimeExceptions into error results with the root-cause
             // message, so catching thrown exceptions alone does not protect credentials.
-            return asMap(Boolean.TRUE.equals(result.isError()) ? safeToolFailure() : result);
+            return asMap(Boolean.TRUE.equals(result.isError()) && !isSafeOperationFailure(result) ? safeToolFailure() : result);
         } catch (RuntimeException exception) {
             log.warn("MCP tool failed: {}", name, exception);
             return asMap(safeToolFailure());
@@ -114,17 +114,23 @@ public class ModernMcpProtocol {
     private static McpSchema.CallToolResult safeToolFailure() {
         return McpSchema.CallToolResult.builder().isError(true)
                 .content(List.of(McpSchema.TextContent.builder(
-                        "Tool failed. Read get_funchole_guide('troubleshooting') and inspect the resource's state before retrying. "
-                                + "Check its exact input contract with get_funchole_tool; ask the operator to inspect logs if the cause is unclear.").build()))
+                        "Tool failed. Read funchole://guides/troubleshooting and inspect current state before retrying. "
+                                + "Read funchole://tools/<name> for its contract; ask the operator to inspect logs if needed.").build()))
                 .build();
     }
 
     private Map<String, Object> readResource(Map<String, Object> params) {
         String uri = text(params.get("uri"), "uri");
-        if (guides.guides().stream().noneMatch(g -> g.uri().equals(uri))) {
-            throw new Fault(400, -32602, "Unknown resource. List resources or use search_funchole.", Map.of());
-        }
-        return cache(asMap(guides.readResource(uri)));
+        var result = asMap(resources.read(uri));
+        return uri.startsWith("funchole://guides/") || uri.startsWith("funchole://tools/") || uri.startsWith("funchole://examples/")
+                ? cache(result) : result;
+    }
+
+    private static boolean isSafeOperationFailure(McpSchema.CallToolResult result) {
+        // Only the curated receipt shape is exempt from exception-message sanitization.
+        if (!(result.structuredContent() instanceof Map<?, ?> body) || !Boolean.FALSE.equals(body.get("ok"))
+                || body.get("data") != null || !McpOperationResult.ERROR_CODES.contains(body.get("code"))) return false;
+        return body.get("message") instanceof String && body.get("links") instanceof Map<?, ?>;
     }
 
     private Map<String, Object> getPrompt(Map<String, Object> params) {

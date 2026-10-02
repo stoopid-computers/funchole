@@ -1,6 +1,6 @@
 # Ship a static site
 
-Use STATIC for browser HTML/CSS/JS, a SPA, or a static-generated site. One Function Version holds the whole site, not one Function per page. Fetch `get_function_example("STATIC_MULTIPAGE")` before the first submission.
+Use STATIC for browser HTML/CSS/JS, a SPA, or a static-generated site. One Function Version holds the whole site, not one Function per page. `read("funchole://examples/STATIC_MULTIPAGE")` before the first build.
 
 ## Source and build contract
 
@@ -14,14 +14,14 @@ The fixture includes `index.html`, `about.html`, `blog/index.html`, and `blog/fi
 
 After the Function Version reaches READY:
 
-1. `create_flow` under the chosen Gateway with `httpMethod="GET"` and a trailing wildcard, such as `/*` for the whole host or `/app/*` for a subtree.
-2. `create_flow_version` with `runtime="STATIC"`. Do not accept the NODE default for a STATIC site.
-3. `create_flow_step` with `componentType="FUNCTION"`, `position=1`, the Function ID and READY Function Version ID.
-4. `adopt_flow_version`. The Gateway reads the artifact directly; STATIC does not need a RESPONSE step or runtime Invocation.
+1. `compose_flow` with a request containing new `key`, `name`, `gatewayRef`, `httpMethod="GET"`, a trailing-wildcard `path` such as `/*` or `/app/*`, and `priority`.
+2. Set `runtime="STATIC"` explicitly. Pin the READY Function Version reference in `componentRef`; single-component composition uses FUNCTION for STATIC.
+3. Retain the returned Flow Version reference. Inspect existing routes before making it live.
+4. `publish_flow` with that `reference` and `expectedActiveVersionRef="none"` initially, or the exact current active version reference on updates. The Gateway reads the artifact directly; STATIC does not need a RESPONSE step or runtime Invocation.
 5. Check the real root page, nested page, CSS/JS/images, and a refresh on a nested path. An HTTP 200 alone may be the SPA fallback rather than the requested file.
 
 The Gateway injects a base href scoped to the site for relative assets. For assets shared across sites, deploy one STATIC Function and mount it at an explicit subtree such as `/shared/*`; reference `/shared/style.css` with a leading slash. The same component version can be pinned by multiple Flows. Check route overlaps and priorities before adoption. See funchole://guides/flows.
 
 ## Update without losing files
 
-New Function Versions clone the latest source/config by default, including a FAILED version. Read `get_function_version_source` before edits, then submit the entire corrected file set. A partial submission is a replacement, not a patch. Build a new READY artifact and create a new STATIC Flow Version that pins it, then adopt. See funchole://guides/evolve and funchole://guides/troubleshooting.
+Choose the intended `baseVersionRef` explicitly for `build_function` updates. `read(reference, view="source")` lists manifest paths; select `file` to read each file with character `offset` and bounded `maxChars` up to 20000. Submit the entire corrected file set. A partial submission is a replacement, not a patch. Build a new READY artifact and compose a new STATIC Flow Version with the existing `flowRef` and no route fields, then publish with the expected active revision. See funchole://guides/evolve and funchole://guides/troubleshooting.
