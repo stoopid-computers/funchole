@@ -12,6 +12,10 @@ import urllib.request
 MODERN = "2026-07-28"
 VERSIONS = [MODERN, "2025-11-25", "2025-06-18", "2025-03-26"]
 MAX_RESPONSE = 4 * 1024 * 1024
+CORE_TOOLS = {"discover", "read", "build_function", "compose_flow", "invoke", "publish_flow",
+              "configure", "connect_database", "configure_gateway", "claim_domain", "retire"}
+GUIDES = {"start", "static", "node", "flows", "data", "multiplayer", "troubleshooting", "evolve"}
+EXAMPLES = {"NODE_BASIC", "NODE_DATABASE", "NODE_ENV_VARS", "NODE_REQUEST_HEADERS", "STATIC_MULTIPAGE"}
 
 
 class Connection:
@@ -69,7 +73,9 @@ class Connection:
         result = message["result"]
         if self.version == MODERN:
             require(result.get("resultType") == "complete", "Missing modern complete result envelope")
-            if method in {"server/discover", "tools/list", "resources/list", "resources/read", "prompts/list"}:
+            if method in {"server/discover", "tools/list", "resources/list", "prompts/list"} or (
+                    method == "resources/read" and params.get("uri", "").startswith(
+                        ("funchole://guides/", "funchole://tools/", "funchole://examples/"))):
                 require("ttlMs" in result and "cacheScope" in result, "Missing modern cache hints")
         return result
 
@@ -91,6 +97,20 @@ def require(condition, message):
         raise RuntimeError(message)
 
 
+def operation(connection, name, **arguments):
+    """Keep the reference and DTO together; never print server bodies on failure."""
+    result = connection.call("tools/call", {"name": name, "arguments": arguments})
+    require(not result.get("isError"), "Tool failed: " + name)
+    receipt = result.get("structuredContent")
+    if receipt is None:
+        receipt = json.loads(result["content"][0]["text"])
+    require(isinstance(receipt, dict) and
+            {"ok", "code", "message", "reference", "data", "links", "warnings"} <= receipt.keys(),
+            "Missing operation receipt: " + name)
+    require(receipt["ok"] is True, "Operation failed: " + name)
+    return receipt
+
+
 def smoke(connection):
     if connection.version == MODERN:
         discovery = connection.call("server/discover")
@@ -105,19 +125,52 @@ def smoke(connection):
         connection.call("notifications/initialized", notification=True)
     tools = connection.list_all("tools/list", "tools")
     names = {tool["name"] for tool in tools}
-    require({"get_funchole_guide", "get_funchole_tool", "search_funchole", "plan_application", "get_function_example"} <= names,
-            "Discovery tools or executable examples are missing")
+    require(CORE_TOOLS <= names, "An expected core tool is missing")
+    require(len(names) == len(tools), "Duplicate tool names")
+    # The HTTP fixture adds pagination/identity callbacks. Nothing else is public.
+    extras = names - CORE_TOOLS
+    require(all(name.startswith("fixture_") for name in extras), "Unexpected or legacy public tool")
+    require(extras or len(tools) == 11, "Production catalog must contain exactly eleven tools")
     resources = connection.list_all("resources/list", "resources")
-    require("funchole://guides/start" in {item["uri"] for item in resources}, "Start resource is missing")
-    guide = connection.call("resources/read", {"uri": "funchole://guides/start"})["contents"][0]["text"]
-    fallback = connection.call("tools/call", {"name": "get_funchole_guide", "arguments": {"topic": "start"}})
-    require(not fallback.get("isError") and fallback["content"][0]["text"] == guide, "Resource/tool guide bodies differ")
+    uris = {item["uri"] for item in resources}
+    expected = ({"funchole://guides/" + topic for topic in GUIDES} |
+                {"funchole://tools/" + name for name in CORE_TOOLS} |
+                {"funchole://examples/" + scenario for scenario in EXAMPLES})
+    require(expected <= uris, "Guide, contract or example resources are missing")
+    for topic in sorted(GUIDES):
+        uri = "funchole://guides/" + topic
+        guide = connection.call("resources/read", {"uri": uri})["contents"][0]["text"]
+        require(operation(connection, "read", reference=uri)["data"] == guide,
+                "Native/read guide bodies differ: " + topic)
+    for listed in tools:
+        if listed["name"] in CORE_TOOLS:
+            contract = operation(connection, "read", reference="funchole://tools/" + listed["name"])["data"]
+            require(contract == listed, "Read contract differs from tools/list: " + listed["name"])
+    offset = 0
+    seen = set()
+    knowledge = []
+    while True:
+        page = operation(connection, "discover", offset=offset, limit=20)["data"]
+        require(len(page["items"]) <= 20 and isinstance(page["total"], int), "Unbounded knowledge page")
+        require(all({"kind", "name", "description", "pointer"} <= item.keys() for item in page["items"]),
+                "Knowledge entry contract differs")
+        knowledge.extend(page["items"])
+        next_offset = page["nextOffset"]
+        if next_offset is None:
+            require(len(knowledge) == page["total"], "Knowledge total differs")
+            break
+        require(isinstance(next_offset, int) and next_offset > offset and next_offset not in seen and len(seen) < 100,
+                "Knowledge pagination did not terminate")
+        seen.add(next_offset)
+        offset = next_offset
+    require(expected <= {item["pointer"] for item in knowledge}, "Knowledge pointers are missing")
+    example = operation(connection, "read", reference="funchole://examples/NODE_BASIC")["data"]
+    require(example["scenario"] == "NODE_BASIC" and example["files"], "Executable example contract differs")
     prompts = connection.list_all("prompts/list", "prompts")
-    require({"build_application", "repair_application"} <= {item["name"] for item in prompts}, "App prompts are missing")
+    require(len(prompts) == 2 and {"build_application", "repair_application"} == {item["name"] for item in prompts},
+            "Expected exactly two app prompts")
     prompt = connection.call("prompts/get", {"name": "build_application", "arguments": {"idea": "A read-only smoke check"}})
     require(prompt.get("messages"), "Build prompt has no messages")
-    plan = connection.call("tools/call", {"name": "plan_application", "arguments": {"kind": "MULTIPLAYER"}})
-    require(not plan.get("isError") and plan.get("structuredContent", {}).get("shippingChecks"), "App plan has no shipping checks")
     print(f"PASS {connection.version}: {len(tools)} tools, {len(resources)} resources, {len(prompts)} prompts")
 
 

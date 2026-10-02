@@ -34,8 +34,13 @@ the local Gateway listens at [https://localhost](https://localhost).
 
 For the full local workflow, see [docs/development.md](docs/development.md).
 
-Connect a coding agent to `/api/mcp` with an MCP API key, then let it read the
-start guide before building. See [agent connection and compatibility checks](docs/mcp.md).
+Connect a coding agent to `/api/mcp` with an MCP API key, then read
+`funchole://guides/start` through native resources or the `read` tool before building.
+The public MCP catalog has eleven tools: `discover`, `read`, `build_function`,
+`compose_flow`, `invoke`, `publish_flow`, `configure`, `connect_database`,
+`configure_gateway`, `claim_domain`, and `retire`. Tools return receipts with
+`ok`, `reference`, and `data`; poll builds and invocations with `read`, then verify
+the real HTTPS app after publication. See [agent connection and compatibility checks](docs/mcp.md).
 
 ## Self Hosting
 
