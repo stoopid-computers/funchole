@@ -32,10 +32,21 @@ spring:
         name: funchole-mcp-server
         version: ${APP_VERSION:0.1.0-SNAPSHOT}
         instructions: >
-          FuncHole lets you create Functions, compose them into Flows, expose
-          Flows as HTTP routes through a Gateway, and attach shared
-          environment/secret/database resources - all through these tools
-          instead of the REST API directly.
+          Build and ship websites, Node APIs, and shared-state apps with FuncHole.
+          Before app work, read funchole://guides/start with resources/read or
+          get_funchole_guide(topic='start'). Use search_funchole for task guides
+          and tools, get_funchole_tool for one exact schema, and plan_application
+          for prerequisites and shipping checks. Read only matching guides.
+          Inspect existing components; reuse pinned versions and shared resources.
+          Fetch get_function_example before first source submission. Source
+          submission replaces all files. Deploy is async: poll to READY or FAILED,
+          inspect logs on failure, then fix forward in a new DRAFT. Adoption changes
+          live traffic. Verify real HTTPS, not just direct Invocations. Builds and
+          handlers are not sandboxed; submit trusted code and keep secrets out of
+          source/logs. Native WebSockets, automatic retries, and branching are not
+          supplied. Ask for missing external prerequisites rather than inventing
+          infrastructure. See funchole://guides/evolve for reuse and project-local
+          learning; project notes do not change server security.
         streamable-http:
           mcp-endpoint: /api/mcp
 

@@ -102,7 +102,7 @@ public class FlowVersionMcpTools {
         return flowVersionMapper.toResponse(version);
     }
 
-    @McpTool(name = "adopt_flow_version", description = "Adopt a FlowVersion, making it the live version its Flow's route serves.")
+    @McpTool(name = "adopt_flow_version", description = "Publish a tested DRAFT Flow Version to live traffic, archiving the previous adopted revision. Verify real HTTPS afterward; see get_funchole_guide('flows').")
     public FlowVersionResponse adoptFlowVersion(
             @McpToolParam(description = "Flow id (UUID)") String flowId,
             @McpToolParam(description = "FlowVersion id (UUID)") String versionId
@@ -140,21 +140,10 @@ public class FlowVersionMcpTools {
 
     @McpTool(
             name = "create_flow_step",
-            description = "Add a step to a DRAFT FlowVersion. componentType is one of FUNCTION, RESPONSE, "
-                    + "MIDDLEWARE, SUB_FLOW; componentId/componentVersionId identify the Function/FlowVersion the "
-                    + "step runs (both are that resource's own id for a FUNCTION step's componentId+its "
-                    + "FunctionVersion id, or the sub-flow's Flow id + its FlowVersion id for SUB_FLOW). "
-                    + "IMPORTANT for a RESPONSE step (the one that ends the Flow and produces the HTTP response for "
-                    + "a NODE-runtime Flow): its Function's handler must return exactly {\"status\": <int>, \"body\": "
-                    + "<any JSON value>} - the Gateway reads only those two fields, always JSON-encodes body, and "
-                    + "always sends Content-Type: application/json. Any other fields (e.g. statusCode, headers) are "
-                    + "silently ignored. If you need to serve raw HTML/CSS/JS with the correct Content-Type (a "
-                    + "frontend/UI page), do not return HTML as a string from a NODE function - deploy it as a "
-                    + "STATIC-runtime Function instead (see create_function's runtime parameter) and route a Flow "
-                    + "to it; the Gateway then serves the files directly with no RESPONSE step needed. A "
-                    + "componentId/componentVersionId can be reused by any number of steps across any number of "
-                    + "Flows - a shared STATIC asset bundle (a common design system, logo, etc.) only needs to be "
-                    + "deployed and referenced once, not cloned into every site that uses it."
+            description = "Add an ordered step to a DRAFT. Pin a READY Function Version for FUNCTION, "
+                    + "MIDDLEWARE or RESPONSE, or an ADOPTED Flow Version for SUB_FLOW. NODE ends with RESPONSE "
+                    + "returning {status, body, headers?}; body is JSON-serialized. STATIC uses FUNCTION to serve "
+                    + "files directly. Components can be reused. Read get_funchole_guide('flows') before composition."
     )
     public FlowStepResponse createFlowStep(
             @McpToolParam(description = "Flow id (UUID)") String flowId,

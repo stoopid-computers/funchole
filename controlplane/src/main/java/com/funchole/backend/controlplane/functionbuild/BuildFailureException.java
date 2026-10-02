@@ -69,8 +69,8 @@ public abstract class BuildFailureException extends RuntimeException {
     }
 
     private static final String EXAMPLE_TOOL_HINT =
-            " Call the MCP tool get_function_example for a known-working template for this runtime, or "
-                    + "get_function_version_build_logs for this stage's full stdout/stderr.";
+            " Read get_funchole_guide('troubleshooting') before retrying. Call get_function_example for a "
+                    + "known-working runtime template, or get_function_version_build_logs for this stage's stdout/stderr.";
 
     protected static String buildMessage(String label, UUID functionVersionId, String stage, List<String> command, Integer exitCode, boolean timedOut) {
         String commandText = String.join(" ", command);

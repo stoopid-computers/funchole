@@ -31,39 +31,21 @@ public class FunctionExampleMcpTools {
 
     @McpTool(
             name = "get_function_example",
-            description = "Return real, known-working example source for a specific Function scenario - "
-                    + "copy-pasteable ground truth for submit_function_version_source, instead of guessing the "
-                    + "expected shape from prose alone. Each example's content is asserted directly by a "
-                    + "currently-passing test in this repo, so it cannot silently drift out of sync with actual "
-                    + "runtime behavior. Call this before writing a NODE RESPONSE handler, a Database-backed "
-                    + "handler, a handler that needs config/secrets, a handler that reads request headers/cookies "
-                    + "or sets response ones, or a multi-page STATIC site for the first time - or any time a "
-                    + "deploy fails and you are not sure why, since build failure messages point back here."
+            description = "Fetch fixture-backed source before your first handler/site submission or when stuck. "
+                    + "Returns entrypoint, handler, runtime and files directly usable by submit_function_version_source. "
+                    + "Read get_funchole_guide('static', 'node' or 'data') for the complete build-to-HTTP journey."
     )
     public FunctionExampleResponse getFunctionExample(
-            @McpToolParam(description = "Which example to return: NODE_BASIC (a NODE RESPONSE step returning the "
-                    + "correct {status, body} contract and echoing its input back), NODE_DATABASE (a NODE handler "
-                    + "that creates a table, inserts a row, and reads it back via an attached Database's "
-                    + "context.db(name)), NODE_ENV_VARS (a NODE handler reading a plain config value or secret set "
-                    + "via set_function_version_env_var/set_environment_env_var - there is no context.env; every "
-                    + "value from an attached EnvironmentProfile and the FunctionVersion's own config is merged "
-                    + "into process.env right before this invocation runs, read it as process.env.KEY_NAME like "
-                    + "any Node process), NODE_REQUEST_HEADERS (a NODE RESPONSE step reading the incoming request's "
-                    + "headers/cookies and setting response ones - only meaningful for a Flow reached through the "
-                    + "Gateway over real HTTP, not a direct invoke_flow_version/invoke_function_version call, since "
-                    + "those pass whatever raw payload the caller supplies as input instead of a real HTTP "
-                    + "request's envelope), or STATIC_MULTIPAGE (a real multi-page static site's file layout, with "
-                    + "package.json build script)") String scenario
+            @McpToolParam(description = "NODE_BASIC, NODE_DATABASE, NODE_ENV_VARS, NODE_REQUEST_HEADERS, or STATIC_MULTIPAGE") String scenario
     ) {
         String normalized = scenario == null ? "" : scenario.trim().toUpperCase(Locale.ROOT);
         return switch (normalized) {
             case "NODE_BASIC" -> new FunctionExampleResponse(
                     "NODE_BASIC",
                     "NODE",
-                    "A NODE-runtime Function used as a Flow's RESPONSE step. Its handler receives the step's "
-                            + "input as its first argument and must return exactly {status, body} - the Gateway "
-                            + "reads only those two fields, always JSON-encodes body, and always sends "
-                            + "Content-Type: application/json.",
+                    "A NODE RESPONSE handler returning {status, body}. The Gateway JSON-serializes body and "
+                            + "defaults to application/json. Optional headers work; use NODE_REQUEST_HEADERS for "
+                            + "that example and get_funchole_guide('node') for real HTTP input and response contracts.",
                     FunctionExampleFixtures.NODE_BASIC_ENTRYPOINT,
                     FunctionExampleFixtures.NODE_BASIC_HANDLER,
                     List.of(new ExampleFile(FunctionExampleFixtures.NODE_BASIC_ENTRYPOINT, FunctionExampleFixtures.NODE_BASIC_SOURCE))

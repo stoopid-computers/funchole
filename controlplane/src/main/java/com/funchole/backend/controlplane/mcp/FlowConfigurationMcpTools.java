@@ -56,7 +56,7 @@ public class FlowConfigurationMcpTools {
         return flowConfigurationService.listDatabaseAttachments(CurrentMcpUser.id(), UUID.fromString(flowId));
     }
 
-    @McpTool(name = "attach_flow_database", description = "Attach a Database resource to a Flow, so context.db(name) can reach it from any step - see attach_function_version_database's own description for the real context.db(...).query(...) call shape and how to seed/migrate a freshly attached Database (there is no separate migration tool - write and invoke a one-off Function for that).")
+    @McpTool(name = "attach_flow_database", description = "Share an external Postgres resource across Flow steps through context.db(resourceName). Read get_funchole_guide('data') for pg.Pool usage and one-off Function migrations.")
     public List<FlowDatabaseAttachmentResponse> attachFlowDatabase(
             @McpToolParam(description = "Flow id (UUID)") String flowId,
             @McpToolParam(description = "Database id (UUID) - see list_databases") String databaseId
