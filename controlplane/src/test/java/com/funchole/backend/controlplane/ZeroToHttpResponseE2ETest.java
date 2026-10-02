@@ -103,7 +103,6 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.MinIOContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -124,7 +123,7 @@ import org.testcontainers.utility.DockerImageName;
  * RuntimeWorkerMain/GatewayMain wire them - just inlined here instead of run
  * as separate OS processes, since nothing in this repo has ever combined
  * more than one of them in a single test before and separate processes has
- * no precedent and is far more fragile for CI. Postgres/NATS/MinIO (a real
+ * no precedent and is far more fragile for CI. Postgres/NATS/RustFS (a real
  * S3-compatible endpoint, standing in for RustFS) are real via testcontainers.
  *
  * <p>Tagged {@code e2e} and excluded from the default {@code test} task (see
@@ -154,7 +153,7 @@ class ZeroToHttpResponseE2ETest {
             .withCommand("-js", "-sd", "/tmp/nats/jetstream");
 
     @Container
-    static MinIOContainer minio = new MinIOContainer("minio/minio");
+    static S3TestContainer minio = new S3TestContainer();
 
     @TempDir
     static Path artifactCacheRoot;
@@ -542,8 +541,21 @@ class ZeroToHttpResponseE2ETest {
     private void deployAndAssertReady(String token, String functionId, String versionId) throws Exception {
         mockMvc.perform(post("/api/v1/functions/{functionId}/versions/{versionId}/deploy", functionId, versionId)
                         .header("Authorization", "Bearer " + token))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.status").value("READY"));
+                .andExpect(status().isOk());
+        long deadline = System.nanoTime() + Duration.ofSeconds(30).toNanos();
+        while (System.nanoTime() < deadline) {
+            MvcResult result = mockMvc.perform(get("/api/v1/functions/{functionId}/versions/{versionId}", functionId, versionId)
+                            .header("Authorization", "Bearer " + token))
+                    .andExpect(status().isOk())
+                    .andReturn();
+            String state = JsonPath.read(result.getResponse().getContentAsString(), "$.data.status");
+            if ("READY".equals(state)) {
+                return;
+            }
+            assertThat(state).isNotEqualTo("FAILED");
+            Thread.sleep(100);
+        }
+        throw new AssertionError("Function Version did not become READY within 30 seconds");
     }
 
     private String createFlow(String token, String flowKey, String path) throws Exception {
