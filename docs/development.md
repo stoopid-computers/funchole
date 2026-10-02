@@ -2,6 +2,10 @@
 
 This document keeps the practical local development notes that do not need to stay on the front page.
 
+For agent connection, on-demand app guides, and protocol smoke tests, see
+[MCP development and compatibility](mcp.md). The focused MCP tests run without Docker;
+artifact builds, database-backed tests, and real Gateway traffic still require the stack.
+
 ## Compose Files
 
 There are two main Compose entrypoints:

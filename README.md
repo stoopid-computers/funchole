@@ -34,6 +34,9 @@ the local Gateway listens at [https://localhost](https://localhost).
 
 For the full local workflow, see [docs/development.md](docs/development.md).
 
+Connect a coding agent to `/api/mcp` with an MCP API key, then let it read the
+start guide before building. See [agent connection and compatibility checks](docs/mcp.md).
+
 ## Self Hosting
 
 The development stack includes the controlplane, web UI, raw Netty Gateway,

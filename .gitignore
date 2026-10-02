@@ -11,6 +11,7 @@ scripts/dev/*
 !scripts/dev/
 !scripts/dev/seed-flow-routes.sh
 !scripts/dev/seed-orders-demo.sh
+!scripts/dev/mcp-smoke.py
 CURRENT_PROJECT_STATE.md
 FUNCHole_MASTER_PRD_AND_BACKLOG.md
 PRODUCTION_DEPLOYMENT_MISSING.md
