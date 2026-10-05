@@ -2,12 +2,6 @@
   "name": "funchole-landing",
   "private": true,
   "scripts": {
-    "build:css": "tailwindcss -i src/input.css -o styles.css --minify",
-    "watch:css": "tailwindcss -i src/input.css -o styles.css --watch",
-    "build": "npm run build:css && mkdir -p dist && cp index.html script.js styles.css robots.txt sitemap.xml og-image.png dist/"
-  },
-  "devDependencies": {
-    "@tailwindcss/cli": "4.3.3",
-    "tailwindcss": "4.3.3"
+    "build": "mkdir -p dist && cp index.html script.js styles.css robots.txt sitemap.xml og-image.png dist/"
   }
 }
