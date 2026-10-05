@@ -14,11 +14,24 @@ import { createInterface } from "node:readline";
 import { existsSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import { inspect } from "node:util";
+import { AsyncLocalStorage } from "node:async_hooks";
 import pg from "pg";
 import { DatabasePoolCache } from "./database-pool-cache.mjs";
+import { ExecutionTimeoutError, runWithTimeout } from "./execution-timeout.mjs";
 
 const rl = createInterface({ input: process.stdin, terminal: false });
 let executionQueue = Promise.resolve();
+
+// A single user Function hanging (an infinite loop, a stuck network call, an
+// unresolved promise - anything) must never be able to block every other
+// user's work indefinitely: this process handles ALL Functions currently
+// routed to this worker, one after another via executionQueue below. Without
+// a hard ceiling, one hung execution wedges the queue forever and takes the
+// whole platform down for every tenant behind it - confirmed in production
+// (2026-09-29): a single Function's stuck database connection froze every
+// other invocation platform-wide. See the known-limitation note on
+// executionContext below for what this timeout does NOT fully solve.
+const EXECUTION_TIMEOUT_MS = Number(process.env.RUNTIME_EXECUTION_TIMEOUT_MS) || 30000;
 
 // Warm connection pools, one per distinct database resource, kept alive for
 // the life of this process (see the module header comment) and reused across
@@ -67,6 +80,51 @@ function sendError(executionId, code, message) {
   writeMessage({ type: "ERROR", executionId, error: { code, message } });
 }
 
+// Routes console output to the correct execution's log stream even when a
+// timed-out execution's handler is still running in the background while a
+// later execution is already active - AsyncLocalStorage tracks the store
+// through each execution's own async call chain independently, so a stray
+// console.log from stale background work still reaches ITS OWN executionId,
+// never the newer one that happens to be running concurrently. This is the
+// one piece of isolation EXECUTION_TIMEOUT_MS can fully guarantee.
+//
+// Known limitation it does NOT solve: process.env is genuinely
+// process-global, with no per-async-context equivalent of AsyncLocalStorage.
+// The environment overlay below (withEnvironmentOverlay) is still restored
+// as soon as an execution's own race settles, so a timed-out handler that
+// reads process.env again after being overtaken by later work can observe
+// stale or another execution's values - the same class of risk the
+// module-level comment already flagged for the pre-timeout, strictly
+// serialized design. A stuck handler doing this is already broken; this is
+// a narrow, documented edge case, not a regression this fix introduces for
+// the common (fast, well-behaved) case, which remains fully serialized.
+const executionContext = new AsyncLocalStorage();
+const rawConsole = {
+  log: console.log.bind(console),
+  info: console.info.bind(console),
+  warn: console.warn.bind(console),
+  error: console.error.bind(console),
+  debug: console.debug.bind(console),
+};
+
+function routeConsole(stream, args) {
+  const store = executionContext.getStore();
+  const message = formatArgs(args);
+  if (!store) {
+    // No active execution (startup/shutdown/parse-error logging) - write for
+    // real instead of silently dropping it.
+    (stream === "stdout" ? rawConsole.log : rawConsole.error)(message);
+    return;
+  }
+  sendLog(store.executionId, stream, store.redactor(message));
+}
+
+console.log = (...args) => routeConsole("stdout", args);
+console.info = (...args) => routeConsole("stdout", args);
+console.debug = (...args) => routeConsole("stdout", args);
+console.warn = (...args) => routeConsole("stderr", args);
+console.error = (...args) => routeConsole("stderr", args);
+
 async function handleExecute(message) {
   const { executionId, artifactPath, input } = message;
   const handlerName = message.handler || "handler";
@@ -101,12 +159,18 @@ async function handleExecute(message) {
   }
 
   const invocationContext = buildInvocationContext(databases);
+  const redactor = createRedactor(environment, databases);
 
   let output;
   try {
-    output = await withExecutionContext(executionId, environment, databases, () => handler(parsedInput, invocationContext));
+    output = await executionContext.run({ executionId, redactor }, () =>
+      withEnvironmentOverlay(environment, () =>
+        runWithTimeout(() => handler(parsedInput, invocationContext), EXECUTION_TIMEOUT_MS)
+      )
+    );
   } catch (error) {
-    sendError(executionId, "ARTIFACT_EXECUTION_ERROR", error && error.message ? error.message : String(error));
+    const code = error instanceof ExecutionTimeoutError ? "EXECUTION_TIMEOUT" : "ARTIFACT_EXECUTION_ERROR";
+    sendError(executionId, code, error && error.message ? error.message : String(error));
     return;
   }
 
@@ -121,30 +185,16 @@ async function handleExecute(message) {
   writeMessage({ type: "RESULT", executionId, output: serializedOutput });
 }
 
-async function withExecutionContext(executionId, environment, databases, callback) {
+async function withEnvironmentOverlay(environment, callback) {
   const previous = new Map();
-  const originalConsole = {
-    log: console.log,
-    info: console.info,
-    warn: console.warn,
-    error: console.error,
-    debug: console.debug,
-  };
-  const redactor = createRedactor(environment, databases);
   for (const [key, value] of Object.entries(environment)) {
     previous.set(key, Object.prototype.hasOwnProperty.call(process.env, key) ? process.env[key] : undefined);
     process.env[key] = String(value);
   }
-  installConsoleCapture(executionId, redactor);
 
   try {
     return await callback();
   } finally {
-    console.log = originalConsole.log;
-    console.info = originalConsole.info;
-    console.warn = originalConsole.warn;
-    console.error = originalConsole.error;
-    console.debug = originalConsole.debug;
     for (const [key, value] of previous.entries()) {
       if (value === undefined) {
         delete process.env[key];
@@ -153,14 +203,6 @@ async function withExecutionContext(executionId, environment, databases, callbac
       }
     }
   }
-}
-
-function installConsoleCapture(executionId, redactor) {
-  console.log = (...args) => sendLog(executionId, "stdout", redactor(formatArgs(args)));
-  console.info = (...args) => sendLog(executionId, "stdout", redactor(formatArgs(args)));
-  console.debug = (...args) => sendLog(executionId, "stdout", redactor(formatArgs(args)));
-  console.warn = (...args) => sendLog(executionId, "stderr", redactor(formatArgs(args)));
-  console.error = (...args) => sendLog(executionId, "stderr", redactor(formatArgs(args)));
 }
 
 function formatArgs(args) {
@@ -200,9 +242,9 @@ rl.on("line", (line) => {
     return;
   }
 
-  // process.env is process-global, so execution is serialized while applying
-  // per-invocation environment overlays. A future worker pool can restore
-  // parallelism with stronger isolation.
+  // Normal (non-timed-out) executions still run one at a time here, in
+  // order - executionQueue only moves on to the next item early when the
+  // current one exceeds EXECUTION_TIMEOUT_MS, per runWithTimeout above.
   executionQueue = executionQueue
     .then(() => handleExecute(message))
     .catch((error) => {
@@ -210,4 +252,4 @@ rl.on("line", (line) => {
     });
 });
 
-console.error("Node executor ready");
+rawConsole.error("Node executor ready");

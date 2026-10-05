@@ -51,7 +51,18 @@ public final class PersistentNodeExecutor implements NodeExecutor, AutoCloseable
     }
 
     public static PersistentNodeExecutor start(String nodeCommand, Path scriptPath) throws IOException {
+        return start(nodeCommand, scriptPath, Map.of());
+    }
+
+    /**
+     * Same as {@link #start(String, Path)}, plus environment variables merged
+     * into the spawned process's own environment (e.g. overriding
+     * {@code RUNTIME_EXECUTION_TIMEOUT_MS} for a test that needs a short
+     * timeout rather than executor.mjs's real-world default).
+     */
+    public static PersistentNodeExecutor start(String nodeCommand, Path scriptPath, Map<String, String> extraEnv) throws IOException {
         ProcessBuilder builder = new ProcessBuilder(nodeCommand, scriptPath.toString());
+        builder.environment().putAll(extraEnv);
         Process process = builder.start();
         return new PersistentNodeExecutor(process);
     }

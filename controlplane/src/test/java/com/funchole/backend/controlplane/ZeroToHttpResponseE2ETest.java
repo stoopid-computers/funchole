@@ -67,6 +67,7 @@ import java.nio.file.Path;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -542,8 +543,27 @@ class ZeroToHttpResponseE2ETest {
     private void deployAndAssertReady(String token, String functionId, String versionId) throws Exception {
         mockMvc.perform(post("/api/v1/functions/{functionId}/versions/{versionId}/deploy", functionId, versionId)
                         .header("Authorization", "Bearer " + token))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.status").value("READY"));
+                .andExpect(status().isOk());
+
+        // Deploy is asynchronous by design (PUBLISHING -> build -> READY, can
+        // take minutes per FunctionVersionDeploymentService's own docs) -
+        // poll rather than assume it finished within this one request/response.
+        Instant deadline = Instant.now().plusSeconds(15);
+        while (Instant.now().isBefore(deadline)) {
+            MvcResult result = mockMvc.perform(get("/api/v1/functions/{functionId}/versions/{versionId}", functionId, versionId)
+                            .header("Authorization", "Bearer " + token))
+                    .andExpect(status().isOk())
+                    .andReturn();
+            String status = JsonPath.read(result.getResponse().getContentAsString(), "$.data.status");
+            if ("READY".equals(status)) {
+                return;
+            }
+            if (!"PUBLISHING".equals(status)) {
+                throw new AssertionError("FunctionVersion " + versionId + " deploy ended in unexpected status: " + status);
+            }
+            Thread.sleep(200);
+        }
+        throw new AssertionError("FunctionVersion " + versionId + " did not reach READY within the deadline");
     }
 
     private String createFlow(String token, String flowKey, String path) throws Exception {
