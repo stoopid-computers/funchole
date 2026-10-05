@@ -3,145 +3,77 @@
 <head>
 <meta charset="UTF-8">
 <title>OG Card</title>
+<!-- Source for og-image.png (1200x630). Render with headless Chrome:
+     chrome --headless=new --hide-scrollbars --force-device-scale-factor=1 --screenshot=og-image.png --window-size=1200,630 --virtual-time-budget=10000 og-card.html -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Caveat:wght@600&family=Figtree:wght@500;600&display=swap" rel="stylesheet">
 <style>
+  :root { --paper:#ECEBE4; --paper-2:#E0DED3; --card:#FBFAF6; --ink:#17181C; --blue:#2F5BFF; --live:#14A35A; --live-ink:#0A7439; --live-soft:#D3F1E0; --sun:#FFD23F; --coral:#FF7A59; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body {
-    width: 1200px;
-    height: 630px;
-    background: #000000;
-    overflow: hidden;
-    font-family: 'Geist', ui-sans-serif, system-ui, sans-serif;
-  }
-  .wrap {
-    position: relative;
-    width: 1200px;
-    height: 630px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    padding: 0 90px;
-  }
-  .glow {
-    position: absolute;
-    top: -260px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 1000px;
-    height: 560px;
-    background: radial-gradient(ellipse, rgb(107 140 255 / 0.16), transparent 70%);
-  }
-  .logo {
-    position: relative;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 48px;
-  }
-  .logo span {
-    font-family: 'Geist', sans-serif;
-    font-weight: 600;
-    font-size: 26px;
-    color: #fafafa;
-    letter-spacing: -0.02em;
-  }
-  .eyebrow {
-    position: relative;
-    font-family: 'Geist Mono', monospace;
-    font-size: 15px;
-    font-weight: 500;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: #7a7a7a;
-    margin-bottom: 20px;
-  }
-  h1 {
-    position: relative;
-    font-size: 66px;
-    font-weight: 500;
-    line-height: 1.06;
-    letter-spacing: -0.045em;
-    color: #fafafa;
-    margin-bottom: 28px;
-    max-width: 960px;
-  }
-  h1 span { color: #6b8cff; }
-  p {
-    position: relative;
-    font-size: 25px;
-    line-height: 1.5;
-    letter-spacing: -0.01em;
-    color: #a1a1a1;
-    max-width: 780px;
-  }
-  .rail {
-    position: absolute;
-    top: 205px;
-    right: 90px;
-    display: flex;
-    flex-direction: column;
-    gap: 52px;
-  }
-  .rail div {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
-  .rail div::before {
-    content: "";
-    width: 34px;
-    height: 1px;
-    background: #2b2b2b;
-  }
-  .rail span {
-    font-family: 'Geist Mono', monospace;
-    font-size: 14px;
-    font-weight: 500;
-    letter-spacing: 0.12em;
-    color: #7a7a7a;
-  }
-  .footer {
-    position: absolute;
-    left: 90px;
-    bottom: 56px;
-    font-family: 'Geist Mono', monospace;
-    font-size: 14px;
-    font-weight: 500;
-    letter-spacing: 0.14em;
-    color: #525252;
-  }
-  .footer .sep { color: #2b2b2b; margin: 0 10px; }
+  html, body { width: 1200px; height: 630px; overflow: hidden; background: var(--paper); font-family: 'Figtree', system-ui, sans-serif; color: var(--ink); }
+  .wrap { position: relative; width: 1200px; height: 630px; }
+  .brand { position: absolute; left: 64px; top: 56px; display: flex; align-items: center; gap: 12px; font: 800 32px/1 'Bricolage Grotesque', sans-serif; letter-spacing: -0.03em; }
+  h1 { position: absolute; left: 64px; top: 180px; font: 800 82px/1.05 'Bricolage Grotesque', sans-serif; letter-spacing: -0.04em; }
+  h1 mark { display: inline-block; margin-left: -6px; padding: 0 6px; color: var(--ink); background: linear-gradient(transparent 56%, var(--sun) 56% 94%, transparent 94%); }
+  .line { position: absolute; left: 64px; top: 405px; font: 600 34px/1.3 'Figtree', sans-serif; color: #2B2D33; }
+  .sub { position: absolute; left: 64px; bottom: 52px; font: 600 26px/1 'Figtree', sans-serif; color: #555861; }
+
+  .flow { position: absolute; left: 700px; top: 40px; width: 450px; display: flex; flex-direction: column; align-items: stretch; }
+  .arrow { align-self: center; width: 0; height: 22px; border-left: 4px dashed var(--ink); position: relative; margin: 4px 0 6px; }
+  .arrow::after { content: ""; position: absolute; left: -9px; bottom: -4px; width: 12px; height: 12px; border-right: 4px solid var(--ink); border-bottom: 4px solid var(--ink); transform: rotate(45deg); }
+  .step { padding: 14px 18px; border: 3px solid var(--ink); border-radius: 14px; box-shadow: 5px 5px 0 var(--ink); }
+  .tiny { font: 600 17px/1 'Figtree', sans-serif; color: #555861; margin-bottom: 7px; }
+  .idea { background: var(--sun); transform: rotate(-1.2deg); }
+  .idea p { font: 600 34px/1.05 'Caveat', cursive; color: var(--ink); }
+  .idea .tiny { font: 600 17px/1 'Figtree', sans-serif; color: #3a3200; }
+  .agent { background: var(--card); }
+  .agent p, .fh p { font: 800 25px/1.1 'Bricolage Grotesque', sans-serif; letter-spacing: -0.02em; }
+  .agent .tiny, .fh .tiny { font: 600 17px/1 'Figtree', sans-serif; letter-spacing: 0; }
+  .fh { background: var(--ink); color: #fff; }
+  .fh .tiny { color: #C9C8C0; }
+  .fh p.row { display: flex; align-items: center; gap: 10px; }
+
+  .live-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .mini { background: var(--card); border: 3px solid var(--ink); border-radius: 12px; box-shadow: 4px 4px 0 var(--ink); overflow: hidden; }
+  .mini:nth-child(2) { transform: translateY(6px) rotate(1deg); } .mini:nth-child(1) { transform: rotate(-1deg); } .mini:nth-child(3) { transform: rotate(-.5deg); }
+  .bar { display: flex; align-items: center; gap: 4px; padding: 6px 7px; background: var(--paper-2); border-bottom: 3px solid var(--ink); }
+  .bar i { flex: none; width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid var(--ink); background: var(--coral); }
+  .bar i:nth-child(2) { background: var(--sun); } .bar i:nth-child(3) { background: var(--live); }
+  .live { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px; font: 700 10px/1 'Figtree', sans-serif; letter-spacing: .05em; color: var(--live-ink); background: var(--live-soft); border: 1.5px solid var(--ink); border-radius: 99px; }
+  .live b { width: 6px; height: 6px; border-radius: 50%; background: var(--live); }
+  .mb { padding: 8px 8px 9px; }
+  .mb svg { display: block; width: 100%; height: auto; background: #fff; border: 2px solid var(--ink); border-radius: 6px; }
+  .mb p { margin-top: 7px; font: 800 15px/1 'Bricolage Grotesque', sans-serif; letter-spacing: -0.02em; }
+  svg .g { fill: #D9D7CC; } svg .b { fill: var(--blue); } svg .y { fill: var(--sun); } svg .i { fill: var(--ink); }
 </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="glow"></div>
-    <div class="logo">
-      <svg width="34" height="34" viewBox="0 0 24 24" aria-hidden="true">
-        <defs>
-          <linearGradient id="fh-mark-og" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stop-color="#b9c8ff"/>
-            <stop offset="1" stop-color="#2f5bff"/>
-          </linearGradient>
-        </defs>
-        <rect x="1.5" y="1.5" width="13.5" height="13.5" rx="4.2" fill="#fafafa"/>
-        <rect x="9" y="9" width="13.5" height="13.5" rx="4.2" fill="url(#fh-mark-og)" fill-opacity=".92"/>
-        <path d="M9 13.2A4.2 4.2 0 0 1 13.2 9H15v1.8a4.2 4.2 0 0 1-4.2 4.2H9z" fill="#dfe6ff"/>
-      </svg>
-      <span>FuncHole</span>
-    </div>
-    <p class="eyebrow">AGENT-BUILT APP WORK</p>
-    <h1>Where coding agents<br><span>build and launch app work</span></h1>
-    <p>Connect your coding agent through MCP, let it build and publish product capabilities, then manage the parts that still need human control.</p>
-    <div class="rail">
-      <div><span>MCP</span></div>
-      <div><span>ROUTES</span></div>
-      <div><span>DATA</span></div>
-      <div><span>LOGS</span></div>
-    </div>
-    <div class="footer">BUILD<span class="sep">/</span>LAUNCH<span class="sep">/</span>OPERATE</div>
+<div class="wrap">
+  <div class="brand">
+    <svg width="40" height="40" viewBox="0 0 24 24"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#C5D0FF"/><stop offset="1" stop-color="#2F5BFF"/></linearGradient></defs><rect x="1.5" y="1.5" width="13.5" height="13.5" rx="4.2" fill="#17181C"/><rect x="9" y="9" width="13.5" height="13.5" rx="4.2" fill="url(#g)" stroke="#17181C" stroke-width="1.5"/><path d="M9 13.2A4.2 4.2 0 0 1 13.2 9H15v1.8a4.2 4.2 0 0 1-4.2 4.2H9z" fill="#DFE6FF"/></svg>
+    FuncHole
   </div>
+
+  <h1>Need it online?<br><mark>Get it live.</mark></h1>
+  <p class="line">Your coding agent builds it.<br>FuncHole puts it live.</p>
+  <p class="sub">funchole.dev</p>
+
+  <div class="flow">
+    <div class="step idea"><p class="tiny">You say</p><p>I need a booking page, a customer portal and an API.</p></div>
+    <span class="arrow"></span>
+    <div class="step agent"><p class="tiny">Your coding agent</p><p>Writes the code</p></div>
+    <span class="arrow"></span>
+    <div class="step fh"><p class="tiny">FuncHole</p><p class="row">
+      <svg width="28" height="28" viewBox="0 0 24 24"><rect x="1.5" y="1.5" width="13.5" height="13.5" rx="4.2" fill="#F5F5F5"/><rect x="9" y="9" width="13.5" height="13.5" rx="4.2" fill="url(#g)"/><path d="M9 13.2A4.2 4.2 0 0 1 13.2 9H15v1.8a4.2 4.2 0 0 1-4.2 4.2H9z" fill="#DFE6FF"/></svg>
+      Deploys it and keeps it running</p></div>
+    <span class="arrow"></span>
+    <div class="live-row">
+      <div class="mini"><div class="bar"><i></i><i></i><i></i><span class="live"><b></b>LIVE</span></div><div class="mb"><svg viewBox="0 0 120 60"><g class="g"><rect x="6" y="8" width="24" height="16" rx="3"/><rect x="36" y="8" width="24" height="16" rx="3"/><rect x="66" y="8" width="24" height="16" rx="3"/><rect x="6" y="32" width="24" height="16" rx="3"/><rect x="66" y="32" width="24" height="16" rx="3"/></g><rect class="b" x="36" y="32" width="24" height="16" rx="3"/><rect class="y" x="96" y="8" width="18" height="40" rx="3"/></svg><p>Booking page</p></div></div>
+      <div class="mini"><div class="bar"><i></i><i></i><i></i><span class="live"><b></b>LIVE</span></div><div class="mb"><svg viewBox="0 0 120 60"><circle class="y" cx="18" cy="16" r="9"/><rect class="i" x="34" y="10" width="46" height="5" rx="2.5"/><rect class="g" x="34" y="19" width="30" height="5" rx="2.5"/><rect class="g" x="6" y="34" width="108" height="10" rx="3"/><rect class="g" x="6" y="47" width="108" height="9" rx="3"/><rect class="b" x="92" y="36" width="18" height="6" rx="3"/></svg><p>Customer portal</p></div></div>
+      <div class="mini"><div class="bar"><i></i><i></i><i></i><span class="live"><b></b>LIVE</span></div><div class="mb"><svg viewBox="0 0 120 60"><text x="8" y="40" font-family="ui-monospace,Menlo,monospace" font-size="30" font-weight="700" fill="#17181C">{ }</text><rect class="y" x="68" y="12" width="44" height="9" rx="3"/><rect class="g" x="68" y="26" width="32" height="7" rx="3"/><rect class="b" x="68" y="38" width="22" height="7" rx="3"/></svg><p>API</p></div></div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
