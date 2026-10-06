@@ -5,7 +5,7 @@
 # from source instead, so it can never go stale relative to a forgotten
 # `npm run build`).
 FROM nginx:alpine
-COPY index.html script.js styles.css robots.txt sitemap.xml llms.txt og-image.png /usr/share/nginx/html/
+COPY index.html script.js styles.css robots.txt sitemap.xml llms.txt favicon.ico apple-touch-icon.png og-image.png /usr/share/nginx/html/
 COPY privacy /usr/share/nginx/html/privacy
 COPY terms /usr/share/nginx/html/terms
 COPY cookies /usr/share/nginx/html/cookies
