@@ -2,6 +2,6 @@
   "name": "funchole-landing",
   "private": true,
   "scripts": {
-    "build": "mkdir -p dist && cp index.html script.js styles.css robots.txt sitemap.xml og-image.png dist/"
+    "build": "mkdir -p dist && cp -R index.html script.js styles.css robots.txt sitemap.xml llms.txt og-image.png privacy terms cookies dist/"
   }
 }
