@@ -2,6 +2,15 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-L9P40W5X66"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-L9P40W5X66');
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cookie Policy — FuncHole</title>
 <meta name="description" content="Which cookies and browser storage FuncHole uses.">
@@ -33,8 +42,8 @@
     <div class="summary">
       <h2>The short version</h2>
       <ul>
-        <li>The funchole.dev website sets no tracking or advertising cookies.</li>
-        <li>Our analytics tool is cookie-free.</li>
+        <li>The funchole.dev website sets analytics cookies through Google Analytics. It sets no advertising cookies.</li>
+        <li>You can block analytics cookies in your browser or with Google’s opt-out add-on.</li>
         <li>The dashboard stores a sign-in session in your browser so you stay logged in.</li>
       </ul>
     </div>
@@ -44,9 +53,9 @@
 
     <h2>The website (funchole.dev)</h2>
     <ul>
-      <li><strong>No tracking or advertising cookies.</strong></li>
+      <li><strong>No advertising cookies.</strong></li>
       <li><strong>Session storage.</strong> The page remembers the GitHub star count for your visit, so it doesn’t ask GitHub again on every page. It is deleted when you close the tab.</li>
-      <li><strong>Analytics.</strong> We use a cookie-free analytics tool (Plausible or Umami). It does not store identifiers in your browser.</li>
+      <li><strong>Analytics.</strong> We use Google Analytics. It sets cookies (such as <code>_ga</code> and <code>_ga_*</code>) to tell visits apart and measure how the site is used. By default they last up to two years.</li>
       <li><strong>Cloudflare.</strong> Our CDN may set cookies or similar data that are strictly necessary for security and performance, such as detecting bots and protecting against attacks.</li>
     </ul>
 
@@ -54,7 +63,7 @@
     <p>When you sign in, the dashboard stores a session token in your browser so you stay signed in. It is necessary for the Service to work, so it doesn’t need your consent. Google sign-in may also set its own cookies on Google’s domains; see Google’s policies.</p>
 
     <h2>Third-party requests</h2>
-    <p>The website loads fonts from Google Fonts and calls the public GitHub API. Those requests send your IP address and browser details to those services, and they may set their own cookies. See their privacy policies for details.</p>
+    <p>The website loads Google Analytics from Google Tag Manager, loads fonts from Google Fonts and calls the public GitHub API. Those requests send your IP address and browser details to those services, and they may set their own cookies. See their privacy policies for details.</p>
 
     <h2>Managing cookies</h2>
     <p>You can block or delete cookies in your browser settings. Blocking the dashboard’s session storage will stop you from staying signed in.</p>
