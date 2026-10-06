@@ -1,0 +1,26 @@
+# FuncHole
+
+> FuncHole turns what you need (a booking system, customer portal, dashboard, API) into a live web solution. Your coding agent writes the solution; FuncHole deploys it, connects it, exposes it at a web address and keeps the backend running. It is a self-hostable platform for coding agents, driven through MCP (Model Context Protocol).
+
+FuncHole is not an AI app builder. The coding agent creates the code; FuncHole runs and operates the backend side: deploying functions, routing HTTP requests through a gateway, custom domains and HTTPS certificates, databases, environment variables and secrets, logs and test invocations. FuncHole is under active development and licensed under FSL-1.1-Apache-2.0.
+
+## Product
+
+- [Homepage](https://funchole.dev/): what FuncHole is and what you can build
+- [Start building](https://app.funchole.dev): sign up and create an API key
+- [Supported coding agents](https://funchole.dev/#agents): Claude Code, Codex, opencode, Cursor, Antigravity, Puku, and any client that supports MCP over HTTP
+- [Pricing](https://funchole.dev/#pricing): FuncHole Cloud early access is free; self-hosting is free
+
+## Documentation
+
+- [Docs](https://github.com/stoopid-computers/funchole/tree/main/docs): development, environment variables, architecture
+- [Managing FuncHole via MCP](https://github.com/stoopid-computers/funchole#managing-funchole-via-mcp)
+- [Architecture](https://github.com/stoopid-computers/funchole/blob/main/docs/architecture.md)
+- [Known limitations](https://github.com/stoopid-computers/funchole/blob/main/docs/limitations.md)
+- [Source code](https://github.com/stoopid-computers/funchole)
+
+## Legal
+
+- [Privacy Policy](https://funchole.dev/privacy/)
+- [Terms of Service](https://funchole.dev/terms/)
+- [Cookie Policy](https://funchole.dev/cookies/)
