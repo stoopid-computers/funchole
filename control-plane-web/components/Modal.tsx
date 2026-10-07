@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import {
   Dialog,
   DialogContent,
@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { slug, track } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 
 interface ModalProps {
@@ -42,6 +43,14 @@ export function Modal({
   dismissible = true,
   widthClassName = "max-w-lg",
 }: ModalProps) {
+  // Opened vs dismissed (Esc / outside click / close) shows where people give up.
+  const name = slug(title);
+  useEffect(() => {
+    const openedAt = Date.now();
+    track("modal_open", { modal: name });
+    return () => track("modal_close", { modal: name, seconds: Math.round((Date.now() - openedAt) / 1000) });
+  }, [name]);
+
   // Dialog's own `sm:max-w-sm` needs an `sm:`-prefixed override to widen it.
   const width = widthClassName
     .split(/\s+/)
@@ -49,7 +58,11 @@ export function Modal({
     .join(" ");
 
   return (
-    <Dialog open onOpenChange={(open) => !open && dismissible && onClose()}>
+    <Dialog open onOpenChange={(open) => {
+        if (open || !dismissible) return;
+        track("modal_dismiss", { modal: name });
+        onClose();
+      }}>
       <DialogContent
         className={cn("max-h-[calc(100dvh-2rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 p-0", width)}
         // With a description Radix links it automatically; without one, opt out

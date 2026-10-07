@@ -2,6 +2,7 @@
 
 import { useState, type MouseEvent, type ReactNode } from "react";
 import { CopyIcon, CheckIcon } from "@/components/icons";
+import { track } from "@/lib/analytics";
 
 interface CopyableLinkProps {
   href: string;
@@ -25,6 +26,7 @@ export function CopyableLink({ href, children, className }: CopyableLinkProps) {
     event.stopPropagation();
     try {
       await navigator.clipboard.writeText(href);
+      track("copy", { kind: "link" });
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {

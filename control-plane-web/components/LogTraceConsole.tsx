@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/Button";
 import { StatusBadge } from "@/components/StatusBadge";
 import { CopyIcon } from "@/components/icons";
+import { track } from "@/lib/analytics";
 import type { InvocationInspectionResponse, InvocationStepInspectionResponse } from "@/lib/types";
 
 type LogFilter = "all" | "stdout" | "stderr" | "errors";
@@ -40,6 +41,7 @@ export function LogTraceConsole({ invocationId, currentStatus, inspection, onRef
   async function copyLogs() {
     try {
       await navigator.clipboard.writeText(logText || inspection?.result || invocationId);
+      track("copy", { kind: "logs" });
       setCopied(true);
       setTimeout(() => setCopied(false), 1200);
     } catch {

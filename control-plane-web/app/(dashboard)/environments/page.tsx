@@ -257,6 +257,7 @@ export default function EnvironmentsPage() {
             >
               <button
                 type="button"
+                data-track="open variable set"
                 onClick={() => {
                   setConfig(null);
                   setSelected(environment);
