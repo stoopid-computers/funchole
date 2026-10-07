@@ -1,3 +1,4 @@
+import { trackApiCall } from "@/lib/analytics";
 import { clearToken, getToken } from "@/lib/auth";
 import type {
   ApiErrorResponse,
@@ -74,6 +75,18 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const method = (init.method ?? "GET").toUpperCase();
+  try {
+    const data = await send<T>(path, init);
+    if (method !== "GET") trackApiCall(method, path, "success");
+    return data;
+  } catch (error) {
+    if (method !== "GET") trackApiCall(method, path, "error", error instanceof ApiError ? error.status : 0);
+    throw error;
+  }
+}
+
+async function send<T>(path: string, init: RequestInit): Promise<T> {
   const token = getToken();
   const headers = new Headers(init.headers);
   if (init.body !== undefined && !(init.body instanceof FormData)) {

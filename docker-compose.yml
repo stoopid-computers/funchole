@@ -282,6 +282,10 @@ services:
         # gateway service exactly. Empty by default (unset here means no
         # /mcp shortcut is shown, not that anything breaks).
         NEXT_PUBLIC_APP_URL: ${PUBLIC_APP_URL:-}
+        # Same build-time-only rule. Google Analytics measurement ID for the
+        # hosted cloud dashboard only; leave unset (the default) to ship no
+        # analytics, e.g. on a self-hosted install.
+        NEXT_PUBLIC_GA_MEASUREMENT_ID: ${PUBLIC_GA_MEASUREMENT_ID:-}
     depends_on:
       controlplane:
         condition: service_healthy

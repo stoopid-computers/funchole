@@ -124,6 +124,11 @@ ENV NEXT_PUBLIC_CONTROLPLANE_URL=${NEXT_PUBLIC_CONTROLPLANE_URL}
 # NEXT_PUBLIC_CONTROLPLANE_URL/api/mcp, which always works regardless.
 ARG NEXT_PUBLIC_APP_URL=""
 ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
+# Same build-time-only inlining - the Google Analytics measurement ID for the
+# hosted cloud dashboard. Empty by default, so self-hosted builds ship no
+# analytics at all (see components/GoogleAnalytics.tsx).
+ARG NEXT_PUBLIC_GA_MEASUREMENT_ID=""
+ENV NEXT_PUBLIC_GA_MEASUREMENT_ID=${NEXT_PUBLIC_GA_MEASUREMENT_ID}
 COPY control-plane-web/package.json control-plane-web/package-lock.json ./
 RUN npm ci --no-audit --no-fund
 COPY control-plane-web/ ./

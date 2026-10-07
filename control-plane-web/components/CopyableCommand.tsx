@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { track } from "@/lib/analytics";
 import { Button } from "@/components/Button";
 import { CheckIcon, CopyIcon } from "@/components/icons";
 
@@ -10,6 +11,7 @@ export function CopyableCommand({ value }: { value: string }) {
   async function copy() {
     try {
       await navigator.clipboard.writeText(value);
+      track("copy", { kind: "command" });
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {

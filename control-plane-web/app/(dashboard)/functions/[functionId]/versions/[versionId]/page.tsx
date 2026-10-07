@@ -508,6 +508,7 @@ function SourcePanel({ functionId, versionId, source, sourceLoaded, isDraft, cop
                   {files.length > 1 && (
                     <button
                       type="button"
+                      data-track="remove file"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleRemoveFile(f.path);

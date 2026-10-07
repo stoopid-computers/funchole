@@ -11,6 +11,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { track } from "@/lib/analytics";
 
 interface ConfirmRequest {
   message: string;
@@ -28,9 +29,14 @@ let enqueue: ((request: ConfirmRequest) => void) | null = null;
  * rest the description; its first word becomes the confirm button's label.
  */
 export function confirmAction(message: string): Promise<boolean> {
-  if (!enqueue) return Promise.resolve(window.confirm(message));
+  const action = splitMessage(message).verb.toLowerCase();
+  const done = (confirmed: boolean) => {
+    track(confirmed ? "confirm_accept" : "confirm_cancel", { action });
+    return confirmed;
+  };
+  if (!enqueue) return Promise.resolve(window.confirm(message)).then(done);
   const push = enqueue;
-  return new Promise((resolve) => push({ message, resolve }));
+  return new Promise<boolean>((resolve) => push({ message, resolve })).then(done);
 }
 
 function splitMessage(message: string) {
