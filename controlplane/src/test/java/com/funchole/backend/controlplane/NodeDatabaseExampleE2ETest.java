@@ -77,7 +77,6 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.MinIOContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -91,7 +90,7 @@ import org.testcontainers.utility.DockerImageName;
  * table it creates/inserts/selects via {@code context.db('primary')} round-trips correctly.
  *
  * <p>Reuses {@link ZeroToHttpResponseE2ETest}'s in-process architecture (real Dispatcher/Runtime
- * Worker classes, wired in-process, Postgres/NATS/MinIO via testcontainers) but skips the
+ * Worker classes, wired in-process, Postgres/NATS/RustFS via testcontainers) but skips the
  * Gateway/TLS layer entirely - invokes the Flow directly via {@code POST
  * /api/v1/flows/{id}/versions/{id}/invoke} instead, since this test is about the Database
  * resolution path, not HTTP routing. The Database resource's own credentials are resolved
@@ -127,7 +126,7 @@ class NodeDatabaseExampleE2ETest {
             .withCommand("-js", "-sd", "/tmp/nats/jetstream");
 
     @Container
-    static MinIOContainer minio = new MinIOContainer("minio/minio");
+    static S3TestContainer minio = new S3TestContainer();
 
     @TempDir
     static Path artifactCacheRoot;

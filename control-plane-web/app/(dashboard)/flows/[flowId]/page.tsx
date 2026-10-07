@@ -167,9 +167,10 @@ export default function FlowDetailPage() {
   }
 
   async function handleAdopt(version: FlowVersionResponse) {
+    if (!flow) return;
     setError(null);
     try {
-      await api.adoptFlowVersion(flowId, version.id);
+      await api.adoptFlowVersion(flowId, version.id, flow.activeFlowVersionId);
       refresh();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to adopt version");

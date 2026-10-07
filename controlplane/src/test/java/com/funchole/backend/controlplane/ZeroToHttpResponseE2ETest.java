@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.funchole.backend.certificate.CertificateBundle;
 import com.funchole.backend.certificate.CertificateProvider;
 import com.funchole.backend.certificate.CertificateRequest;
@@ -24,6 +25,8 @@ import com.funchole.backend.controlplane.repository.AppDomainRepository;
 import com.funchole.backend.controlplane.repository.AppUserRepository;
 import com.funchole.backend.controlplane.repository.GatewayCertificateRepository;
 import com.funchole.backend.controlplane.repository.GatewayRepository;
+import com.funchole.backend.controlplane.mcp.McpReference;
+import com.funchole.backend.controlplane.mcp.ModernMcpProtocol;
 import com.funchole.backend.dispatcher.ExecutionPlanner;
 import com.funchole.backend.dispatcher.InvocationDispatcher;
 import com.funchole.backend.dispatcher.IpcRuntimeExecutionGateway;
@@ -56,6 +59,7 @@ import com.zaxxer.hikari.HikariDataSource;
 import io.nats.client.Connection;
 import io.nats.client.Nats;
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
@@ -65,11 +69,16 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.SecureRandom;
+import java.security.cert.CertificateFactory;
+import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.net.ssl.SSLContext;
@@ -103,7 +112,6 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.MinIOContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -124,7 +132,7 @@ import org.testcontainers.utility.DockerImageName;
  * RuntimeWorkerMain/GatewayMain wire them - just inlined here instead of run
  * as separate OS processes, since nothing in this repo has ever combined
  * more than one of them in a single test before and separate processes has
- * no precedent and is far more fragile for CI. Postgres/NATS/MinIO (a real
+ * no precedent and is far more fragile for CI. Postgres/NATS/RustFS (a real
  * S3-compatible endpoint, standing in for RustFS) are real via testcontainers.
  *
  * <p>Tagged {@code e2e} and excluded from the default {@code test} task (see
@@ -154,13 +162,14 @@ class ZeroToHttpResponseE2ETest {
             .withCommand("-js", "-sd", "/tmp/nats/jetstream");
 
     @Container
-    static MinIOContainer minio = new MinIOContainer("minio/minio");
+    static S3TestContainer minio = new S3TestContainer();
 
     @TempDir
     static Path artifactCacheRoot;
 
     @DynamicPropertySource
     static void artifactProperties(DynamicPropertyRegistry registry) {
+        registry.add("app.nats.url", () -> "nats://" + nats.getHost() + ":" + nats.getMappedPort(4222));
         registry.add("app.artifact.endpoint", minio::getS3URL);
         registry.add("app.artifact.bucket", () -> BUCKET_NAME);
         registry.add("app.artifact.access-key", minio::getUserName);
@@ -181,6 +190,7 @@ class ZeroToHttpResponseE2ETest {
     private static GatewayInvocationCompletionListener gatewayCompletionListener;
     private static GatewayRegistry gatewayRegistry;
     private static GatewayRegistryLoader gatewayRegistryLoader;
+    private static final Map<String, CertificateBundle> certificateBundles = new ConcurrentHashMap<>();
     private static final String RUNTIME_INSTANCE_ID = "runtime-node-e2e-1";
 
     @Autowired
@@ -234,8 +244,9 @@ class ZeroToHttpResponseE2ETest {
      * context is guaranteed up (proven by a real MockMvc call already having
      * succeeded).
      */
-    private static void startGateway() throws Exception {
-        CertificateLoader certificateLoader = reference -> certificateBundleHolder;
+    private static synchronized void startGateway() throws Exception {
+        if (gatewayServer != null) return;
+        CertificateLoader certificateLoader = reference -> certificateBundles.get(reference.secretPath());
         gatewayRegistryLoader = new GatewayRegistryLoader(infraDataSource, certificateLoader);
         gatewayRegistry = new GatewayRegistry(gatewayRegistryLoader.load());
         JdbcInvocationRegistry gatewayInvocationRegistry =
@@ -341,16 +352,175 @@ class ZeroToHttpResponseE2ETest {
         assertThat(stepResult).contains("\"ok\": true").contains("\"path\": \"" + path + "\"");
     }
 
+    @Test
+    void guidedMcpBuildDraftPublishAndReplaceServesBothRevisionsOverHttps() throws Exception {
+        String token = obtainToken();
+        String apiKey = createMcpKey(token);
+        String hostname = createGateway();
+        startGateway();
+
+        assertThat(mcp(apiKey, "server/discover", Map.of()).path("supportedVersions").toString())
+                .contains(ModernMcpProtocol.VERSION);
+        JsonNode toolPage = mcp(apiKey, "tools/list", Map.of());
+        StringBuilder toolInventory = new StringBuilder(toolPage.path("tools").toString());
+        while (toolPage.hasNonNull("nextCursor")) {
+            toolPage = mcp(apiKey, "tools/list", Map.of("cursor", toolPage.path("nextCursor").asText()));
+            toolInventory.append(toolPage.path("tools"));
+        }
+        assertThat(toolInventory.toString()).contains("build_function", "compose_flow", "publish_flow");
+        assertThat(mcpTool(apiKey, "discover", Map.of("query", "flows")).path("ok").asBoolean()).isTrue();
+
+        String path = "/guided-" + UUID.randomUUID().toString().replace("-", "");
+        String functionKey = "fn_guided_" + UUID.randomUUID().toString().replace("-", "");
+        Map<String, Object> firstBuild = Map.of("key", functionKey, "name", "Guided E2E Function",
+                "runtime", "NODE", "entrypoint", "index.mjs", "handler", "handler",
+                "files", List.of(Map.of("path", "index.mjs", "content", source("first"))));
+        String firstOperation = "build-" + UUID.randomUUID();
+        JsonNode built = mcpTool(apiKey, "build_function", Map.of("request", firstBuild, "clientOperationId", firstOperation));
+        String firstFunctionVersion = successfulReference(built);
+        awaitMcpStatus(apiKey, firstFunctionVersion, "READY");
+        // Simulate losing the first HTTP response and retry the exact operation ID and request.
+        JsonNode replay = mcpTool(apiKey, "build_function", Map.of("request", firstBuild, "clientOperationId", firstOperation));
+        assertThat(successfulReference(replay)).isEqualTo(firstFunctionVersion);
+        McpReference functionVersion = McpReference.parse(firstFunctionVersion);
+        assertThat(new JdbcTemplate(controlplaneDataSource).queryForObject(
+                "select count(*) from function_versions where function_id = ?", Integer.class, functionVersion.parentId()))
+                .isEqualTo(1);
+
+        String flowKey = "flw_guided_" + UUID.randomUUID().toString().replace("-", "");
+        String gatewayRef = McpReference.of("gateways", gatewayIdHolder);
+        JsonNode composed = mcpTool(apiKey, "compose_flow", Map.of("request", Map.of(
+                "key", flowKey, "name", "Guided E2E Flow", "gatewayRef", gatewayRef,
+                "httpMethod", "GET", "path", path, "componentRef", firstFunctionVersion)));
+        String firstFlowVersion = successfulReference(composed);
+        assertThat(mcpTool(apiKey, "read", Map.of("reference", firstFlowVersion)).path("data").path("status").asText())
+                .isEqualTo("DRAFT");
+        String invocationRef = successfulReference(mcpTool(apiKey, "invoke", Map.of("reference", firstFlowVersion, "input", "{}")));
+        assertThat(awaitMcpStatus(apiKey, invocationRef, "COMPLETED").toString()).contains("first");
+
+        publishMcp(apiKey, firstFlowVersion, null);
+        gatewayRegistry.replace(gatewayRegistryLoader.load());
+        HttpResponse firstHttps = sendPinnedHttpsRequest(gatewayServer.boundPort(), hostname, path, certificateBundles.get(hostname));
+        assertThat(firstHttps.statusCode()).isEqualTo(200);
+        assertThat(firstHttps.body()).contains("first", path);
+
+        JsonNode rebuilt = mcpTool(apiKey, "build_function", Map.of("request", Map.of(
+                "functionRef", McpReference.of("functions", functionVersion.parentId()),
+                "baseVersionRef", firstFunctionVersion, "entrypoint", "index.mjs", "handler", "handler",
+                "files", List.of(Map.of("path", "index.mjs", "content", source("second"))))));
+        String secondFunctionVersion = successfulReference(rebuilt);
+        assertThat(secondFunctionVersion).isNotEqualTo(firstFunctionVersion);
+        awaitMcpStatus(apiKey, secondFunctionVersion, "READY");
+        String flowRef = McpReference.of("flows", McpReference.parse(firstFlowVersion).parentId());
+        JsonNode replacement = mcpTool(apiKey, "compose_flow", Map.of("request", Map.of(
+                "flowRef", flowRef, "componentRef", secondFunctionVersion)));
+        String secondFlowVersion = successfulReference(replacement);
+        publishMcp(apiKey, secondFlowVersion, firstFlowVersion);
+        gatewayRegistry.replace(gatewayRegistryLoader.load());
+        HttpResponse secondHttps = sendPinnedHttpsRequest(gatewayServer.boundPort(), hostname, path, certificateBundles.get(hostname));
+        assertThat(secondHttps.statusCode()).isEqualTo(200);
+        assertThat(secondHttps.body()).contains("second", path).doesNotContain("first");
+    }
+
+    private String createMcpKey(String token) throws Exception {
+        MvcResult response = mockMvc.perform(post("/api/v1/api-keys")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Golden MCP E2E\"}"))
+                .andExpect(status().isOk()).andReturn();
+        return JsonPath.read(response.getResponse().getContentAsString(), "$.data.rawKey");
+    }
+
+    private JsonNode mcp(String apiKey, String method, Map<String, Object> params) throws Exception {
+        Map<String, Object> requestParams = new LinkedHashMap<>(params);
+        requestParams.put("_meta", Map.of("io.modelcontextprotocol/protocolVersion", ModernMcpProtocol.VERSION,
+                "io.modelcontextprotocol/clientCapabilities", Map.of()));
+        Map<String, Object> request = Map.of("jsonrpc", "2.0", "id", UUID.randomUUID().toString(),
+                "method", method, "params", requestParams);
+        String toolName = method.equals("tools/call") ? (String) params.get("name") : null;
+        var builder = post("/api/mcp")
+                .header("Authorization", "Bearer " + apiKey)
+                .header("MCP-Protocol-Version", ModernMcpProtocol.VERSION)
+                .header("Mcp-Method", method)
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Accept", "application/json, text/event-stream")
+                .content(new ObjectMapper().writeValueAsString(request));
+        if (toolName != null) builder.header("Mcp-Name", toolName);
+        String body = mockMvc.perform(builder).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        JsonNode result = new ObjectMapper().readTree(body);
+        assertThat(result.path("error").isMissingNode()).as(body).isTrue();
+        return result.path("result");
+    }
+
+    private JsonNode mcpTool(String apiKey, String name, Map<String, Object> arguments) throws Exception {
+        JsonNode result = mcp(apiKey, "tools/call", Map.of("name", name, "arguments", arguments));
+        assertThat(result.path("isError").asBoolean()).as(result.toString()).isFalse();
+        return result.path("structuredContent");
+    }
+
+    private String successfulReference(JsonNode receipt) {
+        assertThat(receipt.path("ok").asBoolean()).as(receipt.toString()).isTrue();
+        String reference = receipt.path("reference").asText();
+        assertThat(reference).startsWith("funchole://");
+        return reference;
+    }
+
+    private JsonNode awaitMcpStatus(String apiKey, String reference, String targetStatus) throws Exception {
+        long deadline = System.nanoTime() + Duration.ofSeconds(30).toNanos();
+        while (System.nanoTime() < deadline) {
+            JsonNode state = mcpTool(apiKey, "read", Map.of("reference", reference));
+            String status = state.path("data").path("status").asText();
+            if (targetStatus.equals(status)) return state;
+            assertThat(status).as(state.toString()).isNotEqualTo("FAILED");
+            Thread.sleep(1000);
+        }
+        throw new AssertionError(reference + " did not reach " + targetStatus + " within 30 seconds");
+    }
+
+    private void publishMcp(String apiKey, String draft, String expected) throws Exception {
+        Map<String, Object> request = new LinkedHashMap<>();
+        request.put("reference", draft);
+        request.put("expectedActiveVersionRef", expected);
+        successfulReference(mcpTool(apiKey, "publish_flow", Map.of("request", request)));
+    }
+
+    private static String source(String marker) {
+        return "export async function handler(input) { return { status: 200, body: { marker: '" + marker
+                + "', path: input.path } }; }";
+    }
+
     private record HttpResponse(int statusCode, String body) {
     }
 
     private HttpResponse sendRealHttpsRequest(int port, String hostname, String path) throws Exception {
-        SSLContext sslContext = trustAllSslContext();
+        return sendHttpsRequest(port, hostname, path, trustAllSslContext(), false);
+    }
+
+    private HttpResponse sendPinnedHttpsRequest(int port, String hostname, String path, CertificateBundle bundle) throws Exception {
+        X509Certificate pinned = (X509Certificate) CertificateFactory.getInstance("X.509")
+                .generateCertificate(new ByteArrayInputStream(bundle.certificateChain()));
+        X509TrustManager trustPinned = new X509TrustManager() {
+            @Override public void checkClientTrusted(X509Certificate[] chain, String authType) { }
+            @Override public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+                if (chain.length == 0 || !pinned.equals(chain[0])) throw new CertificateException("Unexpected gateway certificate");
+                pinned.checkValidity();
+            }
+            @Override public X509Certificate[] getAcceptedIssuers() { return new X509Certificate[]{pinned}; }
+        };
+        SSLContext context = SSLContext.getInstance("TLS");
+        context.init(null, new TrustManager[]{trustPinned}, new SecureRandom());
+        return sendHttpsRequest(port, hostname, path, context, true);
+    }
+
+    private HttpResponse sendHttpsRequest(int port, String hostname, String path, SSLContext sslContext,
+                                          boolean verifyHostname) throws Exception {
         SSLSocketFactory factory = sslContext.getSocketFactory();
-        try (SSLSocket socket = (SSLSocket) factory.createSocket()) {
-            socket.connect(new InetSocketAddress("localhost", port), 5000);
+        Socket transport = new Socket();
+        transport.connect(new InetSocketAddress("localhost", port), 5000);
+        try (SSLSocket socket = (SSLSocket) factory.createSocket(transport, hostname, port, true)) {
             SSLParameters parameters = socket.getSSLParameters();
             parameters.setServerNames(List.of(new SNIHostName(hostname)));
+            if (verifyHostname) parameters.setEndpointIdentificationAlgorithm("HTTPS");
             socket.setSSLParameters(parameters);
             socket.startHandshake();
 
@@ -448,8 +618,7 @@ class ZeroToHttpResponseE2ETest {
      * bundle directly via the certificate module's own generator and saves
      * the certificate row by hand, matching what that pipeline would
      * eventually produce. The test's own {@code CertificateLoader} stub
-     * (see {@link #startGateway()}) returns this same bundle regardless of
-     * the secret_ref passed in - there is no OpenBao here to resolve it from.
+     * (see {@link #startGateway()}) returns the generated bundle by secret_ref.
      */
     private String createGateway() {
         AppUser admin = appUserRepository.findByUsername("admin").orElseThrow();
@@ -463,9 +632,9 @@ class ZeroToHttpResponseE2ETest {
 
         GeneratedCertificate generated = new SelfSignedCertificateGenerator(Duration.ofDays(30))
                 .generate(new CertificateRequest(hostname, List.of(hostname)));
-        certificateBundleHolder = generated.bundle();
+        certificateBundles.put(hostname, generated.bundle());
         GatewayCertificate certificate = GatewayCertificate.create(
-                gateway, hostname, null, CertificateProvider.SELF_SIGNED, "e2e-test-secret-ref");
+                gateway, hostname, null, CertificateProvider.SELF_SIGNED, hostname);
         certificate.markActive(generated.issuedAt(), generated.expiresAt());
         gatewayCertificateRepository.save(certificate);
 
@@ -473,8 +642,6 @@ class ZeroToHttpResponseE2ETest {
     }
 
     private UUID gatewayIdHolder;
-    private static CertificateBundle certificateBundleHolder;
-
     @Autowired
     private AppUserRepository appUserRepository;
 
@@ -542,8 +709,21 @@ class ZeroToHttpResponseE2ETest {
     private void deployAndAssertReady(String token, String functionId, String versionId) throws Exception {
         mockMvc.perform(post("/api/v1/functions/{functionId}/versions/{versionId}/deploy", functionId, versionId)
                         .header("Authorization", "Bearer " + token))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.status").value("READY"));
+                .andExpect(status().isOk());
+        long deadline = System.nanoTime() + Duration.ofSeconds(30).toNanos();
+        while (System.nanoTime() < deadline) {
+            MvcResult result = mockMvc.perform(get("/api/v1/functions/{functionId}/versions/{versionId}", functionId, versionId)
+                            .header("Authorization", "Bearer " + token))
+                    .andExpect(status().isOk())
+                    .andReturn();
+            String state = JsonPath.read(result.getResponse().getContentAsString(), "$.data.status");
+            if ("READY".equals(state)) {
+                return;
+            }
+            assertThat(state).isNotEqualTo("FAILED");
+            Thread.sleep(100);
+        }
+        throw new AssertionError("Function Version did not become READY within 30 seconds");
     }
 
     private String createFlow(String token, String flowKey, String path) throws Exception {

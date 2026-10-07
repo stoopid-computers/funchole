@@ -19,7 +19,7 @@ import org.springframework.stereotype.Service;
 
 /**
  * MCP tool surface for Flows - mirrors {@code FlowController} exactly. A
- * Flow is a route (method+path under a Gateway) whose FlowVersions compose
+ * Flow has a Flow Route (method+path under a Gateway); its FlowVersions compose
  * Function/RESPONSE/MIDDLEWARE/SUB_FLOW steps - see FlowVersion/FlowStep
  * tools for the composition itself.
  */
@@ -55,8 +55,9 @@ public class FlowMcpTools {
 
     @McpTool(
             name = "create_flow",
-            description = "Create a new Flow - an HTTP route (method+path) under a Gateway. Create a FlowVersion "
-                    + "under it next with create_flow_version, add steps, then adopt_flow_version to make it live."
+            description = "Create a Flow identity and its Flow Route (method+path under a Gateway). Create a "
+                    + "matching runtime Flow Version, add pinned steps, test, then adopt to serve live HTTP. "
+                    + "Read get_funchole_guide('flows') before routing."
     )
     public FlowResponse createFlow(
             @McpToolParam(description = "Unique key: letters, numbers, '_', '.' and '-' only, e.g. flw_orders_list") String flowKey,

@@ -1,6 +1,7 @@
 package com.funchole.backend.controlplane.controller;
 
 import com.funchole.backend.controlplane.dto.FlowStepResponse;
+import com.funchole.backend.controlplane.dto.FlowPublishRequest;
 import com.funchole.backend.controlplane.dto.FlowVersionCreateRequest;
 import com.funchole.backend.controlplane.dto.FlowVersionResponse;
 import com.funchole.backend.controlplane.entity.FlowStep;
@@ -9,6 +10,7 @@ import com.funchole.backend.controlplane.mapper.FlowStepMapper;
 import com.funchole.backend.controlplane.mapper.FlowVersionMapper;
 import com.funchole.backend.controlplane.security.AppUserPrincipal;
 import com.funchole.backend.controlplane.service.FlowStepService;
+import com.funchole.backend.controlplane.service.FlowPublicationService;
 import com.funchole.backend.controlplane.service.FlowVersionService;
 import com.funchole.backend.core.base.mapper.PaginationMapper;
 import com.funchole.backend.core.base.response.ApiResponse;
@@ -33,6 +35,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/flows/{flowId}/versions")
 public class FlowVersionController {
     private final FlowVersionService flowVersionService;
+    private final FlowPublicationService flowPublicationService;
     private final FlowStepService flowStepService;
     private final FlowVersionMapper flowVersionMapper;
     private final FlowStepMapper flowStepMapper;
@@ -40,12 +43,14 @@ public class FlowVersionController {
 
     public FlowVersionController(
             FlowVersionService flowVersionService,
+            FlowPublicationService flowPublicationService,
             FlowStepService flowStepService,
             FlowVersionMapper flowVersionMapper,
             FlowStepMapper flowStepMapper,
             PaginationMapper paginationMapper
     ) {
         this.flowVersionService = flowVersionService;
+        this.flowPublicationService = flowPublicationService;
         this.flowStepService = flowStepService;
         this.flowVersionMapper = flowVersionMapper;
         this.flowStepMapper = flowStepMapper;
@@ -94,8 +99,21 @@ public class FlowVersionController {
             @PathVariable UUID flowId,
             @PathVariable UUID versionId
     ) {
-        FlowVersion flowVersion = flowVersionService.adoptVersion(appUserPrincipal.getId(), flowId, versionId);
+        FlowVersion flowVersion = flowPublicationService.adoptWithoutExpectation(appUserPrincipal.getId(), flowId, versionId);
         return ApiResponse.success(flowVersionMapper.toResponse(flowVersion));
+    }
+
+    @PostMapping("/{versionId}/publish")
+    @SecurityRequirement(name = "bearerAuth")
+    public ApiResponse<FlowVersionResponse> publishVersion(
+            @AuthenticationPrincipal AppUserPrincipal appUserPrincipal,
+            @PathVariable UUID flowId,
+            @PathVariable UUID versionId,
+            @Valid @RequestBody FlowPublishRequest request
+    ) {
+        FlowVersion published = flowPublicationService.publish(appUserPrincipal.getId(), flowId, versionId,
+                request.expectedActiveVersionId(), request.route());
+        return ApiResponse.success(flowVersionMapper.toResponse(published));
     }
 
     @PostMapping("/{versionId}/archive")

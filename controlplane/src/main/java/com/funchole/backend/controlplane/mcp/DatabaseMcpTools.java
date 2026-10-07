@@ -64,9 +64,9 @@ public class DatabaseMcpTools {
 
     @McpTool(
             name = "create_database",
-            description = "Register an external Postgres database as a managed Database resource. The password "
-                    + "is stored securely and never returned again - attach the result to a FunctionVersion with "
-                    + "attach_function_version_database so context.db(name) can reach it."
+            description = "Register an existing external Postgres connection; this does not provision Postgres. "
+                    + "The password is stored securely and excluded from routine responses. Attach it to a "
+                    + "Function Version or Flow; read get_funchole_guide('data') before database/migration code."
     )
     public DatabaseResponse createDatabase(
             @McpToolParam(description = "Unique name for this resource, e.g. 'primary'") String name,
