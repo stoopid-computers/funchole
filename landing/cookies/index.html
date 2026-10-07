@@ -2,15 +2,6 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-L9P40W5X66"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-L9P40W5X66');
-</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cookie Policy — FuncHole</title>
 <meta name="description" content="Which cookies and browser storage FuncHole uses.">
@@ -24,6 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/styles.css">
+<script src="/consent.js" defer></script>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs><linearGradient id="fh-grad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#C5D0FF"/><stop offset="1" stop-color="#2F5BFF"/></linearGradient><symbol id="fh-mark" viewBox="0 0 24 24"><rect x="1.5" y="1.5" width="13.5" height="13.5" rx="4.2" fill="#17181C"/><rect x="9" y="9" width="13.5" height="13.5" rx="4.2" fill="url(#fh-grad)" stroke="#17181C" stroke-width="1.5"/><path d="M9 13.2A4.2 4.2 0 0 1 13.2 9H15v1.8a4.2 4.2 0 0 1-4.2 4.2H9z" fill="#DFE6FF"/></symbol></defs></svg>
@@ -42,8 +34,8 @@
     <div class="summary">
       <h2>The short version</h2>
       <ul>
-        <li>The funchole.dev website sets analytics cookies through Google Analytics. It sets no advertising cookies.</li>
-        <li>You can block analytics cookies in your browser or with Google’s opt-out add-on.</li>
+        <li>Analytics cookies (Google Analytics) are only set if you accept them in the banner. We set no advertising cookies.</li>
+        <li>A small cookie remembers your choice for a year, and you can change it any time with “Cookie settings”.</li>
         <li>The dashboard stores a sign-in session in your browser so you stay logged in.</li>
       </ul>
     </div>
@@ -55,7 +47,8 @@
     <ul>
       <li><strong>No advertising cookies.</strong></li>
       <li><strong>Session storage.</strong> The page remembers the GitHub star count for your visit, so it doesn’t ask GitHub again on every page. It is deleted when you close the tab.</li>
-      <li><strong>Analytics.</strong> We use Google Analytics. It sets cookies (such as <code>_ga</code> and <code>_ga_*</code>) to tell visits apart and measure how the site is used. By default they last up to two years.</li>
+      <li><strong>Your choice.</strong> <code>fh_consent</code> stores whether you accepted or declined analytics, for one year. It is shared between funchole.dev and app.funchole.dev so we only ask once, and it is strictly necessary for the banner to work.</li>
+      <li><strong>Analytics, only if you accept.</strong> We use Google Analytics. It sets cookies (such as <code>_ga</code> and <code>_ga_*</code>) to tell visits apart and measure how the site is used. By default they last up to two years.</li>
       <li><strong>Cloudflare.</strong> Our CDN may set cookies or similar data that are strictly necessary for security and performance, such as detecting bots and protecting against attacks.</li>
     </ul>
 
@@ -63,10 +56,13 @@
     <p>When you sign in, the dashboard stores a session token in your browser so you stay signed in. It is necessary for the Service to work, so it doesn’t need your consent. Google sign-in may also set its own cookies on Google’s domains; see Google’s policies.</p>
 
     <h2>Third-party requests</h2>
-    <p>The website loads Google Analytics from Google Tag Manager, loads fonts from Google Fonts and calls the public GitHub API. Those requests send your IP address and browser details to those services, and they may set their own cookies. See their privacy policies for details.</p>
+    <p>The website loads Google Analytics from Google Tag Manager (only after you accept), loads fonts from Google Fonts and calls the public GitHub API. Those requests send your IP address and browser details to those services, and they may set their own cookies. See their privacy policies for details.</p>
+
+    <h2>Changing your choice</h2>
+    <p>Use “Cookie settings” in the footer of this site, or in the dashboard account menu, to accept or decline analytics again. Declining removes the Google Analytics cookies already set. The dashboard follows the same choice.</p>
 
     <h2>Managing cookies</h2>
-    <p>You can block or delete cookies in your browser settings. Blocking the dashboard’s session storage will stop you from staying signed in.</p>
+    <p>You can also block or delete cookies in your browser settings. Blocking the dashboard’s session storage will stop you from staying signed in.</p>
 
     <h2>Contact</h2>
     <p>Questions? <a href="mailto:privacy@funchole.dev">privacy@funchole.dev</a>. See also our <a href="/privacy/">Privacy Policy</a>.</p>
@@ -78,6 +74,7 @@
       <li><a href="/privacy/">Privacy Policy</a></li>
       <li><a href="/terms/">Terms of Service</a></li>
       <li><a href="/cookies/">Cookie Policy</a></li>
+      <li><button type="button" class="link-btn" data-consent-open>Cookie settings</button></li>
       <li><a href="https://github.com/stoopid-computers/funchole/blob/main/LICENSE.md">FSL 1.1 License</a></li>
       <li><a href="/">Back to funchole.dev</a></li>
     </ul>

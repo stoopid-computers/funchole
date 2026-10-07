@@ -464,3 +464,14 @@ button.slot[aria-pressed="true"], .slot.on { background: var(--blue); color: #ff
 .legal-links { display: flex; flex-wrap: wrap; gap: 8px 24px; }
 .legal-links a { color: var(--mute); }
 .legal-links a:hover { color: var(--ink); }
+
+/* ---------- Cookie consent ---------- */
+.consent { position: fixed; z-index: 90; left: 16px; right: 16px; bottom: 16px; max-width: 380px; padding: 18px; background: var(--card); border: var(--stroke); border-radius: 14px; box-shadow: var(--hard); }
+.consent-title { font: 800 18px/1.2 var(--display); letter-spacing: -0.02em; }
+.consent-text { margin-top: 6px; font-size: 14.5px; line-height: 1.45; color: var(--mute); }
+.consent-text a { color: var(--ink); text-underline-offset: 3px; }
+.consent-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+.consent .btn { min-height: 44px; padding: 0 12px; }
+.link-btn { padding: 2px 0; font: inherit; color: var(--mute); background: none; border: 0; cursor: pointer; }
+.link-btn:hover { color: var(--ink); text-decoration: underline; }
+@media (min-width: 640px) { .consent { left: auto; right: 24px; bottom: 24px; } }
