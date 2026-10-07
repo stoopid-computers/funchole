@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { openConsentSettings } from "@/lib/consent";
 import { useEffect, useState, type ComponentType, type ReactNode } from "react";
 import { MenuIcon } from "lucide-react";
 import { api } from "@/lib/api";
@@ -192,6 +193,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 })}
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
+              {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
+                <DropdownMenuItem onSelect={openConsentSettings}>
+                  <SettingsIcon className="h-4 w-4" />
+                  Cookie settings
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem variant="destructive" onSelect={handleLogout}>
                 <LogOutIcon className="h-4 w-4" />
                 Logout

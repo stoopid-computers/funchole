@@ -2,15 +2,6 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-L9P40W5X66"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-L9P40W5X66');
-</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Privacy Policy — FuncHole</title>
 <meta name="description" content="How FuncHole collects, uses and protects your data.">
@@ -24,6 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/styles.css">
+<script src="/consent.js" defer></script>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs><linearGradient id="fh-grad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#C5D0FF"/><stop offset="1" stop-color="#2F5BFF"/></linearGradient><symbol id="fh-mark" viewBox="0 0 24 24"><rect x="1.5" y="1.5" width="13.5" height="13.5" rx="4.2" fill="#17181C"/><rect x="9" y="9" width="13.5" height="13.5" rx="4.2" fill="url(#fh-grad)" stroke="#17181C" stroke-width="1.5"/><path d="M9 13.2A4.2 4.2 0 0 1 13.2 9H15v1.8a4.2 4.2 0 0 1-4.2 4.2H9z" fill="#DFE6FF"/></symbol></defs></svg>
@@ -44,7 +36,7 @@
       <ul>
         <li>We collect what we need to run your account and your solutions: your Google or login details, the code and settings you put into FuncHole, and logs of what your solutions do.</li>
         <li>We don’t sell your data and we don’t show ads.</li>
-        <li>The website uses Google Analytics to understand visits, which sets analytics cookies. We don’t use advertising cookies.</li>
+        <li>Google Analytics runs on the website and in the dashboard only if you accept it in the cookie banner. We don’t use advertising cookies.</li>
         <li>You can ask us to delete your account and data at any time: <a href="mailto:privacy@funchole.dev">privacy@funchole.dev</a>.</li>
       </ul>
     </div>
@@ -63,7 +55,7 @@
     <h3>Messages to us</h3>
     <p>If you email us, we keep the message and your address so we can reply. We answer from a plain email inbox and do not use a separate support or newsletter tool.</p>
     <h3>Website analytics and technical data</h3>
-    <p>We use Google Analytics to measure visits and see which pages people use. It uses cookies and similar identifiers, and may collect your IP address, device and browser details and the pages you view. Google processes this data for us. You can block it in your browser settings or with Google’s opt-out browser add-on. Our CDN, Cloudflare, also processes technical data such as IP address and browser type to deliver and protect the site. Loading the website also fetches fonts from Google Fonts and, to show the star count, calls the public GitHub API, so those services may see your IP address.</p>
+    <p>If you accept analytics cookies, we use Google Analytics on the website and in the dashboard to measure visits and see which pages and buttons people use. We send page paths and button labels, never your code, names, secrets or other content. Nothing is loaded until you accept, and you can change your choice at any time with “Cookie settings” in the footer or the dashboard account menu. It uses cookies and similar identifiers, and may collect your IP address, device and browser details and the pages you view. Google processes this data for us. You can block it in your browser settings or with Google’s opt-out browser add-on. Our CDN, Cloudflare, also processes technical data such as IP address and browser type to deliver and protect the site. Loading the website also fetches fonts from Google Fonts and, to show the star count, calls the public GitHub API, so those services may see your IP address.</p>
 
     <h2>How we use it</h2>
     <ul>
@@ -117,6 +109,7 @@
       <li><a href="/privacy/">Privacy Policy</a></li>
       <li><a href="/terms/">Terms of Service</a></li>
       <li><a href="/cookies/">Cookie Policy</a></li>
+      <li><button type="button" class="link-btn" data-consent-open>Cookie settings</button></li>
       <li><a href="https://github.com/stoopid-computers/funchole/blob/main/LICENSE.md">FSL 1.1 License</a></li>
       <li><a href="/">Back to funchole.dev</a></li>
     </ul>
