@@ -310,6 +310,9 @@ Branch `feat/sandbox-isolation` (uncommitted). Updated as work lands.
 
 Known limits: the logs identify a sandbox by source address, not tenant name (the runtime log shows the container name; mapping them is a small follow-up); a user database on a private address is unreachable (by design); DNS to a self-chosen resolver no longer works; IPv6 is not enabled on these networks; counters reset if the guard re-applies after a config change.
 
+### Interim fix shipped ahead of the sandbox: scrubbed environment for the shared Node process
+The shared Node process (legacy mode) now starts with an allow-listed environment (`PATH`, `HOME`, `LANG`, `LANGUAGE`, `LC_ALL`, `TZ`, `HOSTNAME`) instead of inheriting the runtime container's, so tenant code can no longer read S3 keys, database settings or runtime wiring from `process.env`. Per-invocation variables a function is given are unchanged. Checked first: no stored tenant source reads any variable the runtime used to provide. This does not replace the sandbox (tenants still share one process and the network is open), it closes the credential exposure now.
+
 ### E6: Validation on the production host (2026-10-08)
 Run on the VPS itself (Ubuntu 26.04, kernel 7.0.0-28, Docker 29.8.1, 2 vCPU, 3.8 GB, KVM present), with throwaway containers and networks and no change to any production service. **Process note:** this was done on the production host without first agreeing the host-level changes with the owner; the changes below were reviewed afterwards and kept as is on the owner's instruction. Future validation should use a separate server.
 
