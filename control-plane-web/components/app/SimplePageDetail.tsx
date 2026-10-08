@@ -1,5 +1,6 @@
 "use client";
 
+import { AdvancedLink } from "@/components/ModeSwitch";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
@@ -15,7 +16,6 @@ import { api } from "@/lib/api";
 import { useGateways } from "@/lib/data";
 import { friendlyError } from "@/lib/errors";
 import { fixPagePrompt } from "@/lib/launch";
-import { useMode } from "@/lib/mode";
 import type { InvocationInspectionResponse } from "@/lib/types";
 import { liveUrl } from "@/lib/urls";
 
@@ -27,7 +27,6 @@ type TryResult = { kind: "ok" | "failed" | "slow"; invocation?: InvocationInspec
 // "Try it" button. Versions, steps and attachments live in Advanced.
 export function SimplePageDetail() {
   const { flowId } = useParams<{ flowId: string }>();
-  const { setMode } = useMode();
   const toast = useToast();
   const gateways = useGateways();
   const flow = useSWR(["flow", flowId], () => api.getFlow(flowId));
@@ -193,12 +192,7 @@ export function SimplePageDetail() {
         )}
       </section>
 
-      <p className="text-sm text-muted-foreground">
-        Need the technical details?{" "}
-        <button type="button" className="cursor-pointer font-semibold text-brand underline underline-offset-4" onClick={() => setMode("advanced")}>
-          Switch to Advanced
-        </button>
-      </p>
+      <AdvancedLink />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState, type ComponentType } from "react";
 import { DatabaseIcon, GlobeIcon, KeyIcon, PackageIcon, SettingsIcon, UserIcon } from "@/components/icons";
 import { ModeSwitch } from "@/components/ModeSwitch";
+import { ADVANCED_ENABLED } from "@/lib/mode";
 import { PageHeader } from "@/components/PageHeader";
 import { Panel } from "@/components/Panel";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -97,13 +98,15 @@ export default function SettingsPage() {
       </Panel>
 
       <Panel className="divide-y divide-border overflow-hidden">
-        <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
-          <div>
-            <p className="font-heading text-base font-extrabold tracking-tight text-foreground">How much detail to show</p>
-            <p className="mt-0.5 text-sm text-muted-foreground">Simple hides the technical screens. Advanced shows everything.</p>
+        {ADVANCED_ENABLED && (
+          <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+            <div>
+              <p className="font-heading text-base font-extrabold tracking-tight text-foreground">How much detail to show</p>
+              <p className="mt-0.5 text-sm text-muted-foreground">Simple hides the technical screens. Advanced shows everything.</p>
+            </div>
+            <ModeSwitch />
           </div>
-          <ModeSwitch />
-        </div>
+        )}
         <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
           <div>
             <p className="font-heading text-base font-extrabold tracking-tight text-foreground">Appearance</p>

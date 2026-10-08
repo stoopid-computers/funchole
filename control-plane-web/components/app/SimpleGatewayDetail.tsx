@@ -1,5 +1,6 @@
 "use client";
 
+import { AdvancedLink } from "@/components/ModeSwitch";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import useSWR from "swr";
@@ -10,13 +11,11 @@ import { PageLoading } from "@/components/PageLoading";
 import { StatusBadge } from "@/components/StatusBadge";
 import { api } from "@/lib/api";
 import { friendlyError } from "@/lib/errors";
-import { useMode } from "@/lib/mode";
 import { liveUrl } from "@/lib/urls";
 
 // Simple-mode view of the gateway: your address, plus the own-domain wizard.
 export function SimpleGatewayDetail() {
   const { gatewayId } = useParams<{ gatewayId: string }>();
-  const { setMode } = useMode();
   const gateway = useSWR(["gateway", gatewayId], () => api.getGateway(gatewayId));
 
   if (!gateway.data) {
@@ -51,12 +50,7 @@ export function SimpleGatewayDetail() {
 
       <DomainWizard gatewayId={gatewayId} />
 
-      <p className="text-sm text-muted-foreground">
-        Need the technical details?{" "}
-        <button type="button" className="cursor-pointer font-semibold text-brand underline underline-offset-4" onClick={() => setMode("advanced")}>
-          Switch to Advanced
-        </button>
-      </p>
+      <AdvancedLink />
     </div>
   );
 }

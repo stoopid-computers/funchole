@@ -7,7 +7,7 @@ import { ProfileContext } from "@/lib/profile";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ModeSwitch } from "@/components/ModeSwitch";
 import { ToastProvider } from "@/components/Toast";
-import { ModeProvider, saveMode, useMode, useSavedMode } from "@/lib/mode";
+import { ADVANCED_ENABLED, ModeProvider, saveMode, useMode, useSavedMode } from "@/lib/mode";
 import { useEffect, useState, type ComponentType, type ReactNode } from "react";
 import { MenuIcon } from "lucide-react";
 import { api } from "@/lib/api";
@@ -148,7 +148,7 @@ function Shell({ children }: { children: ReactNode }) {
   // First time in the new workspace: people who already build things get
   // Advanced once; everyone else stays in Simple. After that it is their choice.
   useEffect(() => {
-    if (savedMode !== null) return;
+    if (!ADVANCED_ENABLED || savedMode !== null) return;
     let active = true;
     Promise.all([api.listFunctions(1, 1), api.listFlows(1, 1)])
       .then(([functions, flows]) => {
