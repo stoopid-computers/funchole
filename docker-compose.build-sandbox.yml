@@ -21,6 +21,10 @@ services:
       dockerfile: docker/sandbox/Dockerfile.build
     entrypoint: ["true"]
     restart: "no"
+    # Builds are started by the Docker daemon, not by a compose service, so nothing else would make compose
+    # create build-net. Attaching this one-shot service does; the network outlives the container.
+    networks:
+      - build-net
 
   # Runs tenant builds. It talks to the Docker daemon, so it holds NO platform credentials, only its
   # own token. Builds run as an unprivileged user (never root), with no capabilities, a read-only
