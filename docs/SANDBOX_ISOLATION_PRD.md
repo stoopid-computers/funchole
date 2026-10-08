@@ -313,6 +313,15 @@ Known limits: the logs identify a sandbox by source address, not tenant name (th
 ### Interim fix shipped ahead of the sandbox: scrubbed environment for the shared Node process
 The shared Node process (legacy mode) now starts with an allow-listed environment (`PATH`, `HOME`, `LANG`, `LANGUAGE`, `LC_ALL`, `TZ`, `HOSTNAME`) instead of inheriting the runtime container's, so tenant code can no longer read S3 keys, database settings or runtime wiring from `process.env`. Per-invocation variables a function is given are unchanged. Checked first: no stored tenant source reads any variable the runtime used to provide. This does not replace the sandbox (tenants still share one process and the network is open), it closes the credential exposure now.
 
+### Rollout status (2026-10-09, production VPS)
+**Live:** runtime sandbox (18:38-18:41 UTC, window under 3 minutes, all customers at once in a quiet period) and build sandbox (controlplane switched at 18:52 UTC). `COMPOSE_FILE` in the server's `.env` keeps the sandbox overrides active for every plain `docker compose` command (a plain command used to be how the legacy runtime would silently come back).
+
+**Checked before switching:** every function artifact (205; the other 108 are static sites) loaded in the sandbox configuration and in a permissive baseline: 202 identical, 0 failing only in the sandbox, 3 broken in both. **Checked after:** sandboxes run under gVisor, read-only, unprivileged, 128 MB, 64 processes, guarded network; invocations all completed; memory flat at about 1.5 GB available; no OOM events after the switch; guard counters 0 (no customer function tried anything blocked); a real build through the production manager (npm install of registry packages, malicious postinstall) saw nothing and could reach nothing; guard dropped its attempts.
+
+**Rollback (about a minute):** remove the `COMPOSE_FILE` line from the server's `.env`, then `docker compose up -d runtime controlplane`. The legacy images are tagged `funchole-runtime:rollback-legacy-pre-sandbox` and `:latest` (untouched). The firewall rules and extra networks can stay.
+
+**Found during the rollout and fixed:** the build network was never created by compose (nothing referenced it) and is now created via the `build-image` service. **Not yet exercised end to end:** a real user deploy that goes controlplane -> manager (the Java client is covered by integration tests and the manager was driven by hand with production settings). **Open:** the manager image on the server is the validated pre-built one, to be replaced by a normal build in the next maintenance window; the runtime container still holds S3 credentials and the Docker socket (moves to its own host in E7); no per-tenant canary exists.
+
 ### Rollout runbook (production VPS, runtime first, builds second)
 Compose files: `docker-compose.sandbox.yml` (runtime sandbox + egress guard) and `docker-compose.build-sandbox.yml` (build isolation, layered on the first). Each uses its own image names, so the legacy images are never overwritten.
 
