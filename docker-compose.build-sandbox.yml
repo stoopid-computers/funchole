@@ -1,0 +1,81 @@
+# Sandbox mode for tenant BUILDS (docs/SANDBOX_ISOLATION_PRD.md, E4). Layer it on top of the runtime sandbox:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.sandbox.yml -f docker-compose.build-sandbox.yml build build-image sandbox-manager
+#   docker compose -f docker-compose.yml -f docker-compose.sandbox.yml -f docker-compose.build-sandbox.yml up -d sandbox-manager controlplane
+#
+# Needs SANDBOX_MANAGER_TOKEN in .env (a long random secret shared by controlplane and manager) and the
+# egress-guard service from docker-compose.sandbox.yml.
+#
+# What changes: tenant builds (npm ci / npm run build) stop running inside the controlplane, where a
+# malicious postinstall would sit next to every platform secret. The controlplane sends them to the sandbox
+# manager, which runs them in locked-down containers as an unprivileged user.
+#
+# Rollback: run the commands without this file; the controlplane goes back to building locally.
+
+services:
+  # Builds the (untrusted) build image on the host's Docker, then exits.
+  build-image:
+    image: funchole-build-sandbox:local
+    build:
+      context: .
+      dockerfile: docker/sandbox/Dockerfile.build
+    entrypoint: ["true"]
+    restart: "no"
+
+  # Runs tenant builds. It talks to the Docker daemon, so it holds NO platform credentials, only its
+  # own token. Builds run as an unprivileged user (never root), with no capabilities, a read-only
+  # root filesystem, hard memory/CPU/PID limits, and none of this container's environment.
+  sandbox-manager:
+    image: funchole-sandbox-manager:local
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: sandbox-manager
+    mem_limit: 256m
+    environment:
+      SANDBOX_MANAGER_TOKEN: ${SANDBOX_MANAGER_TOKEN:?Set SANDBOX_MANAGER_TOKEN in your .env file (a long random secret)}
+      # Must be a HOST path, mounted at the same path below, because the Docker daemon bind-mounts it into builds.
+      SANDBOX_JOBS_DIR: ${SANDBOX_JOBS_DIR:-/var/lib/funchole/sandbox-jobs}
+      BUILD_USER: "10001:10001"
+      BUILD_IMAGE: funchole-build-sandbox:local
+      # Empty = Docker's default runtime; set BUILD_RUNTIME=runsc to build under gVisor.
+      BUILD_RUNTIME: ${BUILD_RUNTIME:-}
+      BUILD_NETWORK: ${COMPOSE_PROJECT_NAME:-funchole}_build-net
+      BUILD_DNS: ${EGRESS_DNS_SERVERS:-8.8.8.8,8.8.4.4}
+      BUILD_MEMORY: ${BUILD_MEMORY:-512m}
+      BUILD_CPUS: ${BUILD_CPUS:-1}
+    volumes:
+      - ${SANDBOX_JOBS_DIR:-/var/lib/funchole/sandbox-jobs}:${SANDBOX_JOBS_DIR:-/var/lib/funchole/sandbox-jobs}
+      - /var/run/docker.sock:/var/run/docker.sock
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:7090/healthz >/dev/null"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    depends_on:
+      build-image:
+        condition: service_completed_successfully
+      egress-guard:
+        condition: service_healthy
+    networks:
+      - funchole-network
+
+  controlplane:
+    environment:
+      BUILD_ISOLATION: sandbox
+      SANDBOX_MANAGER_URL: http://sandbox-manager:7090
+      SANDBOX_MANAGER_TOKEN: ${SANDBOX_MANAGER_TOKEN:?Set SANDBOX_MANAGER_TOKEN in your .env file}
+    depends_on:
+      sandbox-manager:
+        condition: service_healthy
+
+networks:
+  # Builds only: the public internet for the package registry, and nothing else of the platform.
+  build-net:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: fhbld0
+      com.docker.network.bridge.enable_icc: "false"
+    ipam:
+      config:
+        - subnet: ${BUILD_NET_SUBNET:-10.213.41.0/24}
