@@ -7,7 +7,9 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -55,8 +57,33 @@ public final class PersistentNodeExecutor implements NodeExecutor, AutoCloseable
         return new PersistentNodeExecutor(process);
     }
 
+    /**
+     * The only variables the Node process inherits from this one. Tenant code runs inside it, so it must
+     * never see this process's own environment (S3 keys, database settings, runtime wiring...). What a
+     * function legitimately reads is injected per invocation (see executor.mjs); these are just the
+     * harmless basics a Node process and its libraries expect.
+     */
+    static final Set<String> CHILD_ENVIRONMENT_ALLOWLIST =
+            Set.of("PATH", "HOME", "LANG", "LANGUAGE", "LC_ALL", "TZ", "HOSTNAME");
+
+    static Map<String, String> childEnvironment(Map<String, String> parentEnvironment) {
+        Map<String, String> allowed = new HashMap<>();
+        parentEnvironment.forEach((name, value) -> {
+            if (CHILD_ENVIRONMENT_ALLOWLIST.contains(name)) {
+                allowed.put(name, value);
+            }
+        });
+        return allowed;
+    }
+
     public static PersistentNodeExecutor start(String nodeCommand, Path scriptPath) throws IOException {
+        return start(nodeCommand, scriptPath, System.getenv());
+    }
+
+    static PersistentNodeExecutor start(String nodeCommand, Path scriptPath, Map<String, String> parentEnvironment) throws IOException {
         ProcessBuilder builder = new ProcessBuilder(nodeCommand, scriptPath.toString());
+        builder.environment().clear();
+        builder.environment().putAll(childEnvironment(parentEnvironment));
         Process process = builder.start();
         return new PersistentNodeExecutor(process);
     }
