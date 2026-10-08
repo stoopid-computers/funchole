@@ -1,5 +1,6 @@
 "use client";
 
+import { AdvancedLink } from "@/components/ModeSwitch";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import useSWR from "swr";
@@ -11,14 +12,12 @@ import { api } from "@/lib/api";
 import { summarizeBuildFailure } from "@/lib/buildlog";
 import { friendlyError } from "@/lib/errors";
 import { fixPrompt } from "@/lib/launch";
-import { useMode } from "@/lib/mode";
 import { timeAgo } from "@/lib/time";
 
 // Simple-mode feature detail: is it ready, and if an update failed, why, and
 // what to tell the agent. Source, artifacts and runtime live in Advanced.
 export function SimpleFeatureDetail() {
   const { functionId } = useParams<{ functionId: string }>();
-  const { setMode } = useMode();
   const toast = useToast();
   const feature = useSWR(["function", functionId], () => api.getFunction(functionId));
   const versions = useSWR(["function-versions-detail", functionId], () => api.listFunctionVersions(functionId, 1, 10), {
@@ -102,12 +101,7 @@ export function SimpleFeatureDetail() {
         )}
       </section>
 
-      <p className="text-sm text-muted-foreground">
-        Need the technical details?{" "}
-        <button type="button" className="cursor-pointer font-semibold text-brand underline underline-offset-4" onClick={() => setMode("advanced")}>
-          Switch to Advanced
-        </button>
-      </p>
+      <AdvancedLink />
     </div>
   );
 }

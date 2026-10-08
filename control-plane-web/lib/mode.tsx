@@ -7,6 +7,10 @@ import { PAGE_COPY, type PageKey } from "@/lib/pagecopy";
 // Simple (the default) hides engineering terms and technical screens;
 // Advanced keeps everything. The choice is stored per browser.
 const KEY = "fh_mode";
+
+// Advanced is parked: everyone sees Simple and nothing offers a way into
+// Advanced. Flip this to true to bring the switch and the technical screens back.
+export const ADVANCED_ENABLED = false;
 const listeners = new Set<() => void>();
 
 function read(): Mode | null {
@@ -19,6 +23,7 @@ function read(): Mode | null {
 }
 
 export function saveMode(mode: Mode) {
+  if (mode === "advanced" && !ADVANCED_ENABLED) return;
   try {
     localStorage.setItem(KEY, mode);
   } catch {
@@ -64,7 +69,7 @@ const ModeContext = createContext<ModeContextValue>({
 
 export function ModeProvider({ children }: { children: ReactNode }) {
   const saved = useSavedMode();
-  const mode: Mode = saved ?? "simple";
+  const mode: Mode = ADVANCED_ENABLED && saved === "advanced" ? "advanced" : "simple";
   const setMode = useCallback((next: Mode) => saveMode(next), []);
   const value = useMemo<ModeContextValue>(
     () => ({
