@@ -52,6 +52,7 @@ public final class InvocationDispatcher {
     private final FunctionVersionEnvironmentResolver environmentResolver;
     private final FunctionVersionDatabaseResolver databaseResolver;
     private final InvocationStepExecutionLogRegistry stepExecutionLogRegistry;
+    private final TenantResolver tenantResolver;
     private final JetStreamSubscription subscription;
 
     /**
@@ -163,6 +164,25 @@ public final class InvocationDispatcher {
             FunctionVersionDatabaseResolver databaseResolver,
             InvocationStepExecutionLogRegistry stepExecutionLogRegistry
     ) {
+        this(connection, invocationRegistry, stepExecutionRegistry, runtimeRegistry,
+                executionPlanner, executionGateway, environmentResolver, databaseResolver,
+                stepExecutionLogRegistry, new NoopTenantResolver());
+    }
+
+    /** Full constructor, additionally telling the runtime which tenant owns each execution. */
+    public InvocationDispatcher(
+            Connection connection,
+            InvocationRegistry invocationRegistry,
+            InvocationStepExecutionRegistry stepExecutionRegistry,
+            RuntimeRegistry runtimeRegistry,
+            ExecutionPlanner executionPlanner,
+            RuntimeExecutionGateway executionGateway,
+            FunctionVersionEnvironmentResolver environmentResolver,
+            FunctionVersionDatabaseResolver databaseResolver,
+            InvocationStepExecutionLogRegistry stepExecutionLogRegistry,
+            TenantResolver tenantResolver
+    ) {
+        this.tenantResolver = tenantResolver;
         this.connection = connection;
         this.invocationRegistry = invocationRegistry;
         this.stepExecutionRegistry = stepExecutionRegistry;
@@ -287,7 +307,7 @@ public final class InvocationDispatcher {
         try {
             Map<String, String> environment = environmentResolver.resolve(stepExecution);
             List<DatabaseConnectionInfo> databases = databaseResolver.resolve(stepExecution);
-            RuntimeExecutionRequest executionRequest = RuntimeExecutionRequest.of(stepExecution, stepInput, environment, databases);
+            RuntimeExecutionRequest executionRequest = RuntimeExecutionRequest.of(stepExecution, stepInput, environment, databases, tenantResolver.resolve(stepExecution));
             UUID stepExecutionId = stepExecution.id();
             RuntimeExecutionHandle handle = executionGateway.handoff(runtimeTarget, executionRequest,
                     logEntry -> stepExecutionLogRegistry.append(stepExecutionId, logEntry.stream(), logEntry.message()));

@@ -46,7 +46,8 @@ public final class DispatcherMain {
                 executionGateway,
                 new JdbcFunctionVersionEnvironmentResolver(dataSource, secretReader),
                 new JdbcFunctionVersionDatabaseResolver(dataSource, secretReader),
-                new JdbcInvocationStepExecutionLogRegistry(dataSource)
+                new JdbcInvocationStepExecutionLogRegistry(dataSource),
+                new JdbcTenantResolver(dataSource)
         );
         Duration pollTimeout = Duration.ofMillis(readInt("DISPATCHER_POLL_TIMEOUT_MS", 1000));
 

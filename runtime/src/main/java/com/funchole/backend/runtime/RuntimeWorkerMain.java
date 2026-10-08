@@ -10,6 +10,7 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -33,8 +34,23 @@ public final class RuntimeWorkerMain {
         String nodeCommand = readString("NODE_COMMAND", "node");
         Path nodeExecutorScript = Path.of(readString("NODE_EXECUTOR_SCRIPT_PATH", "node/executor.mjs"));
 
+        IsolationMode isolation = IsolationMode.parseDefault(System.getenv("RUNTIME_ISOLATION"));
+        Set<String> sandboxTenants = IsolationMode.parseAllowList(System.getenv("RUNTIME_ISOLATION_TENANTS"));
+        IsolationMode.validate(isolation, sandboxTenants, "true".equalsIgnoreCase(System.getenv("RUNTIME_ISOLATION_ALLOW_MIXED")));
+        logger.info("Runtime isolation: default={}, sandbox tenants={}", isolation.name().toLowerCase(), sandboxTenants.size());
+
         ArtifactStore artifactStore = createArtifactStore(artifactStoreType, artifactsRoot, artifactCacheRoot, runtimeType);
-        PersistentNodeExecutor nodeExecutor = PersistentNodeExecutor.start(nodeCommand, nodeExecutorScript);
+        // Each executor only starts when something can route to it, so a pure-sandbox runtime never
+        // runs the shared Node process (and vice versa).
+        PersistentNodeExecutor legacyExecutor = isolation == IsolationMode.LEGACY
+                ? PersistentNodeExecutor.start(nodeCommand, nodeExecutorScript)
+                : null;
+        SandboxNodeExecutor sandboxExecutor = isolation == IsolationMode.SANDBOX || !sandboxTenants.isEmpty()
+                ? new SandboxNodeExecutor(
+                        new DockerSandboxLauncher(Path.of(readString("SANDBOX_LAUNCHER", "/opt/funchole/sandbox/launch.sh")), System.getenv()),
+                        SandboxConfig.from(System.getenv()))
+                : null;
+        IsolationRoutingNodeExecutor nodeExecutor = new IsolationRoutingNodeExecutor(isolation, sandboxTenants, legacyExecutor, sandboxExecutor);
 
         RuntimeWorkerServer server = RuntimeWorkerServer.bind(
                 socketPath,
