@@ -5,9 +5,16 @@ plugins {
 description = 'Runnable Spring Boot controlplane application.'
 
 dependencies {
+    // A real sandbox manager for the build-isolation end-to-end test (its slf4j-simple would clash
+    // with this module's log4j2 binding).
+    testImplementation(project(':sandbox-manager')) {
+        exclude group: 'org.slf4j', module: 'slf4j-simple'
+    }
+
     implementation project(':certificate')
     implementation project(':core')
     implementation project(':artifact')
+    implementation project(':sandbox-protocol')
     // The narrow, transport-neutral cross-module contract only
     // (FunctionVersionInvocationHandoff / DirectInvocationRequest /
     // DirectInvocationResult) - controlplane's own source cannot compile

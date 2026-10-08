@@ -7,6 +7,7 @@ import com.funchole.backend.controlplane.functionbuild.PreparedArtifact;
 import com.funchole.backend.controlplane.functionbuild.RuntimeBuilder;
 import com.funchole.backend.controlplane.functionbuild.process.ProcessExecutor;
 import com.funchole.backend.controlplane.functionbuild.process.ProcessResult;
+import com.funchole.backend.controlplane.functionbuild.process.WorkspaceSync;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -80,7 +81,8 @@ public class NodeRuntimeBuilder implements RuntimeBuilder {
         boolean hasLockfile = Files.isRegularFile(artifactDirectory.resolve(PACKAGE_LOCK_JSON));
         List<String> command = hasLockfile ? List.of("npm", "ci") : List.of("npm", "install");
 
-        ProcessResult result = processExecutor.execute(command, artifactDirectory, INSTALL_TIMEOUT);
+        // The whole directory, node_modules included, is the artifact, so everything must come back.
+        ProcessResult result = processExecutor.execute(command, artifactDirectory, INSTALL_TIMEOUT, WorkspaceSync.ALL);
         logRecorder.record(STAGE_DEPENDENCY_INSTALL, command, result);
         if (result.timedOut()) {
             throw new NodeBuildException(

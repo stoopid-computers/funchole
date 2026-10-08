@@ -21,4 +21,12 @@ public interface ProcessExecutor {
      * returns, with the result's {@code timedOut} set.
      */
     ProcessResult execute(List<String> command, Path workingDirectory, Duration timeout);
+
+    /**
+     * As {@link #execute(List, Path, Duration)}, telling the executor which of the command's changes the
+     * caller will read afterwards. Executors that run in place need nothing special, hence the default.
+     */
+    default ProcessResult execute(List<String> command, Path workingDirectory, Duration timeout, WorkspaceSync sync) {
+        return execute(command, workingDirectory, timeout);
+    }
 }
