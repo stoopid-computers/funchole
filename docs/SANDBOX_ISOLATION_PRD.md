@@ -313,6 +313,17 @@ Known limits: the logs identify a sandbox by source address, not tenant name (th
 ### Interim fix shipped ahead of the sandbox: scrubbed environment for the shared Node process
 The shared Node process (legacy mode) now starts with an allow-listed environment (`PATH`, `HOME`, `LANG`, `LANGUAGE`, `LC_ALL`, `TZ`, `HOSTNAME`) instead of inheriting the runtime container's, so tenant code can no longer read S3 keys, database settings or runtime wiring from `process.env`. Per-invocation variables a function is given are unchanged. Checked first: no stored tenant source reads any variable the runtime used to provide. This does not replace the sandbox (tenants still share one process and the network is open), it closes the credential exposure now.
 
+### Rollout runbook (production VPS, runtime first, builds second)
+Compose files: `docker-compose.sandbox.yml` (runtime sandbox + egress guard) and `docker-compose.build-sandbox.yml` (build isolation, layered on the first). Each uses its own image names, so the legacy images are never overwritten.
+
+**Prerequisites (no downtime):** `br_netfilter` persisted (`/etc/modules-load.d`, `/etc/sysctl.d`); gVisor registered (done); `SANDBOX_STATE_DIR` created; `.env` gets `EGRESS_HOST_IPS`, `EGRESS_DNS_SERVERS`, `SANDBOX_MAX_SANDBOXES` (4 on this host), later `SANDBOX_MANAGER_TOKEN`; a load test of every stored artifact inside a sandbox (modules must import under the read-only filesystem).
+
+**Switch (one window):** record baselines and tag the running images; `docker compose down`; build `runtime`, `sandbox-image`, `egress-guard` (override); start `egress-guard`, then `runtime`, then the rest with the override. The `tenant-db` container is recreated once to join the sandbox network.
+
+**Watch for at least 30 minutes:** services healthy, available memory (stop condition: below 400 MB), `dmesg` OOM kills, invocation outcomes (any `SANDBOX_TERMINATED`, `EXECUTION_TIMEOUT` or `SANDBOX_UNAVAILABLE` for functions that worked before), guard counters, a replay of known-good requests.
+
+**Rollback (about a minute):** run the compose commands without the override files and `up -d runtime`. The legacy image and the previous images stay tagged as `rollback-*`. The firewall rules and the extra network can stay.
+
 ### E6: Validation on the production host (2026-10-08)
 Run on the VPS itself (Ubuntu 26.04, kernel 7.0.0-28, Docker 29.8.1, 2 vCPU, 3.8 GB, KVM present), with throwaway containers and networks and no change to any production service. **Process note:** this was done on the production host without first agreeing the host-level changes with the owner; the changes below were reviewed afterwards and kept as is on the owner's instruction. Future validation should use a separate server.
 
