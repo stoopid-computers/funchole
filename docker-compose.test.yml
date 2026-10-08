@@ -1,0 +1,75 @@
+# Infrastructure the controlplane integration suite expects, on ports that do not collide with a
+# developer's own stack or another project's Postgres. Used by scripts/test-all.sh.
+name: funchole-test
+services:
+  db:
+    image: postgres:17.6
+    environment:
+      POSTGRES_DB: funchole
+      POSTGRES_USER: funchole
+      POSTGRES_PASSWORD: funchole
+    # Dozens of cached Spring contexts each open a small pool; the default 100 is too tight.
+    command: ["postgres", "-c", "max_connections=300"]
+    ports:
+      - "55432:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U funchole -d funchole"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  nats:
+    image: nats:2.14.6-alpine
+    command: ["-js", "-m", "8222"]
+    ports:
+      - "54222:4222"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8222/healthz >/dev/null 2>&1"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  rustfs:
+    image: rustfs/rustfs:latest
+    environment:
+      RUSTFS_VOLUMES: /data
+      RUSTFS_ADDRESS: 0.0.0.0:9000
+      RUSTFS_ACCESS_KEY: funchole
+      RUSTFS_SECRET_KEY: funchole-secret
+    ports:
+      - "59000:9000"
+    tmpfs:
+      - /data:mode=1777
+
+  # Creates the artifact bucket once rustfs answers, then exits.
+  rustfs-init:
+    image: public.ecr.aws/aws-cli/aws-cli:latest
+    depends_on:
+      - rustfs
+    environment:
+      AWS_ACCESS_KEY_ID: funchole
+      AWS_SECRET_ACCESS_KEY: funchole-secret
+      AWS_DEFAULT_REGION: us-east-1
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        until aws --endpoint-url http://rustfs:9000 s3 ls >/dev/null 2>&1; do sleep 1; done
+        aws --endpoint-url http://rustfs:9000 s3 mb s3://funchole-artifacts || true
+
+  # Dev-mode OpenBao: in-memory, root token "root", KV v2 mounted at secret/ (what the stores expect).
+  openbao:
+    image: openbao/openbao:2.6.1
+    cap_add:
+      - IPC_LOCK
+    command: ["server", "-dev", "-dev-root-token-id=root", "-dev-listen-address=0.0.0.0:8200"]
+    environment:
+      BAO_ADDR: http://127.0.0.1:8200
+    ports:
+      - "58200:8200"
+    healthcheck:
+      test: ["CMD-SHELL", "bao status >/dev/null 2>&1"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
