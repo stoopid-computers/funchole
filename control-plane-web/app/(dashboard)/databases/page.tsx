@@ -9,13 +9,14 @@ import { inputClass, labelClass, fieldClass } from "@/components/Input";
 import { PageHeader } from "@/components/PageHeader";
 import { ResourceList, ResourceListState } from "@/components/ResourceList";
 import { PlusIcon, TrashIcon, PencilIcon, KeyIcon } from "@/components/icons";
-import { api, ApiError } from "@/lib/api";
+import { api } from "@/lib/api";
 import type { DatabaseResponse, PaginationResponse } from "@/lib/types";
 import { FormError } from "@/components/FormError";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { confirmAction } from "@/components/ConfirmDialog";
 import { NativeSelect } from "@/components/ui/native-select";
+import { friendlyError } from "@/lib/errors";
 
 const PAGE_SIZE = 10;
 
@@ -67,8 +68,8 @@ export default function DatabasesPage() {
       try {
         const data = await api.listDatabases(page, PAGE_SIZE);
         if (!cancelled) setDatabases(data);
-      } catch {
-        if (!cancelled) setError("Failed to load databases");
+      } catch (err) {
+        if (!cancelled) setError(friendlyError(err, "Failed to load databases"));
       }
     })();
     return () => {
@@ -138,7 +139,7 @@ export default function DatabasesPage() {
       closeForm();
       refresh();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to save database");
+      setError(friendlyError(err, "Failed to save database"));
     } finally {
       setBusy(false);
     }
@@ -152,7 +153,7 @@ export default function DatabasesPage() {
       const result = await api.revealDatabasePassword(db.id);
       setRevealedPassword(result.password);
     } catch (err) {
-      setRevealError(err instanceof ApiError ? err.message : "Failed to reveal password");
+      setRevealError(friendlyError(err, "Failed to reveal password"));
     }
   }
 
@@ -163,7 +164,7 @@ export default function DatabasesPage() {
   }
 
   async function handleDelete(db: DatabaseResponse) {
-    if (!await confirmAction(`Delete data source "${db.name}"? Anything using it will lose this connection.`)) {
+    if (!await confirmAction({ title: `Delete data source "${db.name}"?`, description: `Anything using it will lose this connection.`, confirmLabel: "Delete" })) {
       return;
     }
     setError(null);
@@ -171,7 +172,7 @@ export default function DatabasesPage() {
       await api.deleteDatabase(db.id);
       refresh();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to delete database");
+      setError(friendlyError(err, "Failed to delete database"));
     }
   }
 

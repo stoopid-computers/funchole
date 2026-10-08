@@ -1,4 +1,5 @@
 import { Badge } from "@/components/ui/badge";
+import { statusInfo } from "@/lib/copy";
 import { cn } from "@/lib/utils";
 
 // Landing-page status pills: mono, uppercase, tinted - green for healthy,
@@ -28,8 +29,10 @@ const STATUS_TONE: Record<string, keyof typeof TONES> = {
   INACTIVE: "neutral",
 };
 
-export function StatusBadge({ status }: { status: string }) {
-  const tone = STATUS_TONE[status] ?? "neutral";
+// `kind="certificate"` shows "Secure" instead of repeating the gateway's "ACTIVE".
+export function StatusBadge({ status, kind }: { status: string; kind?: "certificate" }) {
+  const tone = kind === "certificate" ? statusInfo(status, kind).tone : STATUS_TONE[status] ?? "neutral";
+  const label = kind === "certificate" ? statusInfo(status, kind).label : status;
   return (
     <Badge
       variant="outline"
@@ -39,7 +42,7 @@ export function StatusBadge({ status }: { status: string }) {
       )}
     >
       {tone === "live" ? <span className="live-dot" aria-hidden="true" /> : <span className="size-1.5 rounded-full bg-current" aria-hidden="true" />}
-      {status}
+      {label}
     </Badge>
   );
 }

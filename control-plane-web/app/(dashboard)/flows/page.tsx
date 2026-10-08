@@ -11,12 +11,14 @@ import { ResourceList, ResourceListState } from "@/components/ResourceList";
 import { PlusIcon, TrashIcon, ServerIcon } from "@/components/icons";
 import { EmptyState } from "@/components/EmptyState";
 import { CopyableLink } from "@/components/CopyableLink";
-import { api, ApiError } from "@/lib/api";
+import { api } from "@/lib/api";
 import type { FlowResponse, GatewayResponse, PaginationResponse } from "@/lib/types";
 import { FormError } from "@/components/FormError";
 import { Modal } from "@/components/Modal";
 import { confirmAction } from "@/components/ConfirmDialog";
 import { NativeSelect } from "@/components/ui/native-select";
+import { friendlyError } from "@/lib/errors";
+import { gatewayHost, liveUrl } from "@/lib/urls";
 
 const PAGE_SIZE = 10;
 const HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"];
@@ -58,8 +60,8 @@ export default function FlowsPage() {
       try {
         const data = await api.listFlows(page, PAGE_SIZE);
         if (!cancelled) setFlows(data);
-      } catch {
-        if (!cancelled) setError("Failed to load flows");
+      } catch (err) {
+        if (!cancelled) setError(friendlyError(err, "Failed to load flows"));
       }
       try {
         const gatewayData = await api.listGateways(1, 100);
@@ -109,14 +111,14 @@ export default function FlowsPage() {
       closeForm();
       refresh();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to create flow");
+      setError(friendlyError(err, "Failed to create flow"));
     } finally {
       setBusy(false);
     }
   }
 
   async function handleDelete(flow: FlowResponse) {
-    if (!await confirmAction(`Delete flow "${flow.name}"?`)) {
+    if (!await confirmAction({ title: `Delete flow "${flow.name}"?`, confirmLabel: "Delete" })) {
       return;
     }
     setError(null);
@@ -124,7 +126,7 @@ export default function FlowsPage() {
       await api.deleteFlow(flow.id);
       refresh();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to delete flow");
+      setError(friendlyError(err, "Failed to delete flow"));
     }
   }
 
@@ -218,7 +220,7 @@ export default function FlowsPage() {
               >
                 {gateways.map((gateway) => (
                   <option key={gateway.id} value={gateway.id}>
-                    {gateway.name} ({gateway.uniqueKey}.{gateway.domainName})
+                    {gateway.name} ({gatewayHost(gateway)})
                   </option>
                 ))}
               </NativeSelect>
@@ -305,7 +307,7 @@ export default function FlowsPage() {
         )}
         {flows?.items.map((flow) => {
           const flowGateway = gatewayById.get(flow.gatewayId);
-          const routeUrl = flowGateway ? `https://${flowGateway.uniqueKey}.${flowGateway.domainName}${flow.path}` : null;
+          const routeUrl = flowGateway ? liveUrl(flowGateway, flow.path) : null;
           return (
           <div key={flow.id} className="grid gap-4 px-5 py-4 transition-colors hover:bg-white/[0.03] xl:grid-cols-[1fr_auto]">
             <div className="min-w-0">

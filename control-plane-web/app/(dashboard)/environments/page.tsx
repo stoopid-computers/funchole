@@ -11,12 +11,13 @@ import { inputClass, labelClass, fieldClass } from "@/components/Input";
 import { PageHeader } from "@/components/PageHeader";
 import { ResourceList, ResourceListState } from "@/components/ResourceList";
 import { KeyIcon, PencilIcon, PlusIcon, TrashIcon } from "@/components/icons";
-import { api, ApiError } from "@/lib/api";
+import { api } from "@/lib/api";
 import type {
   EnvironmentProfileConfigResponse,
   EnvironmentProfileResponse,
   PaginationResponse,
 } from "@/lib/types";
+import { friendlyError } from "@/lib/errors";
 
 const PAGE_SIZE = 10;
 
@@ -50,8 +51,8 @@ export default function EnvironmentsPage() {
       try {
         const data = await api.listEnvironments(page, PAGE_SIZE);
         if (!cancelled) setEnvironments(data);
-      } catch {
-        if (!cancelled) setError("Failed to load environments");
+      } catch (err) {
+        if (!cancelled) setError(friendlyError(err, "Failed to load environments"));
       }
     })();
     return () => {
@@ -69,7 +70,7 @@ export default function EnvironmentsPage() {
         const data = await api.getEnvironmentConfig(selected.id);
         if (!cancelled) setConfig(data);
       } catch (err) {
-        if (!cancelled) setError(err instanceof ApiError ? err.message : "Failed to load environment config");
+        if (!cancelled) setError(friendlyError(err, "Failed to load environment config"));
       }
     })();
     return () => {
@@ -123,14 +124,14 @@ export default function EnvironmentsPage() {
       closeForm();
       refresh();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to save environment");
+      setError(friendlyError(err, "Failed to save environment"));
     } finally {
       setBusy(false);
     }
   }
 
   async function handleDelete(environment: EnvironmentProfileResponse) {
-    if (!await confirmAction(`Delete variable set "${environment.name}"? Anything using it will stop inheriting these values.`)) {
+    if (!await confirmAction({ title: `Delete variable set "${environment.name}"?`, description: `Anything using it will stop inheriting these values.`, confirmLabel: "Delete" })) {
       return;
     }
     setError(null);
@@ -142,7 +143,7 @@ export default function EnvironmentsPage() {
       }
       refresh();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to delete environment");
+      setError(friendlyError(err, "Failed to delete environment"));
     }
   }
 
@@ -156,7 +157,7 @@ export default function EnvironmentsPage() {
       setConfig(data);
       refresh();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to save config");
+      setError(friendlyError(err, "Failed to save config"));
     }
   }
 

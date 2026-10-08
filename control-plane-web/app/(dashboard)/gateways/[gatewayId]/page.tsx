@@ -10,10 +10,13 @@ import { inputClass, labelClass, fieldClass } from "@/components/Input";
 import { CopyableCommand } from "@/components/CopyableCommand";
 import { CopyableLink } from "@/components/CopyableLink";
 import { ArrowLeftIcon, ChevronRightIcon, PlusIcon, TrashIcon, GlobeIcon } from "@/components/icons";
-import { api, ApiError } from "@/lib/api";
+import { api } from "@/lib/api";
 import type { GatewayResponse, CustomDomainResponse } from "@/lib/types";
 import { FormError } from "@/components/FormError";
 import { confirmAction } from "@/components/ConfirmDialog";
+import { friendlyError } from "@/lib/errors";
+import { PageLoading } from "@/components/PageLoading";
+import { gatewayHost, liveUrl } from "@/lib/urls";
 
 export default function GatewayDetailPage() {
   const params = useParams<{ gatewayId: string }>();
@@ -28,8 +31,8 @@ export default function GatewayDetailPage() {
       try {
         const data = await api.getGateway(gatewayId);
         if (!cancelled) setGateway(data);
-      } catch {
-        if (!cancelled) setError("Failed to load entry point");
+      } catch (err) {
+        if (!cancelled) setError(friendlyError(err, "Failed to load entry point"));
       }
     })();
     return () => {
@@ -38,7 +41,7 @@ export default function GatewayDetailPage() {
   }, [gatewayId]);
 
   if (!gateway) {
-    return <p className="text-sm text-muted-foreground">Loading…</p>;
+    return <PageLoading error={error} />;
   }
 
   return (
@@ -63,14 +66,14 @@ export default function GatewayDetailPage() {
             <h1 className="text-2xl font-medium tracking-tight text-foreground">{gateway.name}</h1>
             <StatusBadge status={gateway.status} />
             {gateway.certificate ? (
-              <StatusBadge status={gateway.certificate.status} />
+              <StatusBadge status={gateway.certificate.status} kind="certificate" />
             ) : (
               <span className="rounded-md border border-border px-1.5 py-0.5 text-xs text-muted-foreground">No certificate</span>
             )}
           </div>
           <code className="mt-2 block font-mono text-sm text-foreground">
-            <CopyableLink href={`https://${gateway.uniqueKey}.${gateway.domainName}`}>
-              {gateway.uniqueKey}.{gateway.domainName}
+            <CopyableLink href={liveUrl(gateway)}>
+              {gatewayHost(gateway)}
             </CopyableLink>
           </code>
           {gateway.description && <p className="mt-1 text-sm text-muted-foreground">{gateway.description}</p>}
@@ -83,7 +86,7 @@ export default function GatewayDetailPage() {
         </FormError>
       )}
 
-      <CustomDomainsPanel gatewayId={gatewayId} gatewayHostname={`${gateway.uniqueKey}.${gateway.domainName}`} onError={setError} />
+      <CustomDomainsPanel gatewayId={gatewayId} gatewayHostname={gatewayHost(gateway)} onError={setError} />
     </div>
   );
 }
@@ -108,7 +111,7 @@ function CustomDomainsPanel({ gatewayId, gatewayHostname, onError }: CustomDomai
         const data = await api.listGatewayCustomDomains(gatewayId);
         if (!cancelled) setDomains(data);
       } catch (err) {
-        if (!cancelled) onError(err instanceof ApiError ? err.message : "Failed to load custom domains");
+        if (!cancelled) onError(friendlyError(err, "Failed to load custom domains"));
       }
     })();
     return () => {
@@ -130,7 +133,7 @@ function CustomDomainsPanel({ gatewayId, gatewayHostname, onError }: CustomDomai
       setAdding(false);
       refresh();
     } catch (err) {
-      onError(err instanceof ApiError ? err.message : "Failed to attach domain");
+      onError(friendlyError(err, "Failed to attach domain"));
     } finally {
       setBusy(false);
     }
@@ -142,12 +145,12 @@ function CustomDomainsPanel({ gatewayId, gatewayHostname, onError }: CustomDomai
       await api.initiateCustomDomainVerification(domain.id);
       refresh();
     } catch (err) {
-      onError(err instanceof ApiError ? err.message : "Failed to start verification");
+      onError(friendlyError(err, "Failed to start verification"));
     }
   }
 
   async function handleDetach(domain: CustomDomainResponse) {
-    if (!await confirmAction(`Detach "${domain.hostname}" from this entry point?`)) {
+    if (!await confirmAction({ title: `Detach "${domain.hostname}" from this entry point?`, confirmLabel: "Detach" })) {
       return;
     }
     onError("");
@@ -155,7 +158,7 @@ function CustomDomainsPanel({ gatewayId, gatewayHostname, onError }: CustomDomai
       await api.deleteCustomDomain(domain.id);
       refresh();
     } catch (err) {
-      onError(err instanceof ApiError ? err.message : "Failed to detach domain");
+      onError(friendlyError(err, "Failed to detach domain"));
     }
   }
 
@@ -199,7 +202,7 @@ function CustomDomainsPanel({ gatewayId, gatewayHostname, onError }: CustomDomai
                     <CopyableLink href={`https://${domain.hostname}`}>{domain.hostname}</CopyableLink>
                   </code>
                   <StatusBadge status={domain.status} />
-                  <StatusBadge status={domain.certStatus} />
+                  <StatusBadge status={domain.certStatus} kind="certificate" />
                   <Button
                     variant="danger"
                     size="icon"

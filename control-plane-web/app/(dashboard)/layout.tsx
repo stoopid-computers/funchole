@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { openConsentSettings } from "@/lib/consent";
+import { ProfileContext } from "@/lib/profile";
 import { useEffect, useState, type ComponentType, type ReactNode } from "react";
 import { MenuIcon } from "lucide-react";
 import { api } from "@/lib/api";
@@ -20,7 +21,6 @@ import {
   LogOutIcon,
   UserIcon,
   SettingsIcon,
-  PackageIcon,
 } from "@/components/icons";
 import { BrandMark } from "@/components/BrandMark";
 import { ConfirmHost } from "@/components/ConfirmDialog";
@@ -72,26 +72,19 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     label: "Account",
     items: [
       { href: "/profile", label: "User Profile", icon: UserIcon },
-      { href: "/account", label: "Account", icon: UserIcon },
-      { href: "/settings", label: "Settings", icon: SettingsIcon },
-      { href: "/package", label: "Package", icon: PackageIcon },
     ],
   },
 ];
 
 const NAV_ITEMS = NAV_GROUPS.flatMap((group) => group.items);
 
-const ACCOUNT_MENU_ITEMS: NavItem[] = [
-  { href: "/profile", label: "User Profile", icon: UserIcon },
-  { href: "/account", label: "Account", icon: UserIcon },
-  { href: "/settings", label: "Settings", icon: SettingsIcon },
-  { href: "/package", label: "Package", icon: PackageIcon },
-];
+const ACCOUNT_MENU_ITEMS: NavItem[] = [{ href: "/profile", label: "User Profile", icon: UserIcon }];
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [profile, setProfile] = useState<ProfileResponse | null>(null);
+  const [profileKey, setProfileKey] = useState(0);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
@@ -105,7 +98,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
-  }, []);
+  }, [profileKey]);
 
   function handleLogout() {
     clearToken();
@@ -120,6 +113,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const initial = (profile?.username || profile?.fullName || "U").slice(0, 1).toUpperCase();
 
   return (
+    <ProfileContext.Provider value={{ profile, refresh: () => setProfileKey((key) => key + 1) }}>
     <div className="flex min-h-screen bg-background">
       <aside className="fixed inset-y-0 left-0 z-20 hidden w-64 flex-col border-r border-border bg-background lg:flex">
         <div className="flex h-14 items-center px-5">
@@ -212,6 +206,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
       <ConfirmHost />
     </div>
+    </ProfileContext.Provider>
   );
 }
 

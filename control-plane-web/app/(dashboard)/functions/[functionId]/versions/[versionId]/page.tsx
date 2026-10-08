@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { NativeSelect } from "@/components/ui/native-select";
 import { useParams, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import CodeMirror, { EditorView } from "@uiw/react-codemirror";
 import { syntaxHighlighting } from "@codemirror/language";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -42,13 +42,24 @@ import type {
   FunctionVersionSourceResponse,
   InvocationInspectionResponse,
 } from "@/lib/types";
+import { friendlyError } from "@/lib/errors";
+import { PageLoading } from "@/components/PageLoading";
 
 const DEFAULT_SOURCE = `export async function handler(input) {
   return { status: 200, body: { ok: true, input } };
 }
 `;
 
+// useSearchParams must sit under a Suspense boundary (Next 16 docs).
 export default function FunctionVersionDetailPage() {
+  return (
+    <Suspense fallback={<p className="p-6 text-sm text-muted-foreground">Loading…</p>}>
+      <FunctionVersionDetail />
+    </Suspense>
+  );
+}
+
+function FunctionVersionDetail() {
   const params = useParams<{ functionId: string; versionId: string }>();
   const { functionId, versionId } = params;
   const copyFrom = useSearchParams().get("copyFrom");
@@ -69,14 +80,14 @@ export default function FunctionVersionDetailPage() {
       try {
         const fnData = await api.getFunction(functionId);
         if (!cancelled) setFn(fnData);
-      } catch {
-        if (!cancelled) setError("Failed to load function");
+      } catch (err) {
+        if (!cancelled) setError(friendlyError(err, "Failed to load function"));
       }
       try {
         const versionData = await api.getFunctionVersion(functionId, versionId);
         if (!cancelled) setVersion(versionData);
-      } catch {
-        if (!cancelled) setError("Failed to load version");
+      } catch (err) {
+        if (!cancelled) setError(friendlyError(err, "Failed to load version"));
       }
       try {
         const sourceData = await api.getFunctionVersionSource(functionId, versionId);
@@ -104,12 +115,8 @@ export default function FunctionVersionDetailPage() {
       await api.deployFunctionVersion(functionId, versionId);
       refresh();
     } catch (err) {
-      if (err instanceof ApiError) {
-        setError(err.message);
-        if (err.details.length > 0) setDeployErrorDetails(err.details);
-      } else {
-        setError("Failed to deploy");
-      }
+      setError(friendlyError(err, "Failed to deploy"));
+      if (err instanceof ApiError && err.details.length > 0) setDeployErrorDetails(err.details);
       refresh();
     } finally {
       setBusy(false);
@@ -117,7 +124,7 @@ export default function FunctionVersionDetailPage() {
   }
 
   if (!fn || !version) {
-    return <p className="p-6 text-sm text-muted-foreground">Loading…</p>;
+    return <PageLoading error={error} />;
   }
 
   const isDraft = version.status === "DRAFT";
@@ -295,7 +302,7 @@ function SourcePanel({ functionId, versionId, source, sourceLoaded, isDraft, cop
         setEntrypoint(data.entrypoint || copied[0]?.path || DEFAULT_ENTRYPOINT);
         setHandler(data.handler || "handler");
       } catch (err) {
-        if (!cancelled) onError(err instanceof ApiError ? err.message : "Failed to copy source from the selected version");
+        if (!cancelled) onError(friendlyError(err, "Failed to copy source from the selected version"));
       } finally {
         if (!cancelled) setCopying(false);
       }
@@ -371,7 +378,7 @@ function SourcePanel({ functionId, versionId, source, sourceLoaded, isDraft, cop
       setEditing(false);
       onSubmitted();
     } catch (err) {
-      onError(err instanceof ApiError ? err.message : "Failed to submit source");
+      onError(friendlyError(err, "Failed to submit source"));
     } finally {
       setBusy(false);
     }
@@ -609,7 +616,7 @@ function ConfigPanel({ functionId, versionId, onError }: ConfigPanelProps) {
         const data = await api.getFunctionVersionConfig(functionId, versionId);
         if (!cancelled) setConfig(data);
       } catch (err) {
-        if (!cancelled) onError(err instanceof ApiError ? err.message : "Failed to load configuration");
+        if (!cancelled) onError(friendlyError(err, "Failed to load configuration"));
       }
     })();
     return () => {
@@ -690,7 +697,7 @@ function ConfigList({ title, entries, placeholderValue, secret, onSave, onError 
       setValue("");
       setAdding(false);
     } catch (err) {
-      onError(err instanceof ApiError ? err.message : `Failed to save ${title.toLowerCase()}`);
+      onError(friendlyError(err, `Failed to save ${title.toLowerCase()}`));
     } finally {
       setBusy(false);
     }
@@ -787,7 +794,7 @@ function DatabasesPanel({ functionId, versionId, onError }: DatabasesPanelProps)
           setAvailable(databases.items);
         }
       } catch (err) {
-        if (!cancelled) onError(err instanceof ApiError ? err.message : "Failed to load databases");
+        if (!cancelled) onError(friendlyError(err, "Failed to load databases"));
       }
     })();
     return () => {
@@ -808,7 +815,7 @@ function DatabasesPanel({ functionId, versionId, onError }: DatabasesPanelProps)
       setSelected("");
       refresh();
     } catch (err) {
-      onError(err instanceof ApiError ? err.message : "Failed to attach database");
+      onError(friendlyError(err, "Failed to attach database"));
     } finally {
       setBusy(false);
     }
@@ -820,7 +827,7 @@ function DatabasesPanel({ functionId, versionId, onError }: DatabasesPanelProps)
       await api.detachFunctionVersionDatabase(functionId, versionId, databaseId);
       refresh();
     } catch (err) {
-      onError(err instanceof ApiError ? err.message : "Failed to detach database");
+      onError(friendlyError(err, "Failed to detach database"));
     }
   }
 
@@ -953,7 +960,7 @@ function TestInvokePanel({ functionId, versionId, onError }: TestInvokePanelProp
       setInvocationId(result.invocationId);
       setInitialStatus(result.initialStatus);
     } catch (err) {
-      onError(err instanceof ApiError ? err.message : "Failed to invoke");
+      onError(friendlyError(err, "Failed to invoke"));
     } finally {
       setBusy(false);
     }
@@ -966,7 +973,7 @@ function TestInvokePanel({ functionId, versionId, onError }: TestInvokePanelProp
       const data = await api.getInvocation(invocationId);
       setInspection(data);
     } catch (err) {
-      onError(err instanceof ApiError ? err.message : "Failed to inspect invocation");
+      onError(friendlyError(err, "Failed to inspect invocation"));
     } finally {
       setInspecting(false);
     }

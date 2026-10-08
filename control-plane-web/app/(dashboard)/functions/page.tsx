@@ -8,12 +8,13 @@ import { inputClass, labelClass, fieldClass } from "@/components/Input";
 import { PageHeader } from "@/components/PageHeader";
 import { ResourceList, ResourceListState } from "@/components/ResourceList";
 import { PlusIcon, TrashIcon } from "@/components/icons";
-import { api, ApiError } from "@/lib/api";
+import { api } from "@/lib/api";
 import type { FunctionResponse, PaginationResponse } from "@/lib/types";
 import { FormError } from "@/components/FormError";
 import { Modal } from "@/components/Modal";
 import { confirmAction } from "@/components/ConfirmDialog";
 import { NativeSelect } from "@/components/ui/native-select";
+import { friendlyError } from "@/lib/errors";
 
 const PAGE_SIZE = 10;
 
@@ -45,8 +46,8 @@ export default function FunctionsPage() {
       try {
         const data = await api.listFunctions(page, PAGE_SIZE);
         if (!cancelled) setFunctions(data);
-      } catch {
-        if (!cancelled) setError("Failed to load functions");
+      } catch (err) {
+        if (!cancelled) setError(friendlyError(err, "Failed to load functions"));
       }
     })();
     return () => {
@@ -84,14 +85,14 @@ export default function FunctionsPage() {
       closeForm();
       refresh();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to create function");
+      setError(friendlyError(err, "Failed to create function"));
     } finally {
       setBusy(false);
     }
   }
 
   async function handleDelete(fn: FunctionResponse) {
-    if (!await confirmAction(`Delete function "${fn.name}"?`)) {
+    if (!await confirmAction({ title: `Delete function "${fn.name}"?`, confirmLabel: "Delete" })) {
       return;
     }
     setError(null);
@@ -99,7 +100,7 @@ export default function FunctionsPage() {
       await api.deleteFunction(fn.id);
       refresh();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to delete function");
+      setError(friendlyError(err, "Failed to delete function"));
     }
   }
 

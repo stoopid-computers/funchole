@@ -15,13 +15,15 @@ import { PlusIcon, PencilIcon, TrashIcon, GlobeIcon } from "@/components/icons";
 import { EmptyState } from "@/components/EmptyState";
 import { CopyableLink } from "@/components/CopyableLink";
 import Link from "next/link";
-import { api, ApiError } from "@/lib/api";
+import { api } from "@/lib/api";
 import type {
   DomainResponse,
   GatewayResponse,
   GatewayStatus,
   PaginationResponse,
 } from "@/lib/types";
+import { friendlyError } from "@/lib/errors";
+import { gatewayHost, liveUrl } from "@/lib/urls";
 
 const PAGE_SIZE = 10;
 
@@ -57,8 +59,8 @@ export default function GatewaysPage() {
       try {
         const data = await api.listGateways(page, PAGE_SIZE);
         if (!cancelled) setGateways(data);
-      } catch {
-        if (!cancelled) setError("Failed to load gateways");
+      } catch (err) {
+        if (!cancelled) setError(friendlyError(err, "Failed to load gateways"));
       }
       try {
         const domainData = await api.listDomains(1, 100);
@@ -126,14 +128,14 @@ export default function GatewaysPage() {
       closeForm();
       refresh();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to save gateway");
+      setError(friendlyError(err, "Failed to save gateway"));
     } finally {
       setBusy(false);
     }
   }
 
   async function handleDelete(gateway: GatewayResponse) {
-    if (!await confirmAction(`Delete gateway "${gateway.name}"?`)) {
+    if (!await confirmAction({ title: `Delete gateway "${gateway.name}"?`, confirmLabel: "Delete" })) {
       return;
     }
     setError(null);
@@ -141,7 +143,7 @@ export default function GatewaysPage() {
       await api.deleteGateway(gateway.id);
       refresh();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to delete gateway");
+      setError(friendlyError(err, "Failed to delete gateway"));
     }
   }
 
@@ -155,22 +157,17 @@ export default function GatewaysPage() {
         title="Entry Points"
         description="Public hosts with certificates. An entry point becomes the stable hostname for customer-facing workflows."
         actions={
-        <Button variant="primary" onClick={openCreate} disabled={domains.length === 0}>
-          <PlusIcon className="h-4 w-4" />
-          New entry point
-        </Button>
+        // Without a verified domain nobody can create an entry point; when one
+        // already exists (e.g. auto-provisioned on sign-up) a greyed-out
+        // button with no explanation is worse than no button.
+        domains.length > 0 || (gateways?.items.length ?? 0) === 0 ? (
+          <Button variant="primary" onClick={openCreate} disabled={domains.length === 0}>
+            <PlusIcon className="h-4 w-4" />
+            New entry point
+          </Button>
+        ) : undefined
         }
       />
-
-      {/* When the list is empty its empty state carries this guidance instead. */}
-      {needsDomain && (gateways?.items.length ?? 0) > 0 && (
-        <p className="rounded-xl border border-warning/25 bg-warning/[0.06] px-4 py-3 text-sm text-warning">
-          You need at least one verified domain before creating an entry point.{" "}
-          <Link href="/domains" className="font-medium underline underline-offset-4 hover:text-foreground">
-            {domainAction}
-          </Link>
-        </p>
-      )}
 
       {form && (
         <Modal
@@ -294,11 +291,11 @@ export default function GatewaysPage() {
                   {gateway.name}
                 </Link>
                 <StatusBadge status={gateway.status} />
-                {gateway.certificate ? <StatusBadge status={gateway.certificate.status} /> : <span className="rounded-md border border-border px-1.5 py-0.5 text-xs text-muted-foreground">No certificate</span>}
+                {gateway.certificate ? <StatusBadge status={gateway.certificate.status} kind="certificate" /> : <span className="rounded-md border border-border px-1.5 py-0.5 text-xs text-muted-foreground">No certificate</span>}
               </div>
               <code className="mt-3 block truncate font-mono text-sm text-foreground">
-                <CopyableLink href={`https://${gateway.uniqueKey}.${gateway.domainName}`}>
-                  {gateway.uniqueKey}.{gateway.domainName}
+                <CopyableLink href={liveUrl(gateway)}>
+                  {gatewayHost(gateway)}
                 </CopyableLink>
               </code>
               {gateway.description && <p className="mt-2 text-sm leading-6 text-muted-foreground">{gateway.description}</p>}

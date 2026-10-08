@@ -6,7 +6,10 @@ import type { ComponentType } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { CopyableLink } from "@/components/CopyableLink";
 import { api } from "@/lib/api";
-import type { FlowResponse, GatewayResponse, ProfileResponse } from "@/lib/types";
+import type { FlowResponse, GatewayResponse } from "@/lib/types";
+import { friendlyError } from "@/lib/errors";
+import { useProfile } from "@/lib/profile";
+import { FormError } from "@/components/FormError";
 import { Panel } from "@/components/Panel";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
@@ -24,6 +27,7 @@ import {
   WorkflowIcon,
   ZapIcon,
 } from "@/components/icons";
+import { gatewayHost, liveUrl } from "@/lib/urls";
 
 interface AttentionItem {
   href: string;
@@ -34,7 +38,9 @@ interface AttentionItem {
 
 export default function OverviewPage() {
   const router = useRouter();
-  const [profile, setProfile] = useState<ProfileResponse | null>(null);
+  const { profile } = useProfile();
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const [domainCount, setDomainCount] = useState<number | null>(null);
   const [gatewayCount, setGatewayCount] = useState<number | null>(null);
   const [flowCount, setFlowCount] = useState<number | null>(null);
@@ -47,26 +53,28 @@ export default function OverviewPage() {
 
   useEffect(() => {
     let active = true;
-    api.getProfile().then((p) => active && setProfile(p)).catch(() => {});
-    api.listDomains(1, 1).then((r) => active && setDomainCount(r.totalElements)).catch(() => {});
+    const fail = (err: unknown) => {
+      if (active) setLoadError(friendlyError(err, "We couldn't load your workspace."));
+    };
+    api.listDomains(1, 1).then((r) => active && setDomainCount(r.totalElements)).catch(fail);
     api.listGateways(1, 5).then((r) => {
       if (!active) return;
       setGatewayCount(r.totalElements);
       setGateways(r.items);
-    }).catch(() => {});
-    api.listFlows(1, 5).then((r) => {
+    }).catch(fail);
+    api.listFlows(1, 50).then((r) => {
       if (!active) return;
       setFlowCount(r.totalElements);
       setFlows(r.items);
-    }).catch(() => {});
-    api.listFunctions(1, 1).then((r) => active && setFunctionCount(r.totalElements)).catch(() => {});
-    api.listApiKeys().then((r) => active && setApiKeyCount(r.filter((key) => !key.revokedAt).length)).catch(() => {});
-    api.listEnvironments(1, 1).then((r) => active && setEnvironmentCount(r.totalElements)).catch(() => {});
-    api.listDatabases(1, 1).then((r) => active && setDatabaseCount(r.totalElements)).catch(() => {});
+    }).catch(fail);
+    api.listFunctions(1, 1).then((r) => active && setFunctionCount(r.totalElements)).catch(fail);
+    api.listApiKeys().then((r) => active && setApiKeyCount(r.filter((key) => !key.revokedAt).length)).catch(fail);
+    api.listEnvironments(1, 1).then((r) => active && setEnvironmentCount(r.totalElements)).catch(fail);
+    api.listDatabases(1, 1).then((r) => active && setDatabaseCount(r.totalElements)).catch(fail);
     return () => {
       active = false;
     };
-  }, []);
+  }, [reloadKey]);
 
   const gatewayById = useMemo(() => new Map(gateways.map((gateway) => [gateway.id, gateway])), [gateways]);
 
@@ -74,7 +82,7 @@ export default function OverviewPage() {
     apiKeyCount !== null && apiKeyCount === 0
       ? { href: "/api-keys", label: "Connect an agent", detail: "Required before coding agents can safely work in this workspace.", icon: TerminalIcon }
       : null,
-    domainCount !== null && domainCount === 0
+    domainCount !== null && domainCount === 0 && gatewayCount !== null && gatewayCount === 0
       ? { href: "/domains", label: "Add a custom domain", detail: "Needed before public URLs can run on your own hostname.", icon: GlobeIcon }
       : null,
     gatewayCount !== null && gatewayCount === 0
@@ -94,7 +102,7 @@ export default function OverviewPage() {
     { href: "/flows", label: "Workflows", value: flowCount, icon: WorkflowIcon },
     { href: "/gateways", label: "Entry Points", value: gatewayCount, icon: ServerIcon },
     { href: "/domains", label: "Custom Domains", value: domainCount, icon: GlobeIcon },
-  ];
+  ].filter((metric) => metric.href !== "/domains" || !(domainCount === 0 && (gatewayCount ?? 0) > 0));
 
   const configMetrics = [
     { href: "/api-keys", label: "Agent Access", value: apiKeyCount, icon: TerminalIcon },
@@ -113,12 +121,14 @@ export default function OverviewPage() {
         description="Current workspace state, live URLs, and manual checks. Setup guidance only appears when something needs attention."
         actions={
           <>
-            <Button variant="primary" asChild>
-              <Link href="/functions">
-                <PlayIcon className="h-4 w-4" />
-                Run a test
-              </Link>
-            </Button>
+            {(functionCount ?? 0) > 0 && (
+              <Button variant="primary" asChild>
+                <Link href="/functions">
+                  <PlayIcon className="h-4 w-4" />
+                  Run a test
+                </Link>
+              </Button>
+            )}
             <Button variant="secondary" asChild>
               <Link href="/api-keys">
                 <TerminalIcon className="h-4 w-4" />
@@ -128,6 +138,18 @@ export default function OverviewPage() {
           </>
         }
       />
+
+      {loadError && (
+        <FormError>
+          {loadError}{" "}
+          <button type="button" className="font-medium underline underline-offset-4" onClick={() => {
+              setLoadError(null);
+              setReloadKey((key) => key + 1);
+            }}>
+            Try again
+          </button>
+        </FormError>
+      )}
 
       <section className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border bg-border xl:grid-cols-4 [&>*]:bg-background">
         {coreMetrics.map((metric) => (
@@ -154,7 +176,7 @@ export default function OverviewPage() {
             <div className="divide-y divide-border">
               {activeRoutes.map((flow) => {
                 const gateway = gatewayById.get(flow.gatewayId);
-                const hostname = gateway ? `${gateway.uniqueKey}.${gateway.domainName}` : flow.gatewayName;
+                const hostname = gateway ? gatewayHost(gateway) : flow.gatewayName;
                 const routeUrl = `https://${hostname}${flow.path}`;
                 return (
                   // A plain div (not Link) wrapping the row: the route text
@@ -265,7 +287,7 @@ export default function OverviewPage() {
             ) : (
               draftRoutes.map((flow) => {
                 const gateway = gatewayById.get(flow.gatewayId);
-                const routeUrl = gateway ? `https://${gateway.uniqueKey}.${gateway.domainName}${flow.path}` : null;
+                const routeUrl = gateway ? liveUrl(gateway, flow.path) : null;
                 return (
                   <div
                     key={flow.id}

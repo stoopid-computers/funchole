@@ -18,10 +18,11 @@ import {
   AntigravityIcon,
   PukuIcon,
 } from "@/components/icons";
-import { api, ApiError, API_BASE_URL, APP_URL } from "@/lib/api";
+import { api, API_BASE_URL, APP_URL } from "@/lib/api";
 import type { ApiKeyResponse } from "@/lib/types";
 import { FormError } from "@/components/FormError";
 import { confirmAction } from "@/components/ConfirmDialog";
+import { friendlyError } from "@/lib/errors";
 
 // Prefer the Gateway's own <app-url>/mcp shortcut (see FixedHostProxy.PathOverride)
 // when this deployment has one configured; otherwise fall back to the
@@ -130,8 +131,8 @@ export default function ApiKeysPage() {
       try {
         const data = await api.listApiKeys();
         if (!cancelled) setKeys(data);
-      } catch {
-        if (!cancelled) setError("Failed to load MCP API keys");
+      } catch (err) {
+        if (!cancelled) setError(friendlyError(err, "Failed to load MCP API keys"));
       }
     })();
     return () => {
@@ -164,7 +165,7 @@ export default function ApiKeysPage() {
       setCreating(false);
       refresh();
     } catch (err) {
-      setCreateError(err instanceof ApiError ? err.message : "Failed to create MCP API key");
+      setCreateError(friendlyError(err, "Failed to create MCP API key"));
     } finally {
       setBusy(false);
     }
@@ -178,7 +179,7 @@ export default function ApiKeysPage() {
       const revealed = await api.revealApiKey(key.id);
       setViewingToken(revealed.rawKey);
     } catch (err) {
-      setViewingError(err instanceof ApiError ? err.message : "Failed to load key");
+      setViewingError(friendlyError(err, "Failed to load key"));
     }
   }
 
@@ -189,7 +190,7 @@ export default function ApiKeysPage() {
   }
 
   async function handleRevoke(key: ApiKeyResponse) {
-    if (!await confirmAction(`Revoke "${key.name}"? Anything using it (e.g. an MCP client) will stop working immediately.`)) {
+    if (!await confirmAction({ title: `Revoke "${key.name}"?`, description: `Anything using it (e.g. an MCP client) will stop working immediately.`, confirmLabel: "Revoke" })) {
       return;
     }
     setError(null);
@@ -197,7 +198,7 @@ export default function ApiKeysPage() {
       await api.revokeApiKey(key.id);
       refresh();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to revoke MCP API key");
+      setError(friendlyError(err, "Failed to revoke MCP API key"));
     }
   }
 

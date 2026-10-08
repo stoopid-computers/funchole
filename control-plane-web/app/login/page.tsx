@@ -4,7 +4,7 @@ import Script from "next/script";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { Loader2 } from "lucide-react";
-import { api, ApiError } from "@/lib/api";
+import { api } from "@/lib/api";
 import { setToken } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/Button";
@@ -15,6 +15,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { friendlyError } from "@/lib/errors";
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
@@ -39,9 +40,9 @@ export default function LoginPage() {
     try {
       const token = await api.login(username, password);
       setToken(token.accessToken, token.expiresAt);
-      router.replace("/");
+      router.replace(token.passwordChangeRequired ? "/profile?password=required" : "/");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Login failed");
+      setError(friendlyError(err, "Login failed"));
       setPendingMethod(null);
     }
   }
@@ -53,9 +54,9 @@ export default function LoginPage() {
       try {
         const token = await api.loginWithGoogle(response.credential);
         setToken(token.accessToken, token.expiresAt);
-        router.replace("/");
+        router.replace(token.passwordChangeRequired ? "/profile?password=required" : "/");
       } catch (err) {
-        setError(err instanceof ApiError ? err.message : "Google sign-in failed");
+        setError(friendlyError(err, "Google sign-in failed"));
         setPendingMethod(null);
       }
     },
