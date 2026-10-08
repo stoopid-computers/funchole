@@ -4,17 +4,17 @@ import Script from "next/script";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { Loader2 } from "lucide-react";
-import { api, ApiError } from "@/lib/api";
+import { api } from "@/lib/api";
 import { setToken } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/Button";
 import { BrandMark } from "@/components/BrandMark";
 import { FormError } from "@/components/FormError";
-import { HeroField } from "@/components/HeroField";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { friendlyError } from "@/lib/errors";
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
@@ -39,9 +39,9 @@ export default function LoginPage() {
     try {
       const token = await api.login(username, password);
       setToken(token.accessToken, token.expiresAt);
-      router.replace("/");
+      router.replace(token.passwordChangeRequired ? "/profile?password=required" : "/");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Login failed");
+      setError(friendlyError(err, "Login failed"));
       setPendingMethod(null);
     }
   }
@@ -53,9 +53,9 @@ export default function LoginPage() {
       try {
         const token = await api.loginWithGoogle(response.credential);
         setToken(token.accessToken, token.expiresAt);
-        router.replace("/");
+        router.replace(token.passwordChangeRequired ? "/profile?password=required" : "/");
       } catch (err) {
-        setError(err instanceof ApiError ? err.message : "Google sign-in failed");
+        setError(friendlyError(err, "Google sign-in failed"));
         setPendingMethod(null);
       }
     },
@@ -75,7 +75,7 @@ export default function LoginPage() {
       callback: handleGoogleCredential,
     });
     window.google.accounts.id.renderButton(googleButtonRef.current, {
-      theme: "filled_black",
+      theme: document.documentElement.dataset.theme === "dark" ? "filled_black" : "outline",
       size: "large",
       width: 320,
       text: "signin_with",
@@ -83,27 +83,36 @@ export default function LoginPage() {
   }, [googleScriptLoaded, handleGoogleCredential]);
 
   return (
-    <div className="hero-stage relative isolate flex min-h-screen items-center justify-center overflow-hidden px-4 py-10">
-      {/* The landing hero: a blue bloom plus the interactive dot field. */}
-      <HeroField className="-z-10" />
-      <div className="fh-reveal w-full max-w-sm">
+    <div className="relative flex min-h-screen items-center justify-center px-4 py-10">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
+      <div className="fh-reveal w-full max-w-md">
         <div className="flex justify-center">
           <BrandMark />
         </div>
-        {/* The glow lives on a wrapper: Card's own ring is also a box-shadow and would override it. */}
-        <div className="neon-card mt-8 rounded-[1.35rem]">
-        <Card className="gap-0 rounded-[inherit] bg-transparent py-0 ring-0">
-          <CardHeader className="px-6 pt-6 pb-0 sm:px-7 sm:pt-7">
-            <CardTitle className="display text-2xl">
+
+        {/* The landing page's browser-window frame, on paper. */}
+        <div className="sticker mt-8 overflow-hidden rounded-2xl bg-card">
+          <div className="flex items-center gap-1.5 border-b-2 border-edge bg-muted px-3 py-2" aria-hidden="true">
+            <span className="size-2.5 rounded-full border-[1.5px] border-edge bg-coral" />
+            <span className="size-2.5 rounded-full border-[1.5px] border-edge bg-sun" />
+            <span className="size-2.5 rounded-full border-[1.5px] border-edge bg-live" />
+            <span className="ml-2 truncate rounded-full border-[1.5px] border-edge bg-card px-3 py-0.5 font-mono text-[11px] text-foreground">
+              app.funchole.dev
+            </span>
+          </div>
+
+          <div className="px-6 pt-6 pb-6 sm:px-7 sm:pb-7">
+            <h1 className="display text-3xl text-foreground">
               {pendingMethod === "google" ? "Setting up your workspace" : "Sign in"}
-            </CardTitle>
-            <CardDescription className="mt-1 text-white/70">
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground">
               {pendingMethod === "google"
-                ? "First time here? Creating your default gateway and database — this can take a few extra seconds."
-                : "Access your FuncHole workspace."}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="px-6 pt-6 pb-6 sm:px-7 sm:pb-7">
+                ? "First time here? We're setting up your live address and database. This can take a few extra seconds."
+                : "Continue with Google to get started. If you're new, this creates your account."}
+            </p>
+
             {GOOGLE_CLIENT_ID && (
               <Script
                 src="https://accounts.google.com/gsi/client"
@@ -116,21 +125,21 @@ export default function LoginPage() {
             {/* The Google button mount and the form stay mounted the whole
                 time (just hidden) rather than being swapped out - unmounting
                 googleButtonRef would destroy Google's injected button and it
-                would never come back, since the render effect below only
+                would never come back, since the render effect above only
                 re-fires when the script/callback identity changes, not when
                 this div remounts. */}
             {pendingMethod === "google" && (
-              <div className="flex flex-col items-center gap-4 py-6 text-center">
+              <div className="flex flex-col items-center gap-4 py-8 text-center">
                 <Loader2 className="size-7 animate-spin text-brand" aria-hidden="true" />
-                <p className="max-w-[26ch] text-sm text-white/70">
-                  Hang tight, this won&apos;t take long — you&apos;ll land in your workspace in a moment.
+                <p className="max-w-[26ch] text-sm text-muted-foreground">
+                  Hang tight. You&apos;ll land in your workspace in a moment.
                 </p>
               </div>
             )}
 
             {GOOGLE_CLIENT_ID && (
               <>
-                <div className={cn("mb-5 flex justify-center", pendingMethod === "google" && "hidden")}>
+                <div className={cn("mt-6 mb-5 flex justify-center", pendingMethod === "google" && "hidden")}>
                   <div className="overflow-hidden rounded-lg" ref={googleButtonRef} />
                 </div>
                 <div
@@ -147,7 +156,7 @@ export default function LoginPage() {
             )}
 
             <form
-              className={cn("flex flex-col gap-4", pendingMethod === "google" && "hidden")}
+              className={cn("mt-6 flex flex-col gap-4", GOOGLE_CLIENT_ID && "mt-0", pendingMethod === "google" && "hidden")}
               onSubmit={handleSubmit}
             >
               <div className="flex flex-col gap-2">
@@ -176,14 +185,14 @@ export default function LoginPage() {
 
               {error && <FormError>{error}</FormError>}
 
-              <Button type="submit" variant="primary" disabled={pending} className="mt-2 h-10 w-full">
+              <Button type="submit" variant="primary" size="lg" disabled={pending} className="mt-2 w-full">
                 {pendingMethod === "password" ? "Signing in…" : "Sign in"}
               </Button>
             </form>
-          </CardContent>
-        </Card>
+          </div>
         </div>
-        <p className="mt-8 flex items-center justify-center gap-2 font-mono text-[11px] text-white/60">
+
+        <p className="mt-8 flex items-center justify-center gap-2 text-xs text-muted-foreground">
           <span className="live-dot text-success" aria-hidden="true" />
           Licensed under FSL 1.1
         </p>

@@ -8,11 +8,15 @@ import { panelClass, Panel } from "@/components/Panel";
 import { Button, buttonClasses } from "@/components/Button";
 import { inputClass, labelClass, fieldClass } from "@/components/Input";
 import { ArrowLeftIcon, ChevronRightIcon, PlusIcon, PencilIcon, TrashIcon, CopyIcon } from "@/components/icons";
-import { api, ApiError } from "@/lib/api";
+import { api } from "@/lib/api";
 import type { FunctionResponse, FunctionVersionResponse } from "@/lib/types";
 import { FormError } from "@/components/FormError";
 import { confirmAction } from "@/components/ConfirmDialog";
 import { NativeSelect } from "@/components/ui/native-select";
+import { friendlyError } from "@/lib/errors";
+import { PageLoading } from "@/components/PageLoading";
+import { useMode } from "@/lib/mode";
+import { SimpleFeatureDetail } from "@/components/app/SimpleFeatureDetail";
 
 interface EditFormState {
   name: string;
@@ -21,7 +25,13 @@ interface EditFormState {
 }
 
 export default function FunctionDetailPage() {
+  const { mode } = useMode();
+  return mode === "simple" ? <SimpleFeatureDetail /> : <AdvancedFunctionDetail />;
+}
+
+function AdvancedFunctionDetail() {
   const params = useParams<{ functionId: string }>();
+  const { title: termTitle, noun } = useMode();
   const router = useRouter();
   const functionId = params.functionId;
 
@@ -38,8 +48,8 @@ export default function FunctionDetailPage() {
       try {
         const data = await api.getFunction(functionId);
         if (!cancelled) setFn(data);
-      } catch {
-        if (!cancelled) setError("Failed to load function");
+      } catch (err) {
+        if (!cancelled) setError(friendlyError(err, "Failed to load function"));
       }
       try {
         const versionData = await api.listFunctionVersions(functionId, 1, 50);
@@ -76,20 +86,20 @@ export default function FunctionDetailPage() {
       setEditForm(null);
       refresh();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to update function");
+      setError(friendlyError(err, "Failed to update function"));
     } finally {
       setBusy(false);
     }
   }
 
   async function handleDeleteFunction() {
-    if (!fn || !await confirmAction(`Delete function "${fn.name}"? This cannot be undone.`)) return;
+    if (!fn || !await confirmAction({ title: `Delete ${noun("function")} "${fn.name}"?`, description: `This cannot be undone.`, confirmLabel: "Delete" })) return;
     setError(null);
     try {
       await api.deleteFunction(functionId);
       router.replace("/functions");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to delete function");
+      setError(friendlyError(err, "Failed to delete function"));
     }
   }
 
@@ -103,13 +113,13 @@ export default function FunctionDetailPage() {
         : `/functions/${functionId}/versions/${version.id}`;
       router.push(destination);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to create draft version");
+      setError(friendlyError(err, "Failed to create draft version"));
       setBusy(false);
     }
   }
 
   if (!fn) {
-    return <p className="text-sm text-muted-foreground">Loading…</p>;
+    return <PageLoading error={error} />;
   }
 
   const sortedVersions = [...versions].sort((a, b) => b.version - a.version);
@@ -118,7 +128,7 @@ export default function FunctionDetailPage() {
     <div className="flex flex-col gap-6">
       <nav className="flex items-center gap-1.5 text-sm text-muted-foreground">
         <Link href="/functions" className="hover:text-foreground">
-          Functions
+          {termTitle("function", true)}
         </Link>
         <ChevronRightIcon className="h-3.5 w-3.5" />
         <span className="text-foreground">{fn.name}</span>
@@ -128,6 +138,7 @@ export default function FunctionDetailPage() {
         <div className="flex items-start gap-3">
           <Link
             href="/functions"
+            aria-label="Back to actions"
             className="mt-1 flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-surface-hover hover:text-foreground"
           >
             <ArrowLeftIcon className="h-4 w-4" />

@@ -31,6 +31,8 @@ public interface CustomDomainRepository extends JpaRepository<CustomDomain, UUID
 
     long countByAppUser_Id(UUID appUserId);
 
+    boolean existsByHostname(String hostname);
+
     // Scoped to VERIFIED domains only - a freshly-attached CustomDomain also
     // starts with certStatus=PENDING (see CustomDomain.create()), but must
     // never be picked up here before DNS ownership is actually verified;

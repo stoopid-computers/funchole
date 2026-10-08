@@ -1,4 +1,6 @@
+import { Fragment } from "react";
 import { StatusBadge } from "@/components/StatusBadge";
+import { cn } from "@/lib/utils";
 
 interface FunctionLifecycleDiagramProps {
   status: string;
@@ -6,58 +8,58 @@ interface FunctionLifecycleDiagramProps {
   hasArtifact: boolean;
 }
 
+// Source to a runnable, testable build, drawn like the landing page's flow
+// diagram: cards joined by dashed connectors.
 export function FunctionLifecycleDiagram({ status, hasSource, hasArtifact }: FunctionLifecycleDiagramProps) {
   const stages = [
-    { key: "source", label: "Source", active: hasSource, detail: hasSource ? "submitted" : "missing" },
-    { key: "artifact", label: "Artifact", active: hasArtifact, detail: hasArtifact ? "published" : "not built" },
-    { key: "ready", label: "Ready", active: status === "READY", detail: status.toLowerCase() },
-    { key: "test", label: "Test", active: status === "READY", detail: status === "READY" ? "available" : "blocked" },
+    { key: "source", label: "Source", active: hasSource, detail: hasSource ? "Submitted" : "Missing" },
+    { key: "artifact", label: "Artifact", active: hasArtifact, detail: hasArtifact ? "Published" : "Not built" },
+    { key: "ready", label: "Ready", active: status === "READY", detail: status.charAt(0) + status.slice(1).toLowerCase() },
+    { key: "test", label: "Test", active: status === "READY", detail: status === "READY" ? "Available" : "Blocked" },
   ];
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-background p-5">
+    <div className="overflow-hidden rounded-2xl border border-border bg-card p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="eyebrow">Function lifecycle</p>
-          <h2 className="mt-2 text-base font-medium tracking-tight text-foreground">Source to runnable artifact</h2>
+          <h2 className="mt-1 font-heading text-lg font-extrabold tracking-tight text-foreground">Source to runnable artifact</h2>
         </div>
         <StatusBadge status={status} />
       </div>
 
-      <div className="relative mt-6">
-        <svg viewBox="0 0 820 160" fill="none" className="hidden w-full sm:block">
-          <path d="M112 78H708" stroke="rgba(255,255,255,0.12)" strokeWidth="2" strokeLinecap="round" />
-          <path
-            d="M112 78H708"
-            stroke="rgba(107,140,255,0.72)"
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeDasharray="12 12"
-            className={status === "PUBLISHING" ? "fh-pulse" : ""}
-          />
-          {stages.map((stage, index) => {
-            const x = 112 + index * 198;
-            return (
-              <g key={stage.key}>
-                <circle cx={x} cy="78" r="27" fill={stage.active ? "rgba(107,140,255,0.16)" : "rgba(255,255,255,0.04)"} stroke={stage.active ? "rgba(107,140,255,0.6)" : "rgba(255,255,255,0.12)"} strokeWidth="2" />
-                <circle cx={x} cy="78" r="7" fill={stage.active ? "#6b8cff" : "rgba(255,255,255,0.22)"} />
-              </g>
-            );
-          })}
-        </svg>
-
-        <div className="grid gap-3 sm:grid-cols-4 sm:-mt-4">
-          {stages.map((stage) => (
-            <div key={stage.key} className="rounded-xl border border-border bg-surface/75 p-3">
+      <ol className={cn("mt-5 flex flex-col sm:flex-row sm:items-stretch", status === "PUBLISHING" && "fh-pulse")}>
+        {stages.map((stage, index) => (
+          <Fragment key={stage.key}>
+            {index > 0 && (
+              <li
+                aria-hidden="true"
+                className="mx-auto h-5 w-0 self-center border-l-[3px] border-dashed border-edge sm:h-0 sm:w-6 sm:border-t-[3px] sm:border-l-0"
+              />
+            )}
+            <li
+              className={cn(
+                "flex-1 rounded-xl border-2 p-3",
+                stage.active ? "border-edge bg-live-soft" : "border-dashed border-border-strong bg-muted"
+              )}
+            >
               <div className="flex items-center gap-2">
-                <span className={`h-2.5 w-2.5 rounded-full ${stage.active ? "bg-brand" : "bg-faint"}`} />
+                <span
+                  className={cn(
+                    "grid size-5 place-items-center rounded-full border-2 text-[11px] font-extrabold",
+                    stage.active ? "border-edge bg-live text-[var(--fh-on-sun)]" : "border-border-strong text-transparent"
+                  )}
+                  aria-hidden="true"
+                >
+                  ✓
+                </span>
                 <p className="text-sm font-semibold text-foreground">{stage.label}</p>
               </div>
-              <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">{stage.detail}</p>
-            </div>
-          ))}
-        </div>
-      </div>
+              <p className={cn("mt-1 text-xs", stage.active ? "text-live-ink" : "text-muted-foreground")}>{stage.detail}</p>
+            </li>
+          </Fragment>
+        ))}
+      </ol>
     </div>
   );
 }

@@ -23,10 +23,10 @@ export function OutputLog({ steps }: OutputLogProps) {
                 </p>
               )}
               {step.logs.length > 0 && (
-                <pre className="max-h-64 overflow-auto rounded-lg border border-border bg-background p-2.5 font-mono text-[11px] leading-relaxed">
+                <pre className="max-h-64 overflow-auto rounded-lg border border-island-line bg-island p-2.5 font-mono text-[11px] leading-relaxed text-island-fg">
                   {step.logs.map((log, index) => (
-                    <div key={index} className={log.stream === "stderr" ? "text-danger" : "text-muted-strong"}>
-                      <span className="select-none text-subtle">{log.stream === "stderr" ? "! " : "  "}</span>
+                    <div key={index} className={log.stream === "stderr" ? "text-island-bad" : "text-island-fg"}>
+                      <span className="select-none text-island-mute">{log.stream === "stderr" ? "! " : "  "}</span>
                       {log.message}
                     </div>
                   ))}

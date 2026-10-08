@@ -20,6 +20,7 @@ import com.funchole.backend.controlplane.entity.UserPackage;
 import com.funchole.backend.controlplane.repository.AppDomainRepository;
 import com.funchole.backend.controlplane.repository.AppUserRepository;
 import com.funchole.backend.controlplane.repository.CustomDomainRepository;
+import com.funchole.backend.controlplane.repository.FlowRepository;
 import com.funchole.backend.controlplane.repository.GatewayRepository;
 import com.funchole.backend.controlplane.repository.PackageLimitRepository;
 import com.funchole.backend.controlplane.repository.PackageRepository;
@@ -29,7 +30,9 @@ import com.funchole.backend.core.base.exception.QuotaExceededException;
 import com.funchole.backend.core.base.exception.ResourceNotFoundException;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import com.funchole.backend.invocation.InvocationEventPublisher;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.ApplicationEventPublisher;
@@ -67,6 +70,9 @@ class CustomDomainServiceTests {
     private GatewayRepository gatewayRepository;
 
     @Autowired
+    private FlowRepository flowRepository;
+
+    @Autowired
     private AppDomainRepository appDomainRepository;
 
     @Autowired
@@ -93,6 +99,10 @@ class CustomDomainServiceTests {
     @Autowired
     private PackageRepository packageRepository;
 
+    // The registry wires the NATS publisher eagerly; mock it so the context starts without NATS.
+    @MockitoBean
+    InvocationEventPublisher publisher;
+
     @Autowired
     private UserPackageRepository userPackageRepository;
 
@@ -114,6 +124,19 @@ class CustomDomainServiceTests {
 
         assertThatThrownBy(() -> service.attachCustomDomain(someoneElse, ownersGateway.getId(), "hello.example.com"))
                 .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void attachingAnAlreadyConnectedHostnameIsAConflictNotAServerError() {
+        CustomDomainService service = customDomainService(false);
+        AppUser first = freshCloudUser();
+        service.attachCustomDomain(first, createGatewayFor(first).getId(), "taken.example.com");
+        AppUser second = freshCloudUser();
+        Gateway secondGateway = createGatewayFor(second);
+
+        assertThatThrownBy(() -> service.attachCustomDomain(second, secondGateway.getId(), "Taken.Example.com"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("already connected");
     }
 
     @Test
@@ -172,7 +195,7 @@ class CustomDomainServiceTests {
         // - simplest way to get an owned, routable Gateway without also
         // needing this fixture user to own an AppDomain themselves.
         GatewayService gatewayService = new GatewayService(
-                gatewayRepository, domainService, gatewayCertificateService, applicationEventPublisher,
+                gatewayRepository, flowRepository, domainService, gatewayCertificateService, applicationEventPublisher,
                 packageLimitService, new CloudModeProperties(true), securityProperties);
         verifiedDomain();
         return gatewayService.createGateway(user, new GatewayCreateRequest(

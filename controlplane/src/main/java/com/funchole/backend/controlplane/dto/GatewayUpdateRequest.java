@@ -19,7 +19,8 @@ public record GatewayUpdateRequest(
         @Size(max = 1000, message = "Description must be at most 1000 characters")
         String description,
 
-        @NotNull(message = "App domain id is required")
+        // Ignored for cloud users, whose gateway stays on its assigned domain.
+        @Nullable
         UUID appDomainId,
 
         @NotNull(message = "Status is required")

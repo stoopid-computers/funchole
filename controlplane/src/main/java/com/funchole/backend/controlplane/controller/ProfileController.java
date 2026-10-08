@@ -8,11 +8,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.funchole.backend.controlplane.dto.PackageUsageResponse;
 import com.funchole.backend.controlplane.dto.ProfileRequest;
 import com.funchole.backend.controlplane.dto.ProfileResponse;
 import com.funchole.backend.controlplane.entity.AppUser;
-import com.funchole.backend.controlplane.mapper.ProfileMapper;
 import com.funchole.backend.controlplane.security.AppUserPrincipal;
+import com.funchole.backend.controlplane.service.PackageUsageService;
 import com.funchole.backend.controlplane.service.ProfileService;
 import com.funchole.backend.core.base.response.ApiResponse;
 
@@ -26,11 +27,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 public class ProfileController {
 
     private final ProfileService profileService;
-    private final ProfileMapper profileMapper;
+    private final PackageUsageService packageUsageService;
     
-    public ProfileController(ProfileService profileService, ProfileMapper profileMapper) {
+    public ProfileController(ProfileService profileService, PackageUsageService packageUsageService) {
         this.profileService = profileService;
-        this.profileMapper = profileMapper;
+        this.packageUsageService = packageUsageService;
     }
 
     @GetMapping("/me")
@@ -38,7 +39,13 @@ public class ProfileController {
     public ApiResponse<ProfileResponse> getProfile(@AuthenticationPrincipal AppUserPrincipal appUserPrincipal) throws NotFoundException {
         AppUser appUser = profileService.loadUserById(appUserPrincipal.getId());
 
-        return ApiResponse.success(profileMapper.toResponse(appUser));
+        return ApiResponse.success(profileService.toResponse(appUser));
+    }
+
+    @GetMapping("/package")
+    @SecurityRequirement(name = "bearerAuth")
+    public ApiResponse<PackageUsageResponse> getPackage(@AuthenticationPrincipal AppUserPrincipal appUserPrincipal) {
+        return ApiResponse.success(packageUsageService.usageFor(appUserPrincipal.getId()));
     }
 
     @PutMapping("/me")
@@ -47,7 +54,7 @@ public class ProfileController {
         AppUser appUser = profileService.loadUserById(appUserPrincipal.getId());
         appUser = profileService.updateUser(appUser, profileRequest);
         
-        return ApiResponse.success(profileMapper.toResponse(appUser));
+        return ApiResponse.success(profileService.toResponse(appUser));
     }
 
     

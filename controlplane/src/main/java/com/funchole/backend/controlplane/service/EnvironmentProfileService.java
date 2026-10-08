@@ -126,6 +126,25 @@ public class EnvironmentProfileService {
         return toConfigResponse(profile);
     }
 
+    @Transactional
+    public EnvironmentProfileConfigResponse deleteEnvVar(UUID appUserId, UUID profileId, String key) {
+        EnvironmentProfile profile = getProfileById(appUserId, profileId);
+        EnvironmentProfileEnvVar envVar = envVarRepository.findByEnvironmentProfile_IdAndKey(profileId, key)
+                .orElseThrow(() -> new ResourceNotFoundException("Env var not found: " + key));
+        envVarRepository.delete(envVar);
+        return toConfigResponse(profile);
+    }
+
+    // ponytail: drops the key row so it is no longer injected; FunctionSecretStore has no delete, so the stored value lingers unreferenced.
+    @Transactional
+    public EnvironmentProfileConfigResponse deleteSecret(UUID appUserId, UUID profileId, String key) {
+        EnvironmentProfile profile = getProfileById(appUserId, profileId);
+        EnvironmentProfileSecret secret = secretRepository.findByEnvironmentProfile_IdAndKey(profileId, key)
+                .orElseThrow(() -> new ResourceNotFoundException("Secret not found: " + key));
+        secretRepository.delete(secret);
+        return toConfigResponse(profile);
+    }
+
     private EnvironmentProfileConfigResponse toConfigResponse(EnvironmentProfile profile) {
         UUID profileId = profile.getId();
         return new EnvironmentProfileConfigResponse(

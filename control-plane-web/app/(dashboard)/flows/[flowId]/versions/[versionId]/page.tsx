@@ -39,7 +39,7 @@ import {
   ZapIcon,
   CheckIcon,
 } from "@/components/icons";
-import { api, ApiError } from "@/lib/api";
+import { api } from "@/lib/api";
 import type {
   FlowResponse,
   FlowStepComponentType,
@@ -49,6 +49,11 @@ import type {
   FunctionVersionResponse,
   InvocationInspectionResponse,
 } from "@/lib/types";
+import { friendlyError } from "@/lib/errors";
+import { PageLoading } from "@/components/PageLoading";
+import { useTheme } from "@/components/ThemeToggle";
+import { gatewayHost } from "@/lib/urls";
+import { useMode } from "@/lib/mode";
 
 const NODE_WIDTH = 260;
 const ROW_HEIGHT = 150;
@@ -126,7 +131,9 @@ export default function FlowVersionEditorPage() {
 }
 
 function FlowVersionCanvas() {
+  const theme = useTheme();
   const params = useParams<{ flowId: string; versionId: string }>();
+  const { title: termTitle } = useMode();
   const router = useRouter();
   const { flowId, versionId } = params;
 
@@ -151,18 +158,18 @@ function FlowVersionCanvas() {
         if (!cancelled) setFlow(flowData);
         try {
           const gatewayData = await api.getGateway(flowData.gatewayId);
-          if (!cancelled) setGatewayHostname(`${gatewayData.uniqueKey}.${gatewayData.domainName}`);
+          if (!cancelled) setGatewayHostname(gatewayHost(gatewayData));
         } catch {
           if (!cancelled) setGatewayHostname(null);
         }
-      } catch {
-        if (!cancelled) setError("Failed to load flow");
+      } catch (err) {
+        if (!cancelled) setError(friendlyError(err, "Failed to load flow"));
       }
       try {
         const versionData = await api.getFlowVersion(flowId, versionId);
         if (!cancelled) setVersion(versionData);
-      } catch {
-        if (!cancelled) setError("Failed to load version");
+      } catch (err) {
+        if (!cancelled) setError(friendlyError(err, "Failed to load version"));
       }
       try {
         const versions = await api.listFlowVersions(flowId, 1, 50);
@@ -241,7 +248,7 @@ function FlowVersionCanvas() {
       await api.adoptFlowVersion(flowId, versionId);
       refresh();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to adopt version");
+      setError(friendlyError(err, "Failed to adopt version"));
     } finally {
       setBusy(false);
     }
@@ -254,14 +261,14 @@ function FlowVersionCanvas() {
       await api.archiveFlowVersion(flowId, versionId);
       refresh();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to archive version");
+      setError(friendlyError(err, "Failed to archive version"));
     } finally {
       setBusy(false);
     }
   }
 
   if (!flow || !version) {
-    return <p className="p-6 text-sm text-muted-foreground">Loading…</p>;
+    return <PageLoading error={error} />;
   }
 
   return (
@@ -270,13 +277,14 @@ function FlowVersionCanvas() {
         <div className="flex min-w-0 items-center gap-3">
           <Link
             href={`/flows/${flowId}`}
+            aria-label="Back to this workflow"
             className="flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-surface-hover hover:text-foreground"
           >
             <ArrowLeftIcon className="h-4 w-4" />
           </Link>
           <nav className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <Link href="/flows" className="hover:text-foreground">
-              Flows
+              {termTitle("flow", true)}
             </Link>
             <ChevronRightIcon className="h-3.5 w-3.5" />
             <Link href={`/flows/${flowId}`} className="font-medium text-foreground hover:text-muted-strong">
@@ -409,7 +417,7 @@ function FlowVersionCanvas() {
               elementsSelectable
               fitView
               fitViewOptions={{ padding: 0.3 }}
-              colorMode="dark"
+              colorMode={theme}
               proOptions={{ hideAttribution: true }}
             >
               <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
@@ -485,20 +493,20 @@ function StepInspector({ mode, flowId, versionId, nextPosition, isDraft, onClose
       }
       onSaved();
     } catch (err) {
-      onError(err instanceof ApiError ? err.message : "Failed to save step");
+      onError(friendlyError(err, "Failed to save step"));
     } finally {
       setBusy(false);
     }
   }
 
   async function handleDelete() {
-    if (!initialStep || !await confirmAction(`Remove step "${initialStep.stepKey}"?`)) return;
+    if (!initialStep || !await confirmAction({ title: `Remove step "${initialStep.stepKey}"?`, confirmLabel: "Remove" })) return;
     setBusy(true);
     try {
       await api.deleteFlowStep(flowId, versionId, initialStep.id);
       onSaved();
     } catch (err) {
-      onError(err instanceof ApiError ? err.message : "Failed to delete step");
+      onError(friendlyError(err, "Failed to delete step"));
     } finally {
       setBusy(false);
     }
@@ -810,7 +818,7 @@ function TestFlowPanel({ flowId, versionId, onClose, onError }: TestFlowPanelPro
       setInvocationId(result.invocationId);
       setInitialStatus(result.initialStatus);
     } catch (err) {
-      onError(err instanceof ApiError ? err.message : "Failed to invoke flow");
+      onError(friendlyError(err, "Failed to invoke flow"));
     } finally {
       setBusy(false);
     }
@@ -823,7 +831,7 @@ function TestFlowPanel({ flowId, versionId, onClose, onError }: TestFlowPanelPro
       const data = await api.getInvocation(invocationId);
       setInspection(data);
     } catch (err) {
-      onError(err instanceof ApiError ? err.message : "Failed to inspect invocation");
+      onError(friendlyError(err, "Failed to inspect invocation"));
     } finally {
       setInspecting(false);
     }

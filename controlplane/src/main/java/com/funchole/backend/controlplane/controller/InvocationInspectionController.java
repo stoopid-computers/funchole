@@ -1,5 +1,6 @@
 package com.funchole.backend.controlplane.controller;
 
+import com.funchole.backend.controlplane.activity.InvocationPayloadRedactor;
 import com.funchole.backend.controlplane.dto.InvocationInspectionResponse;
 import com.funchole.backend.controlplane.dto.InvocationStepInspectionResponse;
 import com.funchole.backend.controlplane.dto.InvocationStepLogResponse;
@@ -27,9 +28,14 @@ import org.springframework.web.bind.annotation.RestController;
 public class InvocationInspectionController {
 
     private final InvocationInspectionAccessService invocationInspectionAccessService;
+    private final InvocationPayloadRedactor payloadRedactor;
 
-    public InvocationInspectionController(InvocationInspectionAccessService invocationInspectionAccessService) {
+    public InvocationInspectionController(
+            InvocationInspectionAccessService invocationInspectionAccessService,
+            InvocationPayloadRedactor payloadRedactor
+    ) {
         this.invocationInspectionAccessService = invocationInspectionAccessService;
+        this.payloadRedactor = payloadRedactor;
     }
 
     @GetMapping("/{invocationId}")
@@ -50,7 +56,7 @@ public class InvocationInspectionController {
                 inspection.flowKey(),
                 inspection.flowVersionId(),
                 inspection.functionVersionId(),
-                inspection.inputPayload(),
+                payloadRedactor.redact(inspection.inputPayload()),
                 inspection.result(),
                 inspection.error(),
                 inspection.createdAt(),

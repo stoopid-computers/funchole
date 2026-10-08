@@ -9,10 +9,11 @@ import { inputClass, labelClass, fieldClass } from "@/components/Input";
 import { PageHeader } from "@/components/PageHeader";
 import { ResourceList, ResourceListState } from "@/components/ResourceList";
 import { PlusIcon } from "@/components/icons";
-import { api, ApiError } from "@/lib/api";
+import { api } from "@/lib/api";
 import type { DomainResponse, PaginationResponse } from "@/lib/types";
 import { FormError } from "@/components/FormError";
 import { CopyableLink } from "@/components/CopyableLink";
+import { friendlyError } from "@/lib/errors";
 
 const PAGE_SIZE = 10;
 
@@ -30,8 +31,8 @@ export default function DomainsPage() {
       try {
         const data = await api.listDomains(page, PAGE_SIZE);
         if (!cancelled) setDomains(data);
-      } catch {
-        if (!cancelled) setError("Failed to load domains");
+      } catch (err) {
+        if (!cancelled) setError(friendlyError(err, "Failed to load domains"));
       }
     })();
     return () => {
@@ -52,7 +53,7 @@ export default function DomainsPage() {
       setDomainName("");
       refresh();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to create domain");
+      setError(friendlyError(err, "Failed to create domain"));
     } finally {
       setBusy(false);
     }
@@ -64,7 +65,7 @@ export default function DomainsPage() {
       await api.initiateDomainVerification(domain.id);
       refresh();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to start verification");
+      setError(friendlyError(err, "Failed to start verification"));
     }
   }
 
@@ -106,7 +107,7 @@ export default function DomainsPage() {
         {!domains && <ResourceListState>Loading domains…</ResourceListState>}
         {domains?.items.length === 0 && <ResourceListState>No domains yet. Add one above to begin public URL setup.</ResourceListState>}
         {domains?.items.map((domain) => (
-          <div key={domain.id} className="grid gap-4 px-5 py-4 transition-colors hover:bg-white/[0.03] lg:grid-cols-[1fr_auto]">
+          <div key={domain.id} className="grid gap-4 px-5 py-4 transition-colors hover:bg-ink/4 lg:grid-cols-[1fr_auto]">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <code className="font-mono text-base font-semibold text-foreground">

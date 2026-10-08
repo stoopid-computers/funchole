@@ -12,7 +12,7 @@ import { Button, buttonClasses } from "@/components/Button";
 import { inputClass, labelClass, fieldClass } from "@/components/Input";
 import { ArrowLeftIcon, ChevronRightIcon, PlusIcon, PencilIcon, TrashIcon, PlayIcon, ArchiveIcon, KeyIcon, DatabaseIcon } from "@/components/icons";
 import { CopyableLink } from "@/components/CopyableLink";
-import { api, ApiError } from "@/lib/api";
+import { api } from "@/lib/api";
 import type {
   DatabaseResponse,
   EnvironmentProfileResponse,
@@ -22,6 +22,11 @@ import type {
   FlowVersionResponse,
   GatewayResponse,
 } from "@/lib/types";
+import { friendlyError } from "@/lib/errors";
+import { PageLoading } from "@/components/PageLoading";
+import { gatewayHost, liveUrl } from "@/lib/urls";
+import { useMode } from "@/lib/mode";
+import { SimplePageDetail } from "@/components/app/SimplePageDetail";
 
 const HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"];
 
@@ -35,7 +40,13 @@ interface EditFormState {
 }
 
 export default function FlowDetailPage() {
+  const { mode } = useMode();
+  return mode === "simple" ? <SimplePageDetail /> : <AdvancedFlowDetail />;
+}
+
+function AdvancedFlowDetail() {
   const params = useParams<{ flowId: string }>();
+  const { title: termTitle, noun } = useMode();
   const router = useRouter();
   const flowId = params.flowId;
 
@@ -59,8 +70,8 @@ export default function FlowDetailPage() {
       try {
         const data = await api.getFlow(flowId);
         if (!cancelled) setFlow(data);
-      } catch {
-        if (!cancelled) setError("Failed to load flow");
+      } catch (err) {
+        if (!cancelled) setError(friendlyError(err, "Failed to load flow"));
       }
       try {
         const versionData = await api.listFlowVersions(flowId, 1, 50);
@@ -137,20 +148,20 @@ export default function FlowDetailPage() {
       setEditForm(null);
       refresh();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to update flow");
+      setError(friendlyError(err, "Failed to update flow"));
     } finally {
       setBusy(false);
     }
   }
 
   async function handleDeleteFlow() {
-    if (!flow || !await confirmAction(`Delete flow "${flow.name}"? This cannot be undone.`)) return;
+    if (!flow || !await confirmAction({ title: `Delete ${noun("flow")} "${flow.name}"?`, description: `This cannot be undone.`, confirmLabel: "Delete" })) return;
     setError(null);
     try {
       await api.deleteFlow(flowId);
       router.replace("/flows");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to delete flow");
+      setError(friendlyError(err, "Failed to delete flow"));
     }
   }
 
@@ -161,7 +172,7 @@ export default function FlowDetailPage() {
       const version = await api.createFlowVersion(flowId, { runtime: "NODE" });
       router.push(`/flows/${flowId}/versions/${version.id}`);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to create draft version");
+      setError(friendlyError(err, "Failed to create draft version"));
       setBusy(false);
     }
   }
@@ -172,7 +183,7 @@ export default function FlowDetailPage() {
       await api.adoptFlowVersion(flowId, version.id);
       refresh();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to adopt version");
+      setError(friendlyError(err, "Failed to adopt version"));
     }
   }
 
@@ -182,18 +193,18 @@ export default function FlowDetailPage() {
       await api.archiveFlowVersion(flowId, version.id);
       refresh();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to archive version");
+      setError(friendlyError(err, "Failed to archive version"));
     }
   }
 
   async function handleDeleteVersion(version: FlowVersionResponse) {
-    if (!await confirmAction(`Delete draft v${version.version}?`)) return;
+    if (!await confirmAction({ title: `Delete draft v${version.version}?`, confirmLabel: "Delete" })) return;
     setError(null);
     try {
       await api.deleteFlowVersion(flowId, version.id);
       refresh();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to delete version");
+      setError(friendlyError(err, "Failed to delete version"));
     }
   }
 
@@ -205,7 +216,7 @@ export default function FlowDetailPage() {
       setFlowEnvironments(data);
       setEnvironmentToAttach("");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to attach environment");
+      setError(friendlyError(err, "Failed to attach environment"));
     }
   }
 
@@ -215,7 +226,7 @@ export default function FlowDetailPage() {
       const data = await api.detachFlowEnvironment(flowId, environmentId);
       setFlowEnvironments(data);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to detach environment");
+      setError(friendlyError(err, "Failed to detach environment"));
     }
   }
 
@@ -227,7 +238,7 @@ export default function FlowDetailPage() {
       setFlowDatabases(data);
       setDatabaseToAttach("");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to attach database");
+      setError(friendlyError(err, "Failed to attach database"));
     }
   }
 
@@ -237,23 +248,23 @@ export default function FlowDetailPage() {
       const data = await api.detachFlowDatabase(flowId, databaseId);
       setFlowDatabases(data);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to detach database");
+      setError(friendlyError(err, "Failed to detach database"));
     }
   }
 
   if (!flow) {
-    return <p className="text-sm text-muted-foreground">Loading…</p>;
+    return <PageLoading error={error} />;
   }
 
   const sortedVersions = [...versions].sort((a, b) => b.version - a.version);
   const flowGateway = gateways.find((gateway) => gateway.id === flow.gatewayId);
-  const flowRouteUrl = flowGateway ? `https://${flowGateway.uniqueKey}.${flowGateway.domainName}${flow.path}` : null;
+  const flowRouteUrl = flowGateway ? liveUrl(flowGateway, flow.path) : null;
 
   return (
     <div className="flex flex-col gap-6">
       <nav className="flex items-center gap-1.5 text-sm text-muted-foreground">
         <Link href="/flows" className="hover:text-foreground">
-          Flows
+          {termTitle("flow", true)}
         </Link>
         <ChevronRightIcon className="h-3.5 w-3.5" />
         <span className="text-foreground">{flow.name}</span>
@@ -263,6 +274,7 @@ export default function FlowDetailPage() {
         <div className="flex min-w-0 items-start gap-3">
           <Link
             href="/flows"
+            aria-label="Back to workflows"
             className="mt-1 flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-surface-hover hover:text-foreground"
           >
             <ArrowLeftIcon className="h-4 w-4" />
@@ -313,7 +325,7 @@ export default function FlowDetailPage() {
             >
               {gateways.map((gateway) => (
                 <option key={gateway.id} value={gateway.id}>
-                  {gateway.name} ({gateway.uniqueKey}.{gateway.domainName})
+                  {gateway.name} ({gatewayHost(gateway)})
                 </option>
               ))}
             </NativeSelect>

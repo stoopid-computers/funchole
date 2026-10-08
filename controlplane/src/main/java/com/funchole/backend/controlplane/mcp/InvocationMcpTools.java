@@ -1,5 +1,6 @@
 package com.funchole.backend.controlplane.mcp;
 
+import com.funchole.backend.controlplane.activity.InvocationPayloadRedactor;
 import com.funchole.backend.controlplane.dto.DirectFlowInvocationResponse;
 import com.funchole.backend.controlplane.dto.DirectInvocationResponse;
 import com.funchole.backend.controlplane.dto.InvocationInspectionResponse;
@@ -37,14 +38,17 @@ public class InvocationMcpTools {
     private final FlowVersionService flowVersionService;
     private final FlowVersionInvocationService flowVersionInvocationService;
     private final InvocationInspectionAccessService invocationInspectionAccessService;
+    private final InvocationPayloadRedactor payloadRedactor;
 
     public InvocationMcpTools(
             FunctionVersionService functionVersionService,
             FunctionVersionInvocationService functionVersionInvocationService,
             FlowVersionService flowVersionService,
             FlowVersionInvocationService flowVersionInvocationService,
-            InvocationInspectionAccessService invocationInspectionAccessService
+            InvocationInspectionAccessService invocationInspectionAccessService,
+            InvocationPayloadRedactor payloadRedactor
     ) {
+        this.payloadRedactor = payloadRedactor;
         this.functionVersionService = functionVersionService;
         this.functionVersionInvocationService = functionVersionInvocationService;
         this.flowVersionService = flowVersionService;
@@ -111,7 +115,7 @@ public class InvocationMcpTools {
                 inspection.flowKey(),
                 inspection.flowVersionId(),
                 inspection.functionVersionId(),
-                inspection.inputPayload(),
+                payloadRedactor.redact(inspection.inputPayload()),
                 inspection.result(),
                 inspection.error(),
                 inspection.createdAt(),

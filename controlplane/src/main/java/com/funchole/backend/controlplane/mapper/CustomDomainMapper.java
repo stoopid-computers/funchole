@@ -11,6 +11,7 @@ public interface CustomDomainMapper {
     @Mapping(target = "gatewayId", source = "gateway.id")
     @Mapping(target = "gatewayHostname", ignore = true)
     @Mapping(target = "gatewayPublicIp", ignore = true)
+    @Mapping(target = "verificationRecordName", expression = "java(\"funchole-\" + customDomain.getId() + \".\" + customDomain.getHostname())")
     CustomDomainResponse toResponse(CustomDomain customDomain);
 
     /**
@@ -30,6 +31,7 @@ public interface CustomDomainMapper {
                 base.hostname(),
                 base.status(),
                 base.verificationCode(),
+                base.verificationRecordName(),
                 base.certStatus(),
                 gatewayPublicIp,
                 base.createdAt(),

@@ -27,6 +27,55 @@ export interface ProfileResponse {
   username: string;
   email: string;
   fullName: string;
+  createdAt: string | null;
+  /** The platform admin (bootstrap user). */
+  admin: boolean;
+  /** Whether this is the hosted cloud product (plans, quotas, no domain registry for users). */
+  cloudMode: boolean;
+}
+
+export interface PackageLimitUsage {
+  key: string;
+  /** null = unlimited */
+  limit: number | null;
+  used: number;
+  remaining: number | null;
+}
+
+export interface PackageUsageResponse {
+  cloudMode: boolean;
+  packageKey: string | null;
+  packageName: string | null;
+  limits: PackageLimitUsage[];
+}
+
+export interface InvocationActivity {
+  invocationId: string;
+  flowId: string | null;
+  flowKey: string | null;
+  flowName: string | null;
+  status: string;
+  kind: string;
+  source: "GATEWAY" | "TEST" | string;
+  httpStatus: number | null;
+  createdAt: string;
+  durationMs: number | null;
+}
+
+export interface PageActivity {
+  flowId: string;
+  flowKey: string;
+  flowName: string | null;
+  lastRequestAt: string | null;
+  requests24h: number;
+  failed24h: number;
+}
+
+export interface ActivitySummary {
+  requests24h: number;
+  failed24h: number;
+  lastRequestAt: string | null;
+  pages: PageActivity[];
 }
 
 export interface ProfileRequest {
@@ -87,6 +136,8 @@ export interface CustomDomainResponse {
   hostname: string;
   status: CustomDomainStatus;
   verificationCode: string | null;
+  /** The TXT record name the owner adds to prove they control the domain. */
+  verificationRecordName: string;
   certStatus: CertificateStatus;
   gatewayPublicIp: string | null;
   createdAt: string;
@@ -450,4 +501,17 @@ export interface ApiErrorResponse {
   message: string;
   path: string;
   details: string[];
+  /** Stable machine-readable reason, e.g. QUOTA_EXCEEDED. */
+  code?: string;
+}
+
+export interface FunctionVersionBuildLogResponse {
+  stage: string;
+  command: string;
+  exitCode: number | null;
+  succeeded: boolean;
+  timedOut: boolean;
+  stdout: string;
+  stderr: string;
+  createdAt: string;
 }

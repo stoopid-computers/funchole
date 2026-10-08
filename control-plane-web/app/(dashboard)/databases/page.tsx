@@ -9,13 +9,17 @@ import { inputClass, labelClass, fieldClass } from "@/components/Input";
 import { PageHeader } from "@/components/PageHeader";
 import { ResourceList, ResourceListState } from "@/components/ResourceList";
 import { PlusIcon, TrashIcon, PencilIcon, KeyIcon } from "@/components/icons";
-import { api, ApiError } from "@/lib/api";
+import { api } from "@/lib/api";
 import type { DatabaseResponse, PaginationResponse } from "@/lib/types";
 import { FormError } from "@/components/FormError";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { confirmAction } from "@/components/ConfirmDialog";
 import { NativeSelect } from "@/components/ui/native-select";
+import { friendlyError } from "@/lib/errors";
+import { useMode, usePageCopy } from "@/lib/mode";
+import { Chip } from "@/components/StatusBadge";
+import { timeAgo } from "@/lib/time";
 
 const PAGE_SIZE = 10;
 
@@ -51,6 +55,8 @@ const EMPTY_FORM: DatabaseFormState = {
 };
 
 export default function DatabasesPage() {
+  const { mode, noun } = useMode();
+  const copy = usePageCopy("databases");
   const [databases, setDatabases] = useState<PaginationResponse<DatabaseResponse> | null>(null);
   const [page, setPage] = useState(1);
   const [reloadKey, setReloadKey] = useState(0);
@@ -67,8 +73,8 @@ export default function DatabasesPage() {
       try {
         const data = await api.listDatabases(page, PAGE_SIZE);
         if (!cancelled) setDatabases(data);
-      } catch {
-        if (!cancelled) setError("Failed to load databases");
+      } catch (err) {
+        if (!cancelled) setError(friendlyError(err, "Failed to load databases"));
       }
     })();
     return () => {
@@ -138,7 +144,7 @@ export default function DatabasesPage() {
       closeForm();
       refresh();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to save database");
+      setError(friendlyError(err, "Failed to save database"));
     } finally {
       setBusy(false);
     }
@@ -152,7 +158,7 @@ export default function DatabasesPage() {
       const result = await api.revealDatabasePassword(db.id);
       setRevealedPassword(result.password);
     } catch (err) {
-      setRevealError(err instanceof ApiError ? err.message : "Failed to reveal password");
+      setRevealError(friendlyError(err, "Failed to reveal password"));
     }
   }
 
@@ -163,7 +169,7 @@ export default function DatabasesPage() {
   }
 
   async function handleDelete(db: DatabaseResponse) {
-    if (!await confirmAction(`Delete data source "${db.name}"? Anything using it will lose this connection.`)) {
+    if (!await confirmAction({ title: `Delete ${noun("database")} "${db.name}"?`, description: `Anything using it will lose this connection.`, confirmLabel: "Delete" })) {
       return;
     }
     setError(null);
@@ -171,20 +177,20 @@ export default function DatabasesPage() {
       await api.deleteDatabase(db.id);
       refresh();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to delete database");
+      setError(friendlyError(err, "Failed to delete database"));
     }
   }
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        eyebrow="Configure"
-        title="Data Sources"
-        description="Managed connection definitions for the databases your actions and workflows need."
+        eyebrow={copy.eyebrow}
+        title={copy.title}
+        description={copy.description}
         actions={
         <Button variant="primary" onClick={openCreate}>
           <PlusIcon className="h-4 w-4" />
-          New data source
+          {copy.create}
         </Button>
         }
       />
@@ -319,29 +325,49 @@ export default function DatabasesPage() {
         </FormError>
       )}
 
-      <ResourceList title="Data source registry" description="Reusable connection profiles for actions and workflows.">
-        {!databases && <ResourceListState>Loading data sources…</ResourceListState>}
-        {databases?.items.length === 0 && <ResourceListState>No data sources yet. Create one before attaching data access to customer-facing work.</ResourceListState>}
+      <ResourceList title={copy.listTitle} description={copy.listDescription}>
+        {!databases && <ResourceListState>{copy.loading}</ResourceListState>}
+        {databases?.items.length === 0 && <ResourceListState>{copy.emptyTitle}. {copy.emptyDescription}</ResourceListState>}
         {databases?.items.map((db) => (
-          <div key={db.id} className="grid gap-4 px-5 py-4 transition-colors hover:bg-white/[0.03] lg:grid-cols-[1fr_auto]">
+          <div key={db.id} className="grid gap-4 px-5 py-4 transition-colors hover:bg-ink/4 lg:grid-cols-[1fr_auto]">
             <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="text-base font-semibold text-foreground">{db.name}</p>
-                <span className="rounded-md bg-secondary px-1.5 py-0.5 font-mono text-[11px] text-muted-strong">{db.type}</span>
-                <span className="rounded-md border border-border bg-surface-2 px-1.5 py-0.5 text-xs text-muted-foreground">{db.sslEnabled ? "SSL required" : "SSL optional"}</span>
-              </div>
-              <code className="mt-3 block truncate font-mono text-sm text-muted-strong">
-                {db.username}@{db.host}:{db.port}/{db.databaseName}
-              </code>
-              <p className="mt-2 text-xs text-muted-foreground">Created {new Date(db.createdAt).toLocaleString()}</p>
+              {mode === "advanced" ? (
+                <>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-base font-semibold text-foreground">{db.name}</p>
+                    <span className="rounded-md bg-secondary px-1.5 py-0.5 font-mono text-[11px] text-muted-strong">{db.type}</span>
+                    <span className="rounded-md border border-border bg-surface-2 px-1.5 py-0.5 text-xs text-muted-foreground">{db.sslEnabled ? "SSL required" : "SSL optional"}</span>
+                  </div>
+                  <code className="mt-3 block truncate font-mono text-sm text-muted-strong">
+                    {db.username}@{db.host}:{db.port}/{db.databaseName}
+                  </code>
+                  <p className="mt-2 text-xs text-muted-foreground">Created {new Date(db.createdAt).toLocaleString()}</p>
+                </>
+              ) : (
+                <>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <p className="text-base font-semibold text-foreground">{db.name}</p>
+                    <Chip tone="ok">Ready</Chip>
+                  </div>
+                  <p className="mt-1 text-sm text-muted-foreground">Where your pages keep their data. Created {timeAgo(db.createdAt)}.</p>
+                  <details className="mt-3">
+                    <summary className="cursor-pointer text-sm font-semibold text-brand underline underline-offset-4">Show connection details</summary>
+                    <code className="mt-2 block rounded-lg border border-island-line bg-island p-3 font-mono text-xs break-all text-island-code">
+                      {db.username}@{db.host}:{db.port}/{db.databaseName}
+                    </code>
+                  </details>
+                </>
+              )}
             </div>
             <div className="flex items-center gap-2 lg:justify-end">
-              <Button variant="secondary" size="icon" title="Reveal password" onClick={() => handleReveal(db)}>
+              <Button variant="secondary" size="icon" title={mode === "simple" ? "Show password" : "Reveal password"} onClick={() => handleReveal(db)}>
                 <KeyIcon className="h-4 w-4" />
               </Button>
-              <Button variant="secondary" size="icon" title="Edit" onClick={() => openEdit(db)}>
-                <PencilIcon className="h-4 w-4" />
-              </Button>
+              {mode === "advanced" && (
+                <Button variant="secondary" size="icon" title="Edit" onClick={() => openEdit(db)}>
+                  <PencilIcon className="h-4 w-4" />
+                </Button>
+              )}
               <Button variant="danger" size="icon" title="Delete" onClick={() => handleDelete(db)}>
                 <TrashIcon className="h-4 w-4" />
               </Button>

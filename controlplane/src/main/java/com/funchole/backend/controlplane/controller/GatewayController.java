@@ -88,8 +88,9 @@ public class GatewayController {
             @AuthenticationPrincipal AppUserPrincipal appUserPrincipal,
             @PathVariable UUID id,
             @Valid @RequestBody GatewayUpdateRequest request
-    ) {
-        Gateway gateway = gatewayService.updateGateway(appUserPrincipal.getId(), id, request);
+    ) throws NotFoundException {
+        AppUser appUser = profileService.loadUserById(appUserPrincipal.getId());
+        Gateway gateway = gatewayService.updateGateway(appUser, id, request);
         return ApiResponse.success(gatewayMapper.toResponse(gateway));
     }
 

@@ -15,6 +15,7 @@ import com.funchole.backend.controlplane.entity.Gateway;
 import com.funchole.backend.controlplane.repository.AppDomainRepository;
 import com.funchole.backend.controlplane.repository.AppUserRepository;
 import com.funchole.backend.controlplane.repository.DatabaseRepository;
+import com.funchole.backend.controlplane.repository.FlowRepository;
 import com.funchole.backend.controlplane.repository.GatewayRepository;
 import com.funchole.backend.controlplane.repository.PackageRepository;
 import com.funchole.backend.controlplane.repository.UserPackageRepository;
@@ -93,6 +94,9 @@ class GoogleAuthServiceTests {
 
     @Autowired
     private GatewayRepository gatewayRepository;
+
+    @Autowired
+    private FlowRepository flowRepository;
 
     @Autowired
     private PackageRepository packageRepository;
@@ -264,7 +268,7 @@ class GoogleAuthServiceTests {
      */
     private CloudSignupService cloudSignupService(boolean cloudModeEnabled) {
         GatewayService scopedGatewayService = new GatewayService(
-                gatewayRepository, domainService, gatewayCertificateService, applicationEventPublisher,
+                gatewayRepository, flowRepository, domainService, gatewayCertificateService, applicationEventPublisher,
                 packageLimitService, new CloudModeProperties(cloudModeEnabled), securityProperties);
         TenantDatabaseProperties tenantDatabaseProperties = new TenantDatabaseProperties(
                 tenantDbPostgres.getHost(), tenantDbPostgres.getMappedPort(5432), "tenant_admin", "tenant_admin");

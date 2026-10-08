@@ -1,39 +1,38 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
-import { api, ApiError } from "@/lib/api";
-import type { ProfileResponse } from "@/lib/types";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useState, type FormEvent } from "react";
+import { api } from "@/lib/api";
+import { useProfile } from "@/lib/profile";
 import { Button } from "@/components/Button";
 import { CreatePanel } from "@/components/CreatePanel";
 import { inputClass, labelClass, fieldClass } from "@/components/Input";
 import { PageHeader } from "@/components/PageHeader";
 import { Panel } from "@/components/Panel";
 import { UserIcon } from "@/components/icons";
+import { friendlyError } from "@/lib/errors";
+import { usePageCopy } from "@/lib/mode";
 
 export default function ProfilePage() {
-  const [profile, setProfile] = useState<ProfileResponse | null>(null);
-  const [fullName, setFullName] = useState("");
+  return (
+    <Suspense fallback={null}>
+      <Profile />
+    </Suspense>
+  );
+}
+
+function Profile() {
+  const copy = usePageCopy("profile");
+  const passwordRequired = useSearchParams().get("password") === "required";
+  const { profile, refresh } = useProfile();
+  // null = untouched, so the field follows the loaded profile until edited.
+  const [editedName, setEditedName] = useState<string | null>(null);
+  const fullName = editedName ?? profile?.fullName ?? "";
+  const setFullName = setEditedName;
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    api
-      .getProfile()
-      .then((data) => {
-        if (cancelled) return;
-        setProfile(data);
-        setFullName(data.fullName ?? "");
-      })
-      .catch(() => {
-        if (!cancelled) setError("Failed to load profile");
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -41,16 +40,16 @@ export default function ProfilePage() {
     setMessage(null);
     setBusy(true);
     try {
-      const updated = await api.updateProfile({
+      await api.updateProfile({
         fullName: fullName.trim() || undefined,
         password: password.trim() || undefined,
       });
-      setProfile(updated);
-      setFullName(updated.fullName ?? "");
+      refresh();
+      setEditedName(null);
       setPassword("");
       setMessage("Profile updated");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to update profile");
+      setError(friendlyError(err, "Failed to update profile"));
     } finally {
       setBusy(false);
     }
@@ -59,11 +58,16 @@ export default function ProfilePage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        eyebrow="Account"
-        title="User Profile"
-        description="Manage the profile fields used across your workspace."
+        eyebrow={copy.eyebrow}
+        title={copy.title}
+        description={copy.description}
       />
 
+      {passwordRequired && !message && (
+        <p className="rounded-xl border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning">
+          Please choose a new password to keep your account secure.
+        </p>
+      )}
       {error && <p role="alert" className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">{error}</p>}
       {message && <p className="rounded-xl border border-success/30 bg-success/10 px-4 py-3 text-sm text-success">{message}</p>}
 

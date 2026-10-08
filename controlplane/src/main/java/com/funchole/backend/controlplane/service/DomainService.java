@@ -59,7 +59,7 @@ public class DomainService {
      */
     public AppDomain createDomain(AppUser appUser, DomainCreateRequest request) {
         if (cloudModeProperties.enabled() && !isBootstrapAdmin(appUser)) {
-            throw new ForbiddenException("Only the platform admin can create domains.");
+            throw new ForbiddenException("Only the platform admin can create domains.", "ADMIN_ONLY");
         }
         packageLimitService.enforce(appUser.getId(), PackageLimitKey.MAX_DOMAINS,
                 domainRepository.countByAppUser_Id(appUser.getId()));

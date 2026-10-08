@@ -3,6 +3,11 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { openConsentSettings } from "@/lib/consent";
+import { ProfileContext } from "@/lib/profile";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { ModeSwitch } from "@/components/ModeSwitch";
+import { ToastProvider } from "@/components/Toast";
+import { ModeProvider, saveMode, useMode, useSavedMode } from "@/lib/mode";
 import { useEffect, useState, type ComponentType, type ReactNode } from "react";
 import { MenuIcon } from "lucide-react";
 import { api } from "@/lib/api";
@@ -20,7 +25,7 @@ import {
   LogOutIcon,
   UserIcon,
   SettingsIcon,
-  PackageIcon,
+  ZapIcon,
 } from "@/components/icons";
 import { BrandMark } from "@/components/BrandMark";
 import { ConfirmHost } from "@/components/ConfirmDialog";
@@ -44,7 +49,26 @@ interface NavItem {
   icon: ComponentType<{ className?: string }>;
 }
 
-const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
+interface NavGroup {
+  label: string | null;
+  items: NavItem[];
+}
+
+// Simple: four places, in everyday words. Advanced: every technical screen.
+const SIMPLE_NAV: NavGroup[] = [
+  {
+    label: null,
+    items: [
+      { href: "/", label: "Home", icon: GridIcon },
+      { href: "/flows", label: "Pages & APIs", icon: WorkflowIcon },
+      { href: "/activity", label: "Activity", icon: ZapIcon },
+      { href: "/api-keys", label: "Agent", icon: TerminalIcon },
+      { href: "/settings", label: "Settings", icon: SettingsIcon },
+    ],
+  },
+];
+
+const ADVANCED_NAV: NavGroup[] = [
   {
     label: "Build",
     items: [
@@ -57,6 +81,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     label: "Operate",
     items: [
       { href: "/gateways", label: "Entry Points", icon: ServerIcon },
+      { href: "/activity", label: "Activity", icon: ZapIcon },
       { href: "/domains", label: "Custom Domains", icon: GlobeIcon },
     ],
   },
@@ -72,26 +97,39 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     label: "Account",
     items: [
       { href: "/profile", label: "User Profile", icon: UserIcon },
-      { href: "/account", label: "Account", icon: UserIcon },
       { href: "/settings", label: "Settings", icon: SettingsIcon },
-      { href: "/package", label: "Package", icon: PackageIcon },
     ],
   },
 ];
 
-const NAV_ITEMS = NAV_GROUPS.flatMap((group) => group.items);
+// In Simple mode these screens live under one of the four menu items.
+const SIMPLE_ALIASES: Record<string, string[]> = {
+  "/flows": ["/flows", "/functions"],
+  "/settings": ["/settings", "/environments", "/databases", "/profile", "/domains", "/gateways", "/package", "/account"],
+};
 
 const ACCOUNT_MENU_ITEMS: NavItem[] = [
   { href: "/profile", label: "User Profile", icon: UserIcon },
-  { href: "/account", label: "Account", icon: UserIcon },
   { href: "/settings", label: "Settings", icon: SettingsIcon },
-  { href: "/package", label: "Package", icon: PackageIcon },
 ];
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
+  return (
+    <ModeProvider>
+      <ToastProvider>
+        <Shell>{children}</Shell>
+      </ToastProvider>
+    </ModeProvider>
+  );
+}
+
+function Shell({ children }: { children: ReactNode }) {
+  const { mode } = useMode();
+  const savedMode = useSavedMode();
   const router = useRouter();
   const pathname = usePathname();
   const [profile, setProfile] = useState<ProfileResponse | null>(null);
+  const [profileKey, setProfileKey] = useState(0);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
@@ -105,7 +143,22 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
-  }, []);
+  }, [profileKey]);
+
+  // First time in the new workspace: people who already build things get
+  // Advanced once; everyone else stays in Simple. After that it is their choice.
+  useEffect(() => {
+    if (savedMode !== null) return;
+    let active = true;
+    Promise.all([api.listFunctions(1, 1), api.listFlows(1, 1)])
+      .then(([functions, flows]) => {
+        if (active) saveMode(functions.totalElements + flows.totalElements > 0 ? "advanced" : "simple");
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [savedMode]);
 
   function handleLogout() {
     clearToken();
@@ -113,26 +166,36 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   }
 
   function isActive(href: string) {
-    return href === "/" ? pathname === "/" : pathname.startsWith(href);
+    if (href === "/") return pathname === "/";
+    const paths = mode === "simple" ? (SIMPLE_ALIASES[href] ?? [href]) : [href];
+    return paths.some((path) => pathname.startsWith(path));
   }
 
-  const currentSection = NAV_ITEMS.find((item) => isActive(item.href))?.label ?? "FuncHole";
+  // The domain registry is admin-only on the hosted product: ordinary users
+  // connect their own domain from their live address instead.
+  const hideDomains = profile?.cloudMode === true && !profile.admin;
+  const groups = (mode === "simple" ? SIMPLE_NAV : ADVANCED_NAV).map((group) => ({
+    ...group,
+    items: group.items.filter((item) => !(hideDomains && item.href === "/domains")),
+  }));
+  const currentSection = groups.flatMap((group) => group.items).find((item) => isActive(item.href))?.label ?? "FuncHole";
   const initial = (profile?.username || profile?.fullName || "U").slice(0, 1).toUpperCase();
 
   return (
+    <ProfileContext.Provider value={{ profile, refresh: () => setProfileKey((key) => key + 1) }}>
     <div className="flex min-h-screen bg-background">
-      <aside className="fixed inset-y-0 left-0 z-20 hidden w-64 flex-col border-r border-border bg-background lg:flex">
+      <aside className="fixed inset-y-0 left-0 z-20 hidden w-64 flex-col border-r-2 border-edge bg-background lg:flex">
         <div className="flex h-14 items-center px-5">
           <BrandMark href="/" />
         </div>
         <div className="flex flex-1 flex-col overflow-y-auto px-3 pt-3 pb-4">
-          <SidebarNav isActive={isActive} />
-          <AgentSetupCard />
+          <SidebarNav groups={groups} isActive={isActive} />
+          {mode === "advanced" && <AgentSetupCard />}
         </div>
       </aside>
 
       <div className="flex min-h-screen min-w-0 flex-1 flex-col lg:pl-64">
-        <header className="sticky top-0 z-10 flex h-14 items-center justify-between gap-3 border-b border-border bg-background/80 px-4 backdrop-blur-xl sm:px-6">
+        <header className="sticky top-0 z-10 flex h-14 items-center justify-between gap-3 border-b-2 border-edge bg-background px-4 sm:px-6">
           <div className="flex min-w-0 items-center gap-2 text-sm">
             <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
               <SheetTrigger asChild>
@@ -140,8 +203,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   <MenuIcon />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-72 gap-0 border-border bg-background p-0">
-                <SheetHeader className="h-14 justify-center border-b border-border px-5">
+              <SheetContent side="left" className="w-72 gap-0 p-0">
+                <SheetHeader className="h-14 justify-center border-b-2 border-edge px-5">
                   <SheetTitle asChild>
                     <div>
                       <BrandMark />
@@ -149,27 +212,31 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   </SheetTitle>
                 </SheetHeader>
                 <div className="flex flex-1 flex-col overflow-y-auto px-3 pt-3 pb-4">
-                  <SidebarNav isActive={isActive} onNavigate={() => setMobileNavOpen(false)} />
-                  <AgentSetupCard onNavigate={() => setMobileNavOpen(false)} />
+                  <ModeSwitch className="mb-4 self-start" />
+                  <SidebarNav groups={groups} isActive={isActive} onNavigate={() => setMobileNavOpen(false)} />
+                  {mode === "advanced" && <AgentSetupCard onNavigate={() => setMobileNavOpen(false)} />}
                 </div>
               </SheetContent>
             </Sheet>
             <span className="lg:hidden">
               <BrandMark href="/" showText={false} />
             </span>
-            <span className="hidden font-medium tracking-tight text-foreground sm:inline">FuncHole</span>
+            <span className="hidden font-heading font-extrabold tracking-tight text-foreground sm:inline">FuncHole</span>
             <span className="hidden text-faint sm:inline" aria-hidden="true">
               /
             </span>
             <span className="truncate text-muted-foreground">{currentSection}</span>
           </div>
 
+          <div className="flex items-center gap-2">
+          <ModeSwitch className="hidden sm:inline-flex" />
+          <ThemeToggle />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-9 gap-2 rounded-full pr-1 pl-3" aria-label="Open account menu">
                 <span className="hidden max-w-32 truncate text-sm text-muted-strong sm:block">{profile?.username || "Account"}</span>
                 <Avatar className="size-7">
-                  <AvatarFallback className="bg-secondary text-xs font-medium text-foreground">{initial}</AvatarFallback>
+                  <AvatarFallback className="border-2 border-edge bg-sun font-heading text-xs font-extrabold text-[var(--fh-on-sun)]">{initial}</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
@@ -205,22 +272,24 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          </div>
         </header>
 
-        <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 lg:px-10 lg:py-10">{children}</main>
+        <main data-density="quiet" className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 lg:px-10 lg:py-10">{children}</main>
       </div>
 
       <ConfirmHost />
     </div>
+    </ProfileContext.Provider>
   );
 }
 
-function SidebarNav({ isActive, onNavigate }: { isActive: (href: string) => boolean; onNavigate?: () => void }) {
+function SidebarNav({ groups, isActive, onNavigate }: { groups: NavGroup[]; isActive: (href: string) => boolean; onNavigate?: () => void }) {
   return (
     <div className="flex flex-1 flex-col gap-6">
-      {NAV_GROUPS.map((group) => (
-        <nav key={group.label} aria-label={group.label}>
-          <p className="eyebrow px-2.5 pb-2">{group.label}</p>
+      {groups.map((group) => (
+        <nav key={group.label ?? "main"} aria-label={group.label ?? "Main"}>
+          {group.label && <p className="eyebrow px-2.5 pb-2">{group.label}</p>}
           <div className="space-y-0.5">
             {group.items.map((item) => {
               const active = isActive(item.href);
@@ -232,15 +301,14 @@ function SidebarNav({ isActive, onNavigate }: { isActive: (href: string) => bool
                   onClick={onNavigate}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-sm transition-colors",
+                    "flex h-10 items-center gap-2.5 rounded-lg border-2 px-2.5 text-sm font-medium transition-colors",
                     active
-                      ? "bg-white/[0.07] text-foreground"
-                      : "text-muted-foreground hover:bg-white/[0.04] hover:text-foreground"
+                      ? "border-edge bg-sun text-[var(--fh-on-sun)]"
+                      : "border-transparent text-muted-foreground hover:bg-ink/5 hover:text-foreground"
                   )}
                 >
-                  <Icon className={cn("h-4 w-4", active ? "text-foreground" : "text-subtle")} />
+                  <Icon className={cn("h-4 w-4", active ? "text-[var(--fh-on-sun)]" : "text-subtle")} />
                   <span className="truncate">{item.label}</span>
-                  {active && <span className="ml-auto size-1.5 rounded-full bg-brand" aria-hidden="true" />}
                 </Link>
               );
             })}
@@ -253,8 +321,8 @@ function SidebarNav({ isActive, onNavigate }: { isActive: (href: string) => bool
 
 function AgentSetupCard({ onNavigate }: { onNavigate?: () => void }) {
   return (
-    <div className="mt-6 overflow-hidden rounded-xl border border-border bg-card p-4">
-      <p className="flex items-center gap-2 text-sm font-medium text-foreground">
+    <div className="sticker mt-6 overflow-hidden rounded-xl bg-sun-soft p-4">
+      <p className="flex items-center gap-2 font-heading text-sm font-extrabold text-foreground">
         <span className="live-dot text-brand" aria-hidden="true" />
         Connect your agent first
       </p>
@@ -264,7 +332,7 @@ function AgentSetupCard({ onNavigate }: { onNavigate?: () => void }) {
       <Link
         href="/api-keys"
         onClick={onNavigate}
-        className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-foreground hover:text-muted-strong"
+        className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-foreground underline underline-offset-4"
       >
         Configure agent access
         <span aria-hidden="true">→</span>
