@@ -15,6 +15,8 @@ import { confirmAction } from "@/components/ConfirmDialog";
 import { NativeSelect } from "@/components/ui/native-select";
 import { friendlyError } from "@/lib/errors";
 import { PageLoading } from "@/components/PageLoading";
+import { useMode } from "@/lib/mode";
+import { SimpleFeatureDetail } from "@/components/app/SimpleFeatureDetail";
 
 interface EditFormState {
   name: string;
@@ -23,7 +25,13 @@ interface EditFormState {
 }
 
 export default function FunctionDetailPage() {
+  const { mode } = useMode();
+  return mode === "simple" ? <SimpleFeatureDetail /> : <AdvancedFunctionDetail />;
+}
+
+function AdvancedFunctionDetail() {
   const params = useParams<{ functionId: string }>();
+  const { title: termTitle, noun } = useMode();
   const router = useRouter();
   const functionId = params.functionId;
 
@@ -85,7 +93,7 @@ export default function FunctionDetailPage() {
   }
 
   async function handleDeleteFunction() {
-    if (!fn || !await confirmAction({ title: `Delete function "${fn.name}"?`, description: `This cannot be undone.`, confirmLabel: "Delete" })) return;
+    if (!fn || !await confirmAction({ title: `Delete ${noun("function")} "${fn.name}"?`, description: `This cannot be undone.`, confirmLabel: "Delete" })) return;
     setError(null);
     try {
       await api.deleteFunction(functionId);
@@ -120,7 +128,7 @@ export default function FunctionDetailPage() {
     <div className="flex flex-col gap-6">
       <nav className="flex items-center gap-1.5 text-sm text-muted-foreground">
         <Link href="/functions" className="hover:text-foreground">
-          Functions
+          {termTitle("function", true)}
         </Link>
         <ChevronRightIcon className="h-3.5 w-3.5" />
         <span className="text-foreground">{fn.name}</span>
@@ -130,6 +138,7 @@ export default function FunctionDetailPage() {
         <div className="flex items-start gap-3">
           <Link
             href="/functions"
+            aria-label="Back to actions"
             className="mt-1 flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-surface-hover hover:text-foreground"
           >
             <ArrowLeftIcon className="h-4 w-4" />

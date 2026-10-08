@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useSyncExternalStore } from "react";
+import { useMemo } from "react";
 import CodeMirror, { EditorView } from "@uiw/react-codemirror";
 import { json, jsonParseLinter } from "@codemirror/lang-json";
 import { javascript } from "@codemirror/lang-javascript";
@@ -19,42 +19,33 @@ export const codeSyntaxColorsLight = HighlightStyle.define([
   { tag: [tags.separator, tags.squareBracket, tags.brace, tags.paren, tags.punctuation, tags.operator], color: "#64748b" },
 ]);
 
-// The landing page's code palette (see --fh-code-* in app/tokens.css).
+// The ink-island code palette (see --fh-island-* in app/tokens.css): editors
+// are dark in both themes, like the landing page's code blocks.
 export const codeSyntaxColorsDark = HighlightStyle.define([
-  { tag: [tags.propertyName, tags.attributeName], color: "var(--fh-code-fn)" },
-  { tag: tags.string, color: "var(--fh-code-str)" },
-  { tag: tags.number, color: "var(--fh-code-num)" },
-  { tag: [tags.bool, tags.null, tags.keyword, tags.controlKeyword], color: "var(--fh-code-kw)" },
-  { tag: [tags.function(tags.variableName), tags.function(tags.definition(tags.variableName))], color: "var(--fh-code-fn)" },
-  { tag: tags.comment, color: "var(--fh-faint)", fontStyle: "italic" },
-  { tag: [tags.separator, tags.squareBracket, tags.brace, tags.paren, tags.punctuation, tags.operator], color: "var(--fh-subtle)" },
+  { tag: [tags.propertyName, tags.attributeName], color: "var(--fh-island-fn)" },
+  { tag: tags.string, color: "var(--fh-island-str)" },
+  { tag: tags.number, color: "var(--fh-island-num)" },
+  { tag: [tags.bool, tags.null, tags.keyword, tags.controlKeyword], color: "var(--fh-island-kw)" },
+  { tag: [tags.function(tags.variableName), tags.function(tags.definition(tags.variableName))], color: "var(--fh-island-fn)" },
+  { tag: tags.comment, color: "var(--fh-island-mute)", fontStyle: "italic" },
+  { tag: [tags.separator, tags.squareBracket, tags.brace, tags.paren, tags.punctuation, tags.operator], color: "var(--fh-island-mute)" },
 ]);
 
 export const editorChrome = EditorView.theme({
-  "&": { backgroundColor: "transparent", fontSize: "0.75rem" },
-  ".cm-content": { fontFamily: "var(--font-mono)", caretColor: "var(--foreground)" },
-  ".cm-gutters": { backgroundColor: "transparent", border: "none", color: "var(--fh-faint)" },
-  ".cm-activeLine": { backgroundColor: "rgb(255 255 255 / 0.03)" },
-  ".cm-activeLineGutter": { backgroundColor: "rgb(255 255 255 / 0.03)" },
+  "&": { backgroundColor: "transparent", color: "var(--fh-island-fg)", fontSize: "0.75rem" },
+  ".cm-content": { fontFamily: "var(--font-mono)", caretColor: "var(--fh-island-fg)" },
+  ".cm-gutters": { backgroundColor: "transparent", border: "none", color: "var(--fh-island-mute)" },
+  ".cm-activeLine": { backgroundColor: "rgb(255 255 255 / 0.05)" },
+  ".cm-activeLineGutter": { backgroundColor: "rgb(255 255 255 / 0.05)" },
   "&.cm-focused": { outline: "none" },
-  ".cm-lintRange-error": { backgroundImage: "none", textDecoration: "underline wavy var(--fh-bad)" },
+  ".cm-lintRange-error": { backgroundImage: "none", textDecoration: "underline wavy var(--fh-island-bad)" },
 });
 
-// The console follows its own theme (the `.dark` class on <html>, which the
-// root layout always sets) rather than the OS setting, so the editor's syntax
-// colours always match the surface they're drawn on.
-function subscribeToColorScheme(callback: () => void) {
-  const observer = new MutationObserver(callback);
-  observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
-  return () => observer.disconnect();
-}
-
-function getIsDarkModeSnapshot() {
-  return document.documentElement.classList.contains("dark");
-}
-
+// Editors are ink islands: the dark syntax palette is used in both themes, so
+// it always matches the dark surface it is drawn on. Kept as a hook so call
+// sites don't change.
 export function useIsDarkMode() {
-  return useSyncExternalStore(subscribeToColorScheme, getIsDarkModeSnapshot, () => false);
+  return true;
 }
 
 export function languageForPath(path: string) {
@@ -87,8 +78,8 @@ export function JsonEditor({ value, onChange, error, minHeight = "8rem", label =
     <div className={fieldClass}>
       <span className={labelClass}>{label}</span>
       <div
-        className={`overflow-hidden rounded-lg border bg-background transition-colors ${
-          error ? "border-danger" : "border-input focus-within:border-ring"
+        className={`overflow-hidden rounded-lg border bg-island text-island-fg transition-colors ${
+          error ? "border-danger" : "border-island-line focus-within:border-island-code"
         }`}
       >
         <CodeMirror

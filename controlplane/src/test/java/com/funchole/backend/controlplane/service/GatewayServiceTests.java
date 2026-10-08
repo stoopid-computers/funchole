@@ -9,18 +9,23 @@ import com.funchole.backend.controlplane.config.SecurityProperties;
 import com.funchole.backend.controlplane.constant.DomainStatus;
 import com.funchole.backend.controlplane.constant.GatewayStatus;
 import com.funchole.backend.controlplane.dto.GatewayCreateRequest;
+import com.funchole.backend.controlplane.dto.GatewayUpdateRequest;
 import com.funchole.backend.controlplane.entity.AppDomain;
 import com.funchole.backend.controlplane.entity.AppUser;
 import com.funchole.backend.controlplane.entity.Gateway;
 import com.funchole.backend.controlplane.repository.AppDomainRepository;
 import com.funchole.backend.controlplane.repository.AppUserRepository;
+import com.funchole.backend.controlplane.repository.FlowRepository;
 import com.funchole.backend.controlplane.repository.GatewayRepository;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import com.funchole.backend.invocation.InvocationEventPublisher;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -48,8 +53,18 @@ class GatewayServiceTests {
             .withUsername("test")
             .withPassword("test");
 
+    // The registry wires the NATS publisher eagerly; mock it so the context starts without NATS.
+    @MockitoBean
+    InvocationEventPublisher publisher;
+
+    @Autowired
+    private JdbcTemplate jdbc;
+
     @Autowired
     private GatewayRepository gatewayRepository;
+
+    @Autowired
+    private FlowRepository flowRepository;
 
     @Autowired
     private DomainService domainService;
@@ -121,9 +136,52 @@ class GatewayServiceTests {
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
+    @Test
+    void cloudUserCanRenameTheirGatewayWithoutOwningADomain() {
+        GatewayService service = gatewayService(true);
+        AppUser nonAdmin = freshCloudUser();
+        AppDomain verified = verifiedDomain();
+        Gateway gateway = service.createGateway(nonAdmin, new GatewayCreateRequest("Mine", null, null, GatewayStatus.ACTIVE));
+
+        Gateway renamed = service.updateGateway(nonAdmin, gateway.getId(),
+                new GatewayUpdateRequest("Renamed", "new words", null, GatewayStatus.ACTIVE));
+
+        assertThat(renamed.getName()).isEqualTo("Renamed");
+        assertThat(renamed.getAppDomain().getId()).isEqualTo(verified.getId());
+    }
+
+    @Test
+    void selfHostedUpdateStillNeedsAnOwnedDomain() {
+        GatewayService service = gatewayService(false);
+        AppUser admin = bootstrapAdmin();
+        Gateway gateway = service.createGateway(admin, new GatewayCreateRequest("A", null, verifiedDomain().getId(), GatewayStatus.ACTIVE));
+
+        assertThatThrownBy(() -> service.updateGateway(admin, gateway.getId(),
+                new GatewayUpdateRequest("B", null, null, GatewayStatus.ACTIVE)))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void gatewayWithWorkflowsCannotBeDeleted() {
+        GatewayService service = gatewayService(true);
+        AppUser nonAdmin = freshCloudUser();
+        verifiedDomain();
+        Gateway gateway = service.createGateway(nonAdmin, new GatewayCreateRequest("Mine", null, null, GatewayStatus.ACTIVE));
+        UUID flowId = UUID.randomUUID();
+        jdbc.update("INSERT INTO flows (id, app_user_id, gateway_id, flow_key, name, http_method, path) VALUES (?, ?, ?, ?, 'F', 'GET', '/')",
+                flowId, nonAdmin.getId(), gateway.getId(), "flw_" + flowId.toString().replace("-", ""));
+
+        assertThatThrownBy(() -> service.deleteGateway(nonAdmin.getId(), gateway.getId()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("workflows");
+
+        jdbc.update("UPDATE flows SET deleted_at = now() WHERE id = ?", flowId);
+        assertThatCode(() -> service.deleteGateway(nonAdmin.getId(), gateway.getId())).doesNotThrowAnyException();
+    }
+
     private GatewayService gatewayService(boolean cloudModeEnabled) {
         return new GatewayService(
-                gatewayRepository, domainService, gatewayCertificateService, applicationEventPublisher,
+                gatewayRepository, flowRepository, domainService, gatewayCertificateService, applicationEventPublisher,
                 packageLimitService, new CloudModeProperties(cloudModeEnabled), securityProperties);
     }
 

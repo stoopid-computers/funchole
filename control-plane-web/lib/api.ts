@@ -1,6 +1,10 @@
 import { trackApiCall } from "@/lib/analytics";
 import { clearToken, getToken } from "@/lib/auth";
 import type {
+  ActivitySummary,
+  InvocationActivity,
+  PackageUsageResponse,
+  FunctionVersionBuildLogResponse,
   ApiErrorResponse,
   ApiKeyCreateRequest,
   ApiKeyCreateResponse,
@@ -65,12 +69,15 @@ export const APP_URL = process.env.NEXT_PUBLIC_APP_URL || null;
 export class ApiError extends Error {
   readonly status: number;
   readonly details: string[];
+  /** Stable reason from the API (QUOTA_EXCEEDED, ADMIN_ONLY, ...), when it sends one. */
+  readonly code: string | undefined;
 
-  constructor(status: number, message: string, details: string[] = []) {
+  constructor(status: number, message: string, details: string[] = [], code?: string) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.details = details;
+    this.code = code;
   }
 }
 
@@ -103,7 +110,9 @@ async function send<T>(path: string, init: RequestInit): Promise<T> {
     throw new ApiError(0, "Cannot reach the controlplane API");
   }
 
-  if (response.status === 401) {
+  // A 401 from a sign-in endpoint just means the credentials were wrong; only a
+  // 401 elsewhere means the session ended.
+  if (response.status === 401 && !path.startsWith("/api/v1/auth/")) {
     clearToken();
     if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
       window.location.replace("/login");
@@ -116,7 +125,8 @@ async function send<T>(path: string, init: RequestInit): Promise<T> {
     throw new ApiError(
       response.status,
       body?.message ?? `Request failed with status ${response.status}`,
-      body?.details ?? []
+      body?.details ?? [],
+      body?.code
     );
   }
 
@@ -141,6 +151,19 @@ export const api = {
 
   getProfile(): Promise<ProfileResponse> {
     return request("/api/v1/profile/me");
+  },
+
+  getPackageUsage(): Promise<PackageUsageResponse> {
+    return request("/api/v1/profile/package");
+  },
+
+  listActivity(page: number, size: number, source?: "gateway" | "test"): Promise<PaginationResponse<InvocationActivity>> {
+    const filter = source ? `&source=${source}` : "";
+    return request(`/api/v1/invocations?page=${page}&size=${size}${filter}`);
+  },
+
+  getActivitySummary(): Promise<ActivitySummary> {
+    return request("/api/v1/invocations/summary");
   },
 
   updateProfile(payload: ProfileRequest): Promise<ProfileResponse> {
@@ -398,6 +421,10 @@ export const api = {
     });
   },
 
+  getFunctionVersionBuildLogs(functionId: string, versionId: string): Promise<FunctionVersionBuildLogResponse[]> {
+    return request(`/api/v1/functions/${functionId}/versions/${versionId}/build-logs`);
+  },
+
   getInvocation(invocationId: string): Promise<InvocationInspectionResponse> {
     return request(`/api/v1/invocations/${invocationId}`);
   },
@@ -486,6 +513,14 @@ export const api = {
       method: "PUT",
       body: JSON.stringify({ value }),
     });
+  },
+
+  deleteEnvironmentEnvVar(id: string, key: string): Promise<EnvironmentProfileConfigResponse> {
+    return request(`/api/v1/environments/${id}/config/env/${encodeURIComponent(key)}`, { method: "DELETE" });
+  },
+
+  deleteEnvironmentSecret(id: string, key: string): Promise<EnvironmentProfileConfigResponse> {
+    return request(`/api/v1/environments/${id}/config/secrets/${encodeURIComponent(key)}`, { method: "DELETE" });
   },
 
   listFlowEnvironments(flowId: string): Promise<FlowEnvironmentAttachmentResponse[]> {

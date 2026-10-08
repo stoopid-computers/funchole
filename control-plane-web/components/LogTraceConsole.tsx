@@ -50,7 +50,7 @@ export function LogTraceConsole({ invocationId, currentStatus, inspection, onRef
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-background p-4">
+    <div className="rounded-2xl border border-border bg-card p-4">
       <div className="flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="eyebrow">Invocation trace</p>
@@ -85,7 +85,7 @@ export function LogTraceConsole({ invocationId, currentStatus, inspection, onRef
               type="button"
               onClick={() => setFilter(item)}
               className={`rounded-md border px-2.5 py-1 text-xs font-medium capitalize transition-colors ${
-                filter === item ? "border-border-strong bg-white/[0.06] text-foreground" : "border-border text-muted-foreground hover:text-foreground"
+                filter === item ? "border-border-strong bg-secondary text-foreground" : "border-border text-muted-foreground hover:text-foreground"
               }`}
             >
               {item}
@@ -152,10 +152,10 @@ function StepLogBlock({ step }: { step: InvocationStepInspectionResponse }) {
         <pre className="whitespace-pre-wrap border-b border-border bg-danger/10 p-3 font-mono text-xs leading-5 text-danger">{step.error}</pre>
       )}
       {step.logs.length > 0 && (
-        <pre className="max-h-72 overflow-auto p-3 font-mono text-[11px] leading-5">
+        <pre className="max-h-72 overflow-auto bg-island p-3 font-mono text-[11px] leading-5 text-island-fg">
           {step.logs.map((log, index) => (
-            <div key={`${log.createdAt}-${index}`} className={log.stream === "stderr" ? "text-danger" : "text-muted-strong"}>
-              <span className="select-none text-muted-foreground">{log.stream.padEnd(6)} </span>
+            <div key={`${log.createdAt}-${index}`} className={log.stream === "stderr" ? "text-island-bad" : "text-island-fg"}>
+              <span className="select-none text-island-mute">{log.stream.padEnd(6)} </span>
               {log.message}
             </div>
           ))}

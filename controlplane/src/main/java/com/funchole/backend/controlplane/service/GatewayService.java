@@ -11,6 +11,7 @@ import com.funchole.backend.controlplane.entity.AppDomain;
 import com.funchole.backend.controlplane.entity.AppUser;
 import com.funchole.backend.controlplane.entity.Gateway;
 import com.funchole.backend.controlplane.event.GatewayCertificateProvisionRequested;
+import com.funchole.backend.controlplane.repository.FlowRepository;
 import com.funchole.backend.controlplane.repository.GatewayRepository;
 import com.funchole.backend.core.base.exception.ResourceNotFoundException;
 import java.security.SecureRandom;
@@ -30,6 +31,7 @@ public class GatewayService {
     private static final int UNIQUE_KEY_MAX_ATTEMPTS = 20;
 
     private final GatewayRepository gatewayRepository;
+    private final FlowRepository flowRepository;
     private final DomainService domainService;
     private final GatewayCertificateService gatewayCertificateService;
     private final ApplicationEventPublisher applicationEventPublisher;
@@ -40,6 +42,7 @@ public class GatewayService {
 
     public GatewayService(
             GatewayRepository gatewayRepository,
+            FlowRepository flowRepository,
             DomainService domainService,
             GatewayCertificateService gatewayCertificateService,
             ApplicationEventPublisher applicationEventPublisher,
@@ -48,6 +51,7 @@ public class GatewayService {
             SecurityProperties securityProperties
     ) {
         this.gatewayRepository = gatewayRepository;
+        this.flowRepository = flowRepository;
         this.domainService = domainService;
         this.gatewayCertificateService = gatewayCertificateService;
         this.applicationEventPublisher = applicationEventPublisher;
@@ -125,10 +129,20 @@ public class GatewayService {
     }
 
     @Transactional
-    public Gateway updateGateway(UUID appUserId, UUID gatewayId, GatewayUpdateRequest request) {
-        Gateway gateway = getGatewayById(appUserId, gatewayId);
-        AppDomain appDomain = domainService.getDomainById(appUserId, request.appDomainId());
-        validateVerifiedDomain(appDomain);
+    public Gateway updateGateway(AppUser appUser, UUID gatewayId, GatewayUpdateRequest request) {
+        Gateway gateway = getGatewayById(appUser.getId(), gatewayId);
+        // Cloud users own no domain (see resolveDomainForNewGateway), so renaming
+        // must not demand one: they stay on the domain they were assigned.
+        AppDomain appDomain;
+        if (cloudModeProperties.enabled() && !isBootstrapAdmin(appUser)) {
+            appDomain = gateway.getAppDomain();
+        } else {
+            if (request.appDomainId() == null) {
+                throw new IllegalArgumentException("appDomainId is required.");
+            }
+            appDomain = domainService.getDomainById(appUser.getId(), request.appDomainId());
+            validateVerifiedDomain(appDomain);
+        }
 
         gateway.update(
                 appDomain,
@@ -148,6 +162,10 @@ public class GatewayService {
     @Transactional
     public void deleteGateway(UUID appUserId, UUID gatewayId) {
         Gateway gateway = getGatewayById(appUserId, gatewayId);
+        // flows.gateway_id has no foreign key, so deleting would silently orphan them.
+        if (flowRepository.existsByGateway_IdAndDeletedAtIsNull(gatewayId)) {
+            throw new IllegalStateException("This entry point still has workflows. Delete or move them first.");
+        }
         gatewayRepository.delete(gateway);
     }
 

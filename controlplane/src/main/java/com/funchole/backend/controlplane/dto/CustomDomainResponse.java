@@ -12,6 +12,7 @@ public record CustomDomainResponse(
         String hostname,
         CustomDomainStatus status,
         String verificationCode,
+        String verificationRecordName,
         CertificateStatus certStatus,
         String gatewayPublicIp,
         OffsetDateTime createdAt,

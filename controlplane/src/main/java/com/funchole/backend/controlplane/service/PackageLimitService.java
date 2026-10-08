@@ -78,6 +78,20 @@ public class PackageLimitService {
      * otherwise collapse "found, value null" and "not found" into the same
      * empty Optional, which is a real, different answer.
      */
+    /** Whether the package/quota system is active at all (cloud mode). */
+    public boolean isEnabled() {
+        return cloudModeProperties.enabled();
+    }
+
+    /**
+     * The limit that would apply to this user for {@code key}: {@code null}
+     * means unlimited. Same resolution as {@link #enforce}, but readable
+     * without a creation attempt (for the usage endpoint).
+     */
+    public Integer effectiveLimit(UUID appUserId, PackageLimitKey key) {
+        return resolveEffectiveLimit(appUserId, key);
+    }
+
     private Integer resolveEffectiveLimit(UUID appUserId, PackageLimitKey key) {
         var override = userPackageOverrideRepository.findByAppUser_IdAndLimitKey(appUserId, key.name());
         if (override.isPresent()) {

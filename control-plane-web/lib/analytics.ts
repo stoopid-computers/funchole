@@ -15,7 +15,7 @@ const KNOWN_SEGMENTS = new Set([
   "reveal", "secrets", "source", "steps", "token", "verification", "versions",
 ]);
 
-const PAGE_SEGMENTS = new Set([...KNOWN_SEGMENTS, "account", "login", "package", "settings"]);
+const PAGE_SEGMENTS = new Set([...KNOWN_SEGMENTS, "account", "activity", "login", "package", "settings"]);
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
 // Elements whose text is a whole card or row (names, paths, ...) rather than a label.
 const CONTENT_ELEMENTS = "p, div, code, pre, li, table, h1, h2, h3, h4, h5, h6";
@@ -53,6 +53,18 @@ export function clickLabel(element: HTMLElement) {
 export function track(name: string, params?: GtagParams) {
   if (typeof window === "undefined") return;
   (window as unknown as { gtag?: Gtag }).gtag?.("event", name.slice(0, 40), params);
+}
+
+// Funnel steps (e.g. onboarding) should count once per browser session, not once per render or revisit.
+export function trackOnce(name: string, params?: GtagParams) {
+  try {
+    const key = `fh_tracked_${name}`;
+    if (window.sessionStorage.getItem(key)) return;
+    window.sessionStorage.setItem(key, "1");
+  } catch {
+    // Storage blocked: fall through and send, a duplicate beats a lost step.
+  }
+  track(name, params);
 }
 
 // One event per write call, e.g. POST /functions/<id>/versions/<id>/deploy

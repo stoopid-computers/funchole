@@ -27,6 +27,28 @@ export function term(key: TermKey, mode: Mode = "advanced") {
   return GLOSSARY[key][mode];
 }
 
+// Lower-case nouns for use inside sentences ("Delete this page?"), with plurals.
+const NOUNS = {
+  gateway: { simple: ["live address", "live addresses"], advanced: ["entry point", "entry points"] },
+  flow: { simple: ["page or API", "pages & APIs"], advanced: ["workflow", "workflows"] },
+  function: { simple: ["feature", "features"], advanced: ["action", "actions"] },
+  version: { simple: ["update", "updates"], advanced: ["version", "versions"] },
+  environment: { simple: ["settings group", "settings groups"], advanced: ["variable set", "variable sets"] },
+  database: { simple: ["database", "databases"], advanced: ["data source", "data sources"] },
+  apiKey: { simple: ["agent key", "agent keys"], advanced: ["API key", "API keys"] },
+  domain: { simple: ["domain", "domains"], advanced: ["custom domain", "custom domains"] },
+} as const;
+
+export type NounKey = keyof typeof NOUNS;
+
+export function noun(key: NounKey, mode: Mode = "advanced", plural = false) {
+  return NOUNS[key][mode][plural ? 1 : 0];
+}
+
+export function capitalize(text: string) {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 // Words that must never appear in Simple-mode copy.
 export const BANNED_IN_SIMPLE = [
   "gateway", "flow", "workflow", "runtime", "invocation", "dsn", "priority", "sha",

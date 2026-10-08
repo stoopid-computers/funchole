@@ -77,6 +77,9 @@ logging:
     org.springframework.security: INFO
 
 app:
+  # Invocation history retention in days; 0 keeps everything (the default).
+  invocation-retention:
+    days: ${INVOCATION_RETENTION_DAYS:0}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
   nats:

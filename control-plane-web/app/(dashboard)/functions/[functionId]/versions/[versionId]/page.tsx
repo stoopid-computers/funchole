@@ -44,6 +44,7 @@ import type {
 } from "@/lib/types";
 import { friendlyError } from "@/lib/errors";
 import { PageLoading } from "@/components/PageLoading";
+import { useMode } from "@/lib/mode";
 
 const DEFAULT_SOURCE = `export async function handler(input) {
   return { status: 200, body: { ok: true, input } };
@@ -61,6 +62,7 @@ export default function FunctionVersionDetailPage() {
 
 function FunctionVersionDetail() {
   const params = useParams<{ functionId: string; versionId: string }>();
+  const { title: termTitle } = useMode();
   const { functionId, versionId } = params;
   const copyFrom = useSearchParams().get("copyFrom");
 
@@ -133,7 +135,7 @@ function FunctionVersionDetail() {
     <div className="flex flex-col gap-6">
       <nav className="flex items-center gap-1.5 text-sm text-muted-foreground">
         <Link href="/functions" className="hover:text-foreground">
-          Functions
+          {termTitle("function", true)}
         </Link>
         <ChevronRightIcon className="h-3.5 w-3.5" />
         <Link href={`/functions/${functionId}`} className="font-medium text-foreground hover:text-muted-strong">
@@ -147,6 +149,7 @@ function FunctionVersionDetail() {
         <div className="flex items-start gap-3">
           <Link
             href={`/functions/${functionId}`}
+            aria-label="Back to this action"
             className="mt-1 flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-surface-hover hover:text-foreground"
           >
             <ArrowLeftIcon className="h-4 w-4" />
@@ -505,7 +508,7 @@ function SourcePanel({ functionId, versionId, source, sourceLoaded, isDraft, cop
                 }}
                 className={`group flex w-full items-center justify-between gap-2 rounded-xl border px-3 py-2 text-left text-xs font-mono transition-colors ${
                   f.path === activePath
-                    ? "border-border-strong bg-white/[0.06] text-foreground"
+                    ? "border-border-strong bg-ink/10 text-foreground"
                     : "border-border bg-surface/70 text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -567,7 +570,7 @@ function SourcePanel({ functionId, versionId, source, sourceLoaded, isDraft, cop
             <span className="font-mono text-xs text-muted-strong">{activeFile?.path ?? "Code"}</span>
             <span className="text-xs text-muted-foreground">{activeFile?.content.length ?? 0} chars</span>
           </div>
-          <div className="overflow-hidden bg-background focus-within:ring-1 focus-within:ring-ring">
+          <div className="overflow-hidden bg-island text-island-fg">
             <CodeMirror
               value={activeFile?.content ?? ""}
               onChange={updateActiveContent}

@@ -51,7 +51,9 @@ import type {
 } from "@/lib/types";
 import { friendlyError } from "@/lib/errors";
 import { PageLoading } from "@/components/PageLoading";
+import { useTheme } from "@/components/ThemeToggle";
 import { gatewayHost } from "@/lib/urls";
+import { useMode } from "@/lib/mode";
 
 const NODE_WIDTH = 260;
 const ROW_HEIGHT = 150;
@@ -129,7 +131,9 @@ export default function FlowVersionEditorPage() {
 }
 
 function FlowVersionCanvas() {
+  const theme = useTheme();
   const params = useParams<{ flowId: string; versionId: string }>();
+  const { title: termTitle } = useMode();
   const router = useRouter();
   const { flowId, versionId } = params;
 
@@ -273,13 +277,14 @@ function FlowVersionCanvas() {
         <div className="flex min-w-0 items-center gap-3">
           <Link
             href={`/flows/${flowId}`}
+            aria-label="Back to this workflow"
             className="flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-surface-hover hover:text-foreground"
           >
             <ArrowLeftIcon className="h-4 w-4" />
           </Link>
           <nav className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <Link href="/flows" className="hover:text-foreground">
-              Flows
+              {termTitle("flow", true)}
             </Link>
             <ChevronRightIcon className="h-3.5 w-3.5" />
             <Link href={`/flows/${flowId}`} className="font-medium text-foreground hover:text-muted-strong">
@@ -412,7 +417,7 @@ function FlowVersionCanvas() {
               elementsSelectable
               fitView
               fitViewOptions={{ padding: 0.3 }}
-              colorMode="dark"
+              colorMode={theme}
               proOptions={{ hideAttribution: true }}
             >
               <Background variant={BackgroundVariant.Dots} gap={20} size={1} />

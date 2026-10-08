@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import useSWR from "swr";
 import { Pagination } from "@/components/Pagination";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button, buttonClasses } from "@/components/Button";
@@ -19,6 +20,9 @@ import { confirmAction } from "@/components/ConfirmDialog";
 import { NativeSelect } from "@/components/ui/native-select";
 import { friendlyError } from "@/lib/errors";
 import { gatewayHost, liveUrl } from "@/lib/urls";
+import { timeAgo } from "@/lib/time";
+import { useMode, usePageCopy } from "@/lib/mode";
+import { AskAgentEmpty } from "@/components/AskAgentEmpty";
 
 const PAGE_SIZE = 10;
 const HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"];
@@ -44,6 +48,8 @@ const EMPTY_FORM: FlowFormState = {
 };
 
 export default function FlowsPage() {
+  const { mode, noun } = useMode();
+  const copy = usePageCopy("flows");
   const [flows, setFlows] = useState<PaginationResponse<FlowResponse> | null>(null);
   const [gateways, setGateways] = useState<GatewayResponse[]>([]);
   // False until the entry point list has loaded, so the "create one first" guidance doesn't flash.
@@ -75,6 +81,10 @@ export default function FlowsPage() {
       cancelled = true;
     };
   }, [page, reloadKey]);
+
+  // Only Simple mode shows visit counts; it costs one extra request.
+  const { data: activity } = useSWR(mode === "simple" ? "activity-summary" : null, () => api.getActivitySummary());
+  const activityByFlow = useMemo(() => new Map((activity?.pages ?? []).map((p) => [p.flowId, p])), [activity]);
 
   const gatewayById = useMemo(() => new Map(gateways.map((gateway) => [gateway.id, gateway])), [gateways]);
 
@@ -118,7 +128,7 @@ export default function FlowsPage() {
   }
 
   async function handleDelete(flow: FlowResponse) {
-    if (!await confirmAction({ title: `Delete flow "${flow.name}"?`, confirmLabel: "Delete" })) {
+    if (!await confirmAction({ title: `Delete ${noun("flow")} "${flow.name}"?`, confirmLabel: "Delete" })) {
       return;
     }
     setError(null);
@@ -135,14 +145,16 @@ export default function FlowsPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        eyebrow="Build"
-        title="Workflows"
-        description="Customer-facing paths that connect a request to the right actions."
+        eyebrow={copy.eyebrow}
+        title={copy.title}
+        description={copy.description}
         actions={
+        copy.create === null ? undefined : (
         <Button variant="primary" onClick={openCreate} disabled={gateways.length === 0}>
           <PlusIcon className="h-4 w-4" />
-          New workflow
+          {copy.create}
         </Button>
+        )
         }
       />
 
@@ -276,9 +288,12 @@ export default function FlowsPage() {
         </FormError>
       )}
 
-      <ResourceList title="Workflow catalog" description="Each workflow owns one public path and becomes live after publishing.">
-        {!flows && <ResourceListState>Loading workflows…</ResourceListState>}
-        {flows?.items.length === 0 && gatewaysLoaded && (
+      <ResourceList title={copy.listTitle} description={copy.listDescription}>
+        {!flows && <ResourceListState>{copy.loading}</ResourceListState>}
+        {flows?.items.length === 0 && mode === "simple" && (
+          <AskAgentEmpty title={copy.emptyTitle} description={copy.emptyDescription} />
+        )}
+        {flows?.items.length === 0 && gatewaysLoaded && mode === "advanced" && (
           needsGateway ? (
             <EmptyState
               title="Create an entry point first"
@@ -308,11 +323,14 @@ export default function FlowsPage() {
         {flows?.items.map((flow) => {
           const flowGateway = gatewayById.get(flow.gatewayId);
           const routeUrl = flowGateway ? liveUrl(flowGateway, flow.path) : null;
+          const visits = activityByFlow.get(flow.id);
           return (
-          <div key={flow.id} className="grid gap-4 px-5 py-4 transition-colors hover:bg-white/[0.03] xl:grid-cols-[1fr_auto]">
+          <div key={flow.id} className="grid gap-4 px-5 py-4 transition-colors hover:bg-ink/4 xl:grid-cols-[1fr_auto]">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-md bg-secondary px-1.5 py-0.5 font-mono text-[11px] text-muted-strong">{flow.httpMethod}</span>
+                {mode === "advanced" && (
+                  <span className="rounded-md bg-secondary px-1.5 py-0.5 font-mono text-[11px] text-muted-strong">{flow.httpMethod}</span>
+                )}
                 <code className="truncate font-mono text-sm text-foreground">
                   {routeUrl ? <CopyableLink href={routeUrl}>{flow.path}</CopyableLink> : flow.path}
                 </code>
@@ -321,15 +339,24 @@ export default function FlowsPage() {
               <Link href={`/flows/${flow.id}`} className="mt-3 block text-base font-semibold text-foreground hover:text-muted-strong">
                 {flow.name}
               </Link>
-              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                <code className="rounded-md border border-border bg-surface-2 px-1.5 py-0.5 font-mono">{flow.flowKey}</code>
-                <span>Entry point: {flow.gatewayName}</span>
-                <span>Priority: {flow.priority}</span>
-              </div>
+              {mode === "simple" && (
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {visits
+                    ? `${visits.requests24h} visit${visits.requests24h === 1 ? "" : "s"} today${visits.lastRequestAt ? ` · last ${timeAgo(visits.lastRequestAt)}` : ""}`
+                    : activity ? "No visits today" : ""}
+                </p>
+              )}
+              {mode === "advanced" && (
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                  <code className="rounded-md border border-border bg-surface-2 px-1.5 py-0.5 font-mono">{flow.flowKey}</code>
+                  <span>Entry point: {flow.gatewayName}</span>
+                  <span>Priority: {flow.priority}</span>
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-2 xl:justify-end">
               <Link href={`/flows/${flow.id}`} className={buttonClasses("secondary", "sm")}>
-                Open workflow
+                {copy.open}
               </Link>
               <Button variant="danger" size="icon" title="Delete" onClick={() => handleDelete(flow)}>
                 <TrashIcon className="h-4 w-4" />
@@ -339,6 +366,15 @@ export default function FlowsPage() {
           );
         })}
       </ResourceList>
+
+      {mode === "simple" && (
+        <p className="text-sm text-muted-foreground">
+          Curious how it works?{" "}
+          <Link href="/functions" className="font-semibold text-brand underline underline-offset-4">
+            See the features behind your pages
+          </Link>
+        </p>
+      )}
 
       {flows && (
         <Pagination

@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useState, type FormEvent } from "react";
+import { AgentSetup } from "@/components/app/AgentSetup";
+import { AgentTabs, MCP_URL } from "@/components/app/agents";
 import { Button } from "@/components/Button";
 import { Modal } from "@/components/Modal";
 import { CopyableCommand } from "@/components/CopyableCommand";
@@ -12,107 +14,21 @@ import {
   PlusIcon,
   TrashIcon,
   TerminalIcon,
-  AnthropicIcon,
-  OpenAIIcon,
-  OpencodeIcon,
-  AntigravityIcon,
-  PukuIcon,
 } from "@/components/icons";
-import { api, API_BASE_URL, APP_URL } from "@/lib/api";
+import { api } from "@/lib/api";
 import type { ApiKeyResponse } from "@/lib/types";
 import { FormError } from "@/components/FormError";
 import { confirmAction } from "@/components/ConfirmDialog";
 import { friendlyError } from "@/lib/errors";
-
-// Prefer the Gateway's own <app-url>/mcp shortcut (see FixedHostProxy.PathOverride)
-// when this deployment has one configured; otherwise fall back to the
-// controlplane API domain's real /api/mcp route, which always works.
-const MCP_URL = APP_URL ? `${APP_URL}/mcp` : `${API_BASE_URL}/api/mcp`;
-
-interface AgentCommand {
-  name: string;
-  icon: (props: { className?: string }) => ReactNode;
-  command: (rawKey: string) => string;
-  // Where the command/snippet goes, for agents configured via a file instead
-  // of a CLI invocation (e.g. Antigravity's mcp_config.json) - shown next to
-  // the agent name, kept out of the copyable value itself so what gets
-  // copied is exactly the file's contents.
-  note?: string;
-}
-
-const AGENT_COMMANDS: AgentCommand[] = [
-  {
-    name: "Claude Code",
-    icon: AnthropicIcon,
-    command: (rawKey) =>
-      `claude mcp add --transport http funchole ${MCP_URL} --header "Authorization: Bearer ${rawKey}"`,
-  },
-  {
-    name: "Codex",
-    icon: OpenAIIcon,
-    command: (rawKey) =>
-      `export FUNCHOLE_MCP_TOKEN=${rawKey}\ncodex mcp add funchole --url ${MCP_URL} --bearer-token-env-var FUNCHOLE_MCP_TOKEN`,
-  },
-  {
-    name: "opencode",
-    icon: OpencodeIcon,
-    command: (rawKey) =>
-      `opencode mcp add funchole --url ${MCP_URL} --header "Authorization=Bearer ${rawKey}"`,
-  },
-  {
-    name: "Antigravity",
-    icon: AntigravityIcon,
-    // Antigravity has no CLI "add" command - MCP servers are configured via
-    // its shared config file, read by the 2.0 IDE, the agy CLI, and the SDK
-    // alike.
-    note: "~/.gemini/config/mcp_config.json",
-    command: (rawKey) =>
-      JSON.stringify(
-        { mcpServers: { funchole: { serverUrl: MCP_URL, headers: { Authorization: `Bearer ${rawKey}` } } } },
-        null,
-        2
-      ),
-  },
-  {
-    name: "Puku",
-    icon: PukuIcon,
-    command: (rawKey) =>
-      `puku-cli mcp add funchole --transport http ${MCP_URL} -H "Authorization: Bearer ${rawKey}"`,
-  },
-];
-
-function AgentCommandTabs({ token }: { token: string }) {
-  const [activeIndex, setActiveIndex] = useState(0);
-  const agent = AGENT_COMMANDS[activeIndex];
-
-  return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-nowrap gap-1.5 overflow-x-auto border-b border-border pb-3">
-        {AGENT_COMMANDS.map((item, index) => (
-          <button
-            key={item.name}
-            type="button"
-            onClick={() => setActiveIndex(index)}
-            className={`flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-              index === activeIndex
-                ? "bg-secondary text-foreground"
-                : "text-muted-foreground hover:bg-white/[0.04] hover:text-foreground"
-            }`}
-          >
-            <item.icon className="h-4 w-4" />
-            {item.name}
-          </button>
-        ))}
-      </div>
-      <div className="flex flex-col gap-1.5">
-        {agent.note && <span className="font-mono text-xs text-muted-foreground">{agent.note}</span>}
-        <CopyableCommand value={agent.command(token)} />
-      </div>
-    </div>
-  );
-}
+import { useMode, usePageCopy } from "@/lib/mode";
 
 export default function ApiKeysPage() {
+  const { mode } = useMode();
+  return mode === "simple" ? <AgentSetup /> : <AdvancedApiKeysPage />;
+}
+
+function AdvancedApiKeysPage() {
+  const copy = usePageCopy("apiKeys");
   const [keys, setKeys] = useState<ApiKeyResponse[] | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [creating, setCreating] = useState(false);
@@ -205,13 +121,13 @@ export default function ApiKeysPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        eyebrow="Configure"
-        title="Agent Access"
-        description="Credentials for coding agents. Create one key, copy the generated command, and keep the dashboard for manual oversight."
+        eyebrow={copy.eyebrow}
+        title={copy.title}
+        description={copy.description}
         actions={
         <Button variant="primary" onClick={openCreate}>
           <PlusIcon className="h-4 w-4" />
-          New API key
+          {copy.create}
         </Button>
         }
       />
@@ -228,7 +144,7 @@ export default function ApiKeysPage() {
 
             <div className="flex flex-col gap-2">
               <p className="text-sm font-medium text-foreground">Or paste the ready-to-run command for your agent:</p>
-              <AgentCommandTabs token={revealedKey} />
+              <AgentTabs token={revealedKey} />
             </div>
 
             <Button variant="secondary" className="self-end" onClick={() => setRevealedKey(null)}>
@@ -257,7 +173,7 @@ export default function ApiKeysPage() {
                 </div>
                 <div className="flex flex-col gap-2">
                   <p className="text-sm font-medium text-foreground">Or paste the ready-to-run command for your agent:</p>
-                  <AgentCommandTabs token={viewingToken} />
+                  <AgentTabs token={viewingToken} />
                 </div>
               </>
             )}
@@ -310,11 +226,11 @@ export default function ApiKeysPage() {
         </FormError>
       )}
 
-      <ResourceList title="Agent credentials" description={`Connection endpoint: ${MCP_URL}`}>
-        {!keys && <ResourceListState>Loading agent keys…</ResourceListState>}
-        {keys?.length === 0 && <ResourceListState>No agent keys yet. Create one to connect a coding agent.</ResourceListState>}
+      <ResourceList title={copy.listTitle} description={`${copy.listDescription} Connection endpoint: ${MCP_URL}`.trim()}>
+        {!keys && <ResourceListState>{copy.loading}</ResourceListState>}
+        {keys?.length === 0 && <ResourceListState>{copy.emptyTitle}. {copy.emptyDescription}</ResourceListState>}
         {keys?.map((key) => (
-          <div key={key.id} className="grid gap-4 px-5 py-4 transition-colors hover:bg-white/[0.03] lg:grid-cols-[1fr_auto]">
+          <div key={key.id} className="grid gap-4 px-5 py-4 transition-colors hover:bg-ink/4 lg:grid-cols-[1fr_auto]">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <p className="text-base font-semibold text-foreground">{key.name}</p>

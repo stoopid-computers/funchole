@@ -12,6 +12,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -30,6 +35,7 @@ public class GlobalExceptionHandler {
     ) {
         return buildResponse(
                 HttpStatus.NOT_FOUND,
+                "NOT_FOUND",
                 exception.getMessage(),
                 request.getRequestURI(),
                 List.of()
@@ -43,6 +49,7 @@ public class GlobalExceptionHandler {
     ) {
         return buildResponse(
                 HttpStatus.FORBIDDEN,
+                exception.getCode(),
                 exception.getMessage(),
                 request.getRequestURI(),
                 List.of()
@@ -56,6 +63,7 @@ public class GlobalExceptionHandler {
     ) {
         return buildResponse(
                 HttpStatus.FORBIDDEN,
+                "QUOTA_EXCEEDED",
                 exception.getMessage(),
                 request.getRequestURI(),
                 List.of()
@@ -75,6 +83,7 @@ public class GlobalExceptionHandler {
 
         return buildResponse(
                 HttpStatus.UNPROCESSABLE_CONTENT,
+                "VALIDATION_FAILED",
                 "Validation failed",
                 request.getRequestURI(),
                 details
@@ -93,6 +102,7 @@ public class GlobalExceptionHandler {
 
         return buildResponse(
                 HttpStatus.UNPROCESSABLE_CONTENT,
+                "VALIDATION_FAILED",
                 "Constraint violation",
                 request.getRequestURI(),
                 details
@@ -106,6 +116,7 @@ public class GlobalExceptionHandler {
     ) {
         return buildResponse(
                 HttpStatus.UNPROCESSABLE_CONTENT,
+                "MALFORMED_REQUEST",
                 "Malformed or invalid request body",
                 request.getRequestURI(),
                 List.of()
@@ -119,6 +130,7 @@ public class GlobalExceptionHandler {
     ) {
         return buildResponse(
                 HttpStatus.UNPROCESSABLE_CONTENT,
+                "INVALID_REQUEST",
                 exception.getMessage(),
                 request.getRequestURI(),
                 List.of()
@@ -132,7 +144,67 @@ public class GlobalExceptionHandler {
     ) {
         return buildResponse(
                 HttpStatus.CONFLICT,
+                "CONFLICT",
                 exception.getMessage(),
+                request.getRequestURI(),
+                List.of()
+        );
+    }
+
+    // Bad input that reaches the framework before our code: a non-UUID path
+    // variable, a missing query parameter. These are the caller's mistake (400),
+    // not a server fault.
+    @ExceptionHandler({MethodArgumentTypeMismatchException.class, MissingServletRequestParameterException.class})
+    public ResponseEntity<ApiErrorResponse> handleBadParameter(
+            Exception exception,
+            HttpServletRequest request
+    ) {
+        return buildResponse(
+                HttpStatus.BAD_REQUEST,
+                "BAD_PARAMETER",
+                "A value in the request isn't valid.",
+                request.getRequestURI(),
+                List.of()
+        );
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiErrorResponse> handleUploadTooLarge(
+            MaxUploadSizeExceededException exception,
+            HttpServletRequest request
+    ) {
+        return buildResponse(
+                HttpStatus.CONTENT_TOO_LARGE,
+                "UPLOAD_TOO_LARGE",
+                "That file is too large.",
+                request.getRequestURI(),
+                List.of()
+        );
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleUnknownRoute(
+            NoResourceFoundException exception,
+            HttpServletRequest request
+    ) {
+        return buildResponse(
+                HttpStatus.NOT_FOUND,
+                "NOT_FOUND",
+                "Nothing exists at this address.",
+                request.getRequestURI(),
+                List.of()
+        );
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ApiErrorResponse> handleWrongMethod(
+            HttpRequestMethodNotSupportedException exception,
+            HttpServletRequest request
+    ) {
+        return buildResponse(
+                HttpStatus.METHOD_NOT_ALLOWED,
+                "METHOD_NOT_ALLOWED",
+                "This address doesn't accept that kind of request.",
                 request.getRequestURI(),
                 List.of()
         );
@@ -146,6 +218,7 @@ public class GlobalExceptionHandler {
         log.error("Unhandled exception on {} {}", request.getMethod(), request.getRequestURI(), exception);
         return buildResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR,
+                "INTERNAL_ERROR",
                 "Unexpected server error",
                 request.getRequestURI(),
                 List.of(exception.getClass().getSimpleName())
@@ -154,6 +227,7 @@ public class GlobalExceptionHandler {
 
     private ResponseEntity<ApiErrorResponse> buildResponse(
             HttpStatus status,
+            String code,
             String message,
             String path,
             List<String> details
@@ -164,7 +238,8 @@ public class GlobalExceptionHandler {
                 status.getReasonPhrase(),
                 message,
                 path,
-                details
+                details,
+                code
         );
         return ResponseEntity.status(status).body(body);
     }

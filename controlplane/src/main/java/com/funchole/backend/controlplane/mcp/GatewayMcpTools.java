@@ -78,11 +78,12 @@ public class GatewayMcpTools {
             @McpToolParam(description = "Gateway id (UUID)") String gatewayId,
             @McpToolParam(description = "Display name") String name,
             @McpToolParam(description = "Description", required = false) String description,
-            @McpToolParam(description = "AppDomain id (UUID)") String appDomainId,
+            @McpToolParam(description = "AppDomain id (UUID). Admin only; other users omit this.", required = false) String appDomainId,
             @McpToolParam(description = "ACTIVE or INACTIVE") String status
-    ) {
-        Gateway updated = gatewayService.updateGateway(CurrentMcpUser.id(), UUID.fromString(gatewayId), new GatewayUpdateRequest(
-                name, description, UUID.fromString(appDomainId), GatewayStatus.valueOf(status)));
+    ) throws NotFoundException {
+        AppUser appUser = profileService.loadUserById(CurrentMcpUser.id());
+        Gateway updated = gatewayService.updateGateway(appUser, UUID.fromString(gatewayId), new GatewayUpdateRequest(
+                name, description, appDomainId == null ? null : UUID.fromString(appDomainId), GatewayStatus.valueOf(status)));
         return gatewayMapper.toResponse(updated);
     }
 

@@ -18,6 +18,7 @@ import type {
   PaginationResponse,
 } from "@/lib/types";
 import { friendlyError } from "@/lib/errors";
+import { useMode, usePageCopy } from "@/lib/mode";
 
 const PAGE_SIZE = 10;
 
@@ -36,6 +37,8 @@ const EMPTY_FORM: EnvironmentFormState = {
 };
 
 export default function EnvironmentsPage() {
+  const { noun } = useMode();
+  const copy = usePageCopy("environments");
   const [environments, setEnvironments] = useState<PaginationResponse<EnvironmentProfileResponse> | null>(null);
   const [selected, setSelected] = useState<EnvironmentProfileResponse | null>(null);
   const [config, setConfig] = useState<EnvironmentProfileConfigResponse | null>(null);
@@ -131,7 +134,7 @@ export default function EnvironmentsPage() {
   }
 
   async function handleDelete(environment: EnvironmentProfileResponse) {
-    if (!await confirmAction({ title: `Delete variable set "${environment.name}"?`, description: `Anything using it will stop inheriting these values.`, confirmLabel: "Delete" })) {
+    if (!await confirmAction({ title: `Delete ${noun("environment")} "${environment.name}"?`, description: `Anything using it will stop inheriting these values.`, confirmLabel: "Delete" })) {
       return;
     }
     setError(null);
@@ -161,16 +164,29 @@ export default function EnvironmentsPage() {
     }
   }
 
+  async function removeConfig(kind: "env" | "secret", key: string) {
+    if (!selected) return;
+    if (!await confirmAction({ title: `Remove ${key}?`, description: "Anything using this set stops receiving it.", confirmLabel: "Remove" })) return;
+    setError(null);
+    try {
+      setConfig(kind === "env"
+        ? await api.deleteEnvironmentEnvVar(selected.id, key)
+        : await api.deleteEnvironmentSecret(selected.id, key));
+    } catch (err) {
+      setError(friendlyError(err, "Failed to remove config"));
+    }
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        eyebrow="Configure"
-        title="Variables & Secrets"
-        description="Shared configuration for production, staging, testing, and agent-created work."
+        eyebrow={copy.eyebrow}
+        title={copy.title}
+        description={copy.description}
         actions={
         <Button variant="primary" onClick={openCreate}>
           <PlusIcon className="h-4 w-4" />
-          New variable set
+          {copy.create}
         </Button>
         }
       />
@@ -246,14 +262,14 @@ export default function EnvironmentsPage() {
       )}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
-        <ResourceList title="Variable sets" description="Select a set to manage variables and secrets.">
-          {!environments && <ResourceListState>Loading variable sets…</ResourceListState>}
-          {environments?.items.length === 0 && <ResourceListState>No variable sets yet. Create one for production, staging, or testing context.</ResourceListState>}
+        <ResourceList title={copy.listTitle} description={copy.listDescription}>
+          {!environments && <ResourceListState>{copy.loading}</ResourceListState>}
+          {environments?.items.length === 0 && <ResourceListState>{copy.emptyTitle}. {copy.emptyDescription}</ResourceListState>}
           {environments?.items.map((environment) => (
             <div
               key={environment.id}
-              className={`grid gap-4 px-5 py-4 transition-colors hover:bg-white/[0.03] lg:grid-cols-[1fr_auto] ${
-                selected?.id === environment.id ? "bg-white/[0.04]" : ""
+              className={`grid gap-4 px-5 py-4 transition-colors hover:bg-ink/4 lg:grid-cols-[1fr_auto] ${
+                selected?.id === environment.id ? "bg-ink/5" : ""
               }`}
             >
               <button
@@ -284,7 +300,7 @@ export default function EnvironmentsPage() {
           ))}
         </ResourceList>
 
-        <EnvironmentConfigPanel selected={selected} config={config} onSave={saveConfig} />
+        <EnvironmentConfigPanel selected={selected} config={config} onSave={saveConfig} onRemove={removeConfig} />
       </div>
 
       {environments && (
@@ -303,9 +319,10 @@ interface EnvironmentConfigPanelProps {
   selected: EnvironmentProfileResponse | null;
   config: EnvironmentProfileConfigResponse | null;
   onSave: (kind: "env" | "secret", key: string, value: string) => Promise<void>;
+  onRemove: (kind: "env" | "secret", key: string) => Promise<void>;
 }
 
-function EnvironmentConfigPanel({ selected, config, onSave }: EnvironmentConfigPanelProps) {
+function EnvironmentConfigPanel({ selected, config, onSave, onRemove }: EnvironmentConfigPanelProps) {
   if (!selected) {
     return (
       <Panel className="flex min-h-64 flex-col items-center justify-center gap-3 p-6 text-center">
@@ -329,6 +346,7 @@ function EnvironmentConfigPanel({ selected, config, onSave }: EnvironmentConfigP
         entries={config?.envVars.map((entry) => ({ key: entry.key, value: entry.value })) ?? null}
         placeholder="production"
         onSave={(key, value) => onSave("env", key, value)}
+        onRemove={(key) => onRemove("env", key)}
       />
       <ConfigList
         title="Secrets"
@@ -336,6 +354,7 @@ function EnvironmentConfigPanel({ selected, config, onSave }: EnvironmentConfigP
         placeholder="super-secret-value"
         secret
         onSave={(key, value) => onSave("secret", key, value)}
+        onRemove={(key) => onRemove("secret", key)}
       />
     </Panel>
   );
@@ -347,9 +366,10 @@ interface ConfigListProps {
   placeholder: string;
   secret?: boolean;
   onSave: (key: string, value: string) => Promise<void>;
+  onRemove: (key: string) => Promise<void>;
 }
 
-function ConfigList({ title, entries, placeholder, secret, onSave }: ConfigListProps) {
+function ConfigList({ title, entries, placeholder, secret, onSave, onRemove }: ConfigListProps) {
   const [adding, setAdding] = useState(false);
   const [key, setKey] = useState("");
   const [value, setValue] = useState("");
@@ -388,7 +408,10 @@ function ConfigList({ title, entries, placeholder, secret, onSave }: ConfigListP
           {entries.map((entry) => (
             <li key={entry.key} className="flex items-center gap-3 px-3 py-2 text-xs">
               <span className="w-36 shrink-0 truncate font-mono font-medium text-foreground">{entry.key}</span>
-              <span className="truncate font-mono text-muted-foreground">{secret ? `configured (${entry.value})` : entry.value}</span>
+              <span className="min-w-0 flex-1 truncate font-mono text-muted-foreground">{secret ? `configured (${entry.value})` : entry.value}</span>
+              <Button variant="danger" size="icon" title={`Remove ${entry.key}`} aria-label={`Remove ${entry.key}`} onClick={() => void onRemove(entry.key)}>
+                <TrashIcon className="h-3.5 w-3.5" />
+              </Button>
             </li>
           ))}
         </ul>

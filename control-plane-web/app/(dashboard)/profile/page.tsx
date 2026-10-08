@@ -11,6 +11,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Panel } from "@/components/Panel";
 import { UserIcon } from "@/components/icons";
 import { friendlyError } from "@/lib/errors";
+import { usePageCopy } from "@/lib/mode";
 
 export default function ProfilePage() {
   return (
@@ -21,6 +22,7 @@ export default function ProfilePage() {
 }
 
 function Profile() {
+  const copy = usePageCopy("profile");
   const passwordRequired = useSearchParams().get("password") === "required";
   const { profile, refresh } = useProfile();
   // null = untouched, so the field follows the loaded profile until edited.
@@ -56,9 +58,9 @@ function Profile() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        eyebrow="Account"
-        title="User Profile"
-        description="Manage the profile fields used across your workspace."
+        eyebrow={copy.eyebrow}
+        title={copy.title}
+        description={copy.description}
       />
 
       {passwordRequired && !message && (

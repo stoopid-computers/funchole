@@ -24,6 +24,8 @@ import type {
 } from "@/lib/types";
 import { friendlyError } from "@/lib/errors";
 import { gatewayHost, liveUrl } from "@/lib/urls";
+import { useMode, usePageCopy } from "@/lib/mode";
+import { AskAgentEmpty } from "@/components/AskAgentEmpty";
 
 const PAGE_SIZE = 10;
 
@@ -42,6 +44,8 @@ const EMPTY_FORM: GatewayFormState = {
 };
 
 export default function GatewaysPage() {
+  const { mode, noun } = useMode();
+  const copy = usePageCopy("gateways");
   const [gateways, setGateways] = useState<PaginationResponse<GatewayResponse> | null>(null);
   const [domains, setDomains] = useState<DomainResponse[]>([]);
   // null until the domain list has loaded, so the "add a domain" guidance doesn't flash.
@@ -135,7 +139,7 @@ export default function GatewaysPage() {
   }
 
   async function handleDelete(gateway: GatewayResponse) {
-    if (!await confirmAction({ title: `Delete gateway "${gateway.name}"?`, confirmLabel: "Delete" })) {
+    if (!await confirmAction({ title: `Delete ${noun("gateway")} "${gateway.name}"?`, confirmLabel: "Delete" })) {
       return;
     }
     setError(null);
@@ -153,17 +157,17 @@ export default function GatewaysPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        eyebrow="Operate"
-        title="Entry Points"
-        description="Public hosts with certificates. An entry point becomes the stable hostname for customer-facing workflows."
+        eyebrow={copy.eyebrow}
+        title={copy.title}
+        description={copy.description}
         actions={
         // Without a verified domain nobody can create an entry point; when one
         // already exists (e.g. auto-provisioned on sign-up) a greyed-out
         // button with no explanation is worse than no button.
-        domains.length > 0 || (gateways?.items.length ?? 0) === 0 ? (
+        copy.create !== null && (domains.length > 0 || (gateways?.items.length ?? 0) === 0) ? (
           <Button variant="primary" onClick={openCreate} disabled={domains.length === 0}>
             <PlusIcon className="h-4 w-4" />
-            New entry point
+            {copy.create}
           </Button>
         ) : undefined
         }
@@ -250,9 +254,12 @@ export default function GatewaysPage() {
         </FormError>
       )}
 
-      <ResourceList title="Entry point registry" description="Hosts available for live workflows and certificate-backed traffic.">
-        {!gateways && <ResourceListState>Loading entry points…</ResourceListState>}
-        {gateways?.items.length === 0 && unverifiedDomainCount !== null && (
+      <ResourceList title={copy.listTitle} description={copy.listDescription}>
+        {!gateways && <ResourceListState>{copy.loading}</ResourceListState>}
+        {gateways?.items.length === 0 && mode === "simple" && (
+          <AskAgentEmpty title={copy.emptyTitle} description={copy.emptyDescription} />
+        )}
+        {gateways?.items.length === 0 && unverifiedDomainCount !== null && mode === "advanced" && (
           needsDomain ? (
             <EmptyState
               title={unverifiedDomainCount > 0 ? "Verify your custom domain first" : "Add a custom domain first"}
@@ -284,7 +291,7 @@ export default function GatewaysPage() {
           )
         )}
         {gateways?.items.map((gateway) => (
-          <div key={gateway.id} className="grid gap-4 px-5 py-4 transition-colors hover:bg-white/[0.03] lg:grid-cols-[1fr_auto]">
+          <div key={gateway.id} className="grid gap-4 px-5 py-4 transition-colors hover:bg-ink/4 lg:grid-cols-[1fr_auto]">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <Link href={`/gateways/${gateway.id}`} className="text-base font-semibold text-foreground hover:text-muted-strong">

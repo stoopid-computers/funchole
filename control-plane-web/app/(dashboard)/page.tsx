@@ -9,6 +9,8 @@ import { api } from "@/lib/api";
 import type { FlowResponse, GatewayResponse } from "@/lib/types";
 import { friendlyError } from "@/lib/errors";
 import { useProfile } from "@/lib/profile";
+import { useMode } from "@/lib/mode";
+import { SimpleHome } from "@/components/app/SimpleHome";
 import { FormError } from "@/components/FormError";
 import { Panel } from "@/components/Panel";
 import { PageHeader } from "@/components/PageHeader";
@@ -37,6 +39,11 @@ interface AttentionItem {
 }
 
 export default function OverviewPage() {
+  const { mode } = useMode();
+  return mode === "simple" ? <SimpleHome /> : <AdvancedOverview />;
+}
+
+function AdvancedOverview() {
   const router = useRouter();
   const { profile } = useProfile();
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -151,7 +158,7 @@ export default function OverviewPage() {
         </FormError>
       )}
 
-      <section className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border bg-border xl:grid-cols-4 [&>*]:bg-background">
+      <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         {coreMetrics.map((metric) => (
           <MetricCard key={metric.href} {...metric} />
         ))}
@@ -189,7 +196,7 @@ export default function OverviewPage() {
                     tabIndex={0}
                     onClick={() => router.push(`/flows/${flow.id}`)}
                     onKeyDown={(e) => e.key === "Enter" && router.push(`/flows/${flow.id}`)}
-                    className="group grid cursor-pointer gap-3 px-5 py-4 transition-colors hover:bg-white/[0.02] lg:grid-cols-[1fr_auto]"
+                    className="group grid cursor-pointer gap-3 px-5 py-4 transition-colors hover:bg-ink/3 lg:grid-cols-[1fr_auto]"
                   >
                     <div className="min-w-0">
                       <div className="flex min-w-0 items-center gap-2">
@@ -246,7 +253,7 @@ export default function OverviewPage() {
               attentionItems.map((item) => {
                 const Icon = item.icon;
                 return (
-                  <Link key={item.href} href={item.href} className="group flex gap-3 rounded-xl border border-border p-3 transition-colors hover:border-border-strong hover:bg-white/[0.02]">
+                  <Link key={item.href} href={item.href} className="group flex gap-3 rounded-xl border border-border p-3 transition-colors hover:border-border-strong hover:bg-ink/3">
                     <span className="grid size-9 shrink-0 place-items-center rounded-lg border border-border bg-secondary text-muted-strong">
                       <Icon className="h-4 w-4" />
                     </span>
@@ -295,7 +302,7 @@ export default function OverviewPage() {
                     tabIndex={0}
                     onClick={() => router.push(`/flows/${flow.id}`)}
                     onKeyDown={(e) => e.key === "Enter" && router.push(`/flows/${flow.id}`)}
-                    className="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-border p-3 transition-colors hover:border-border-strong hover:bg-white/[0.02]"
+                    className="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-border p-3 transition-colors hover:border-border-strong hover:bg-ink/3"
                   >
                     <span className="min-w-0">
                       <span className="block truncate text-sm font-medium text-foreground">{flow.name}</span>
@@ -328,7 +335,7 @@ function MetricCard({
   icon: ComponentType<{ className?: string }>;
 }) {
   return (
-    <Link href={href} className="group flex flex-col p-4 transition-colors hover:!bg-card sm:p-6">
+    <Link href={href} className="group flex flex-col rounded-xl border border-border bg-card p-4 transition-colors hover:bg-sun-soft sm:p-6">
       <span className="flex items-center justify-between text-sm text-muted-foreground">
         <span className="flex min-w-0 items-center gap-2">
           <Icon className="h-4 w-4 shrink-0 text-subtle" />
@@ -359,7 +366,7 @@ function CompactMetric({
   icon: ComponentType<{ className?: string }>;
 }) {
   return (
-    <Link href={href} className="flex items-center justify-between px-4 py-3 transition-colors hover:bg-white/[0.02]">
+    <Link href={href} className="flex items-center justify-between px-4 py-3 transition-colors hover:bg-ink/3">
       <span className="flex items-center gap-3">
         <Icon className="h-4 w-4 text-subtle" />
         <span className="text-sm text-foreground">{label}</span>

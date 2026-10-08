@@ -9,6 +9,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -65,7 +66,8 @@ public class SecurityConfig {
             HttpSecurity http,
             ApiKeyAuthenticationFilter apiKeyAuthenticationFilter,
             JwtAuthenticationFilter jwtAuthenticationFilter,
-            AuthenticationProvider authenticationProvider
+            AuthenticationProvider authenticationProvider,
+            SecurityProperties securityProperties
     ) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
@@ -86,6 +88,12 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(PUBLIC_PATHS).permitAll()
                         .requestMatchers(HttpMethod.GET, "/actuator/info").permitAll()
+                        // Metrics, flyway and the rest of actuator describe the whole
+                        // platform, not the caller: operator (bootstrap admin) only.
+                        .requestMatchers("/actuator/**").access((authentication, context) -> new AuthorizationDecision(
+                                authentication.get().isAuthenticated()
+                                        && securityProperties.bootstrapUser().username()
+                                                .equalsIgnoreCase(authentication.get().getName())))
                         .anyRequest().authenticated())
                 // Explicitly ordered relative to each other (not just both
                 // "before UsernamePasswordAuthenticationFilter") so the API

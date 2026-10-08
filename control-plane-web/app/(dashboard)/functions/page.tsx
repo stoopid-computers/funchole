@@ -15,6 +15,11 @@ import { Modal } from "@/components/Modal";
 import { confirmAction } from "@/components/ConfirmDialog";
 import { NativeSelect } from "@/components/ui/native-select";
 import { friendlyError } from "@/lib/errors";
+import { useMode, usePageCopy } from "@/lib/mode";
+import { AskAgentEmpty } from "@/components/AskAgentEmpty";
+import { StatusBadge } from "@/components/StatusBadge";
+import { useFunctionVersions } from "@/lib/data";
+import { timeAgo } from "@/lib/time";
 
 const PAGE_SIZE = 10;
 
@@ -33,7 +38,12 @@ const EMPTY_FORM: FunctionFormState = {
 };
 
 export default function FunctionsPage() {
+  const { mode, noun } = useMode();
+  const copy = usePageCopy("functions");
   const [functions, setFunctions] = useState<PaginationResponse<FunctionResponse> | null>(null);
+  // Latest update status per feature, for the status chips in Simple mode.
+  const versionsByFunction = useFunctionVersions(mode === "simple" ? (functions?.items ?? []).map((fn) => fn.id) : []).data;
+  const latestStatus = new Map(Object.entries(versionsByFunction ?? {}).map(([id, versions]) => [id, versions[0]?.status]));
   const [page, setPage] = useState(1);
   const [reloadKey, setReloadKey] = useState(0);
   const [form, setForm] = useState<FunctionFormState | null>(null);
@@ -92,7 +102,7 @@ export default function FunctionsPage() {
   }
 
   async function handleDelete(fn: FunctionResponse) {
-    if (!await confirmAction({ title: `Delete function "${fn.name}"?`, confirmLabel: "Delete" })) {
+    if (!await confirmAction({ title: `Delete ${noun("function")} "${fn.name}"?`, confirmLabel: "Delete" })) {
       return;
     }
     setError(null);
@@ -107,14 +117,16 @@ export default function FunctionsPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        eyebrow="Build"
-        title="Actions"
-        description="Reusable pieces of work your agent can prepare, test, and connect to customer-facing workflows."
+        eyebrow={copy.eyebrow}
+        title={copy.title}
+        description={copy.description}
         actions={
+        copy.create === null ? undefined : (
         <Button variant="primary" onClick={openCreate}>
           <PlusIcon className="h-4 w-4" />
-          New action
+          {copy.create}
         </Button>
+        )
         }
       />
 
@@ -197,27 +209,38 @@ export default function FunctionsPage() {
         </FormError>
       )}
 
-      <ResourceList title="Action catalog" description="Open an action to inspect versions, source, runtime context, and tests.">
-        {!functions && <ResourceListState>Loading actions…</ResourceListState>}
+      <ResourceList title={copy.listTitle} description={copy.listDescription}>
+        {!functions && <ResourceListState>{copy.loading}</ResourceListState>}
         {functions?.items.length === 0 && (
-          <ResourceListState>No actions yet. Create one manually or let a connected agent prepare the first capability.</ResourceListState>
+          mode === "simple" ? (
+            <AskAgentEmpty title={copy.emptyTitle} description={copy.emptyDescription} />
+          ) : (
+            <ResourceListState>{copy.emptyTitle}. {copy.emptyDescription}</ResourceListState>
+          )
         )}
         {functions?.items.map((fn) => (
-          <div key={fn.id} className="grid gap-4 px-5 py-4 transition-colors hover:bg-white/[0.03] lg:grid-cols-[1fr_auto]">
+          <div key={fn.id} className="grid gap-4 px-5 py-4 transition-colors hover:bg-ink/4 lg:grid-cols-[1fr_auto]">
             <div className="min-w-0">
               <Link href={`/functions/${fn.id}`} className="text-base font-semibold text-foreground hover:text-muted-strong">
                 {fn.name}
               </Link>
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <code className="rounded-md border border-border bg-surface-2 px-1.5 py-0.5 font-mono text-[11px] text-muted-strong">{fn.functionKey}</code>
-                <span className="rounded-md bg-secondary px-1.5 py-0.5 font-mono text-[11px] text-muted-strong">{fn.runtime}</span>
-                <span className="text-xs text-muted-foreground">Created {new Date(fn.createdAt).toLocaleString()}</span>
-              </div>
+              {mode === "advanced" ? (
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <code className="rounded-md border border-border bg-surface-2 px-1.5 py-0.5 font-mono text-[11px] text-muted-strong">{fn.functionKey}</code>
+                  <span className="rounded-md bg-secondary px-1.5 py-0.5 font-mono text-[11px] text-muted-strong">{fn.runtime}</span>
+                  <span className="text-xs text-muted-foreground">Created {new Date(fn.createdAt).toLocaleString()}</span>
+                </div>
+              ) : (
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  {latestStatus.get(fn.id) && <StatusBadge status={latestStatus.get(fn.id)!} />}
+                  <span className="text-xs text-muted-foreground">Created {timeAgo(fn.createdAt)}</span>
+                </div>
+              )}
               {fn.description && <p className="mt-2 text-sm leading-6 text-muted-foreground">{fn.description}</p>}
             </div>
             <div className="flex items-center gap-2 lg:justify-end">
               <Link href={`/functions/${fn.id}`} className={buttonClasses("secondary", "sm")}>
-                Open action
+                {copy.open}
               </Link>
               <Button variant="danger" size="icon" title="Delete" onClick={() => handleDelete(fn)}>
                 <TrashIcon className="h-4 w-4" />

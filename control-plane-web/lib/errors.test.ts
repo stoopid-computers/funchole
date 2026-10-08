@@ -18,6 +18,13 @@ describe("friendlyError", () => {
     expect(friendlyError(new ApiError(403, "Only the platform admin can create domains."), "f")).toMatch(/connect your own domain/);
   });
 
+  it("prefers the API's stable code over parsing the message", () => {
+    expect(friendlyError(new ApiError(401, "Incorrect username or password.", [], "INVALID_CREDENTIALS"), "f")).toBe("Incorrect username or password.");
+    expect(friendlyError(new ApiError(403, "x", [], "ADMIN_ONLY"), "f")).toMatch(/connect your own domain/);
+    expect(friendlyError(new ApiError(403, "Your package allows up to 1 gateway(s)", [], "QUOTA_EXCEEDED"), "f")).toMatch(/plan's limit/);
+    expect(friendlyError(new ApiError(413, "x", [], "UPLOAD_TOO_LARGE"), "f")).toMatch(/too large/);
+  });
+
   it("hides ids, and shows validation details", () => {
     expect(friendlyError(new ApiError(404, "Flow not found: 3f2a9c1e-1111-2222-3333-444455556666"), "f")).toBe(
       "We couldn't find that. It may have been deleted."

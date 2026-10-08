@@ -107,7 +107,7 @@ export default function DomainsPage() {
         {!domains && <ResourceListState>Loading domains…</ResourceListState>}
         {domains?.items.length === 0 && <ResourceListState>No domains yet. Add one above to begin public URL setup.</ResourceListState>}
         {domains?.items.map((domain) => (
-          <div key={domain.id} className="grid gap-4 px-5 py-4 transition-colors hover:bg-white/[0.03] lg:grid-cols-[1fr_auto]">
+          <div key={domain.id} className="grid gap-4 px-5 py-4 transition-colors hover:bg-ink/4 lg:grid-cols-[1fr_auto]">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <code className="font-mono text-base font-semibold text-foreground">

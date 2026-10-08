@@ -146,6 +146,26 @@ public class EnvironmentProfileController {
         ));
     }
 
+    @DeleteMapping("/{environmentId}/config/env/{key}")
+    @SecurityRequirement(name = "bearerAuth")
+    public ApiResponse<EnvironmentProfileConfigResponse> deleteEnvVar(
+            @AuthenticationPrincipal AppUserPrincipal appUserPrincipal,
+            @PathVariable UUID environmentId,
+            @PathVariable String key
+    ) {
+        return ApiResponse.success(environmentProfileService.deleteEnvVar(appUserPrincipal.getId(), environmentId, key));
+    }
+
+    @DeleteMapping("/{environmentId}/config/secrets/{key}")
+    @SecurityRequirement(name = "bearerAuth")
+    public ApiResponse<EnvironmentProfileConfigResponse> deleteSecret(
+            @AuthenticationPrincipal AppUserPrincipal appUserPrincipal,
+            @PathVariable UUID environmentId,
+            @PathVariable String key
+    ) {
+        return ApiResponse.success(environmentProfileService.deleteSecret(appUserPrincipal.getId(), environmentId, key));
+    }
+
     private EnvironmentProfileResponse toResponse(EnvironmentProfile profile) {
         return new EnvironmentProfileResponse(
                 profile.getId(),

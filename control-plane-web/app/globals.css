@@ -9,81 +9,88 @@
 @import "shadcn/tailwind.css";
 @import "./tokens.css";
 
-/* The console is dark-only, like the landing page: <html> always carries
-   `.dark`, so shadcn's `dark:` variants are the ones that apply. */
-@custom-variant dark (&:is(.dark *));
+/* Light is the default; <html data-theme="dark"> switches to ink mode (see
+   components/ThemeToggle.tsx and the no-flash script in app/layout.tsx). */
+@custom-variant dark (&:is([data-theme="dark"] *));
 
 /*
  * Semantic tokens. shadcn/ui components read the standard names
  * (background, card, primary, muted, accent, ...); app code additionally uses
  * the FuncHole names below (surface, brand, success, ...). Every value
- * resolves to the shared palette in tokens.css.
+ * resolves to the palette in tokens.css, so a theme switch only redefines
+ * tokens.
  *
  * Naming note: in shadcn, `muted` and `accent` are *surfaces* (a subdued
  * background and the hover background). Grey text is `text-muted-foreground`;
- * the electric-blue brand colour is `brand`.
+ * brand blue as text is `text-brand`.
  */
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 
-  --background: var(--fh-ink);
-  --foreground: var(--fh-fg);
-  --card: var(--fh-panel);
-  --card-foreground: var(--fh-fg);
-  --popover: var(--fh-panel-2);
-  --popover-foreground: var(--fh-fg);
-  --primary: var(--fh-fg);
-  --primary-foreground: var(--fh-ink);
-  --secondary: var(--fh-raise);
-  --secondary-foreground: var(--fh-fg);
-  --muted: var(--fh-panel-2);
-  --muted-foreground: var(--fh-muted);
-  --accent: var(--fh-raise);
-  --accent-foreground: var(--fh-fg);
-  --destructive: var(--fh-bad);
+  --background: var(--fh-paper);
+  --foreground: var(--fh-ink);
+  --card: var(--fh-card);
+  --card-foreground: var(--fh-ink);
+  --popover: var(--fh-card);
+  --popover-foreground: var(--fh-ink);
+  --primary: var(--fh-blue);
+  --primary-foreground: var(--fh-on-blue);
+  --secondary: var(--fh-paper-2);
+  --secondary-foreground: var(--fh-ink);
+  --muted: var(--fh-paper-2);
+  --muted-foreground: var(--fh-mute);
+  --accent: var(--fh-sun-soft);
+  --accent-foreground: var(--fh-ink);
+  --destructive: var(--fh-danger-ink);
   --border: var(--fh-line);
-  --input: var(--fh-line-strong);
-  --ring: var(--fh-accent);
+  --input: var(--fh-input-line);
+  --ring: var(--fh-focus);
 
-  --chart-1: var(--fh-accent);
-  --chart-2: var(--fh-ok);
-  --chart-3: var(--fh-warn);
-  --chart-4: var(--fh-code-kw);
-  --chart-5: var(--fh-muted);
+  --chart-1: var(--fh-blue);
+  --chart-2: var(--fh-live);
+  --chart-3: var(--fh-sun);
+  --chart-4: var(--fh-coral);
+  --chart-5: var(--fh-mute);
 
   --radius: var(--fh-radius);
 
-  --sidebar: var(--fh-ink);
-  --sidebar-foreground: var(--fh-soft);
-  --sidebar-primary: var(--fh-fg);
-  --sidebar-primary-foreground: var(--fh-ink);
-  --sidebar-accent: var(--fh-raise);
-  --sidebar-accent-foreground: var(--fh-fg);
-  --sidebar-border: var(--fh-line);
-  --sidebar-ring: var(--fh-accent);
+  --sidebar: var(--fh-paper);
+  --sidebar-foreground: var(--fh-ink-2);
+  --sidebar-primary: var(--fh-blue);
+  --sidebar-primary-foreground: var(--fh-on-blue);
+  --sidebar-accent: var(--fh-sun);
+  --sidebar-accent-foreground: var(--fh-on-sun);
+  --sidebar-border: var(--fh-edge);
+  --sidebar-ring: var(--fh-focus);
 
   /* FuncHole names */
-  --surface: var(--fh-panel);
-  --surface-2: var(--fh-panel-2);
-  --surface-hover: var(--fh-raise);
-  --border-strong: var(--fh-line-strong);
-  --muted-strong: var(--fh-soft);
+  --surface: var(--fh-card);
+  --surface-2: var(--fh-paper-2);
+  --surface-hover: var(--fh-paper-2);
+  --border-strong: var(--fh-input-line);
+  --muted-strong: var(--fh-ink-2);
   --subtle: var(--fh-subtle);
   --faint: var(--fh-faint);
-  --brand: var(--fh-accent);
-  --brand-strong: var(--fh-accent-strong);
-  --brand-soft: var(--fh-accent-soft);
-  --success: var(--fh-ok);
-  --warning: var(--fh-warn);
-  --danger: var(--fh-bad);
-  --info: var(--fh-accent);
-  --violet: var(--fh-code-kw);
+  --brand: var(--fh-blue-d);
+  --brand-strong: var(--fh-blue);
+  --brand-soft: var(--fh-blue-soft);
+  --success: var(--fh-live-ink);
+  --warning: var(--fh-warn-ink);
+  --danger: var(--fh-danger-ink);
+  --info: var(--fh-blue-d);
+  --violet: var(--fh-violet);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 @theme inline {
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
-  --font-heading: var(--font-sans);
+  --font-sans: var(--font-body-src), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-heading: var(--font-display-src), "Avenir Next", "Trebuchet MS", system-ui, sans-serif;
+  --font-display: var(--font-display-src), "Avenir Next", "Trebuchet MS", system-ui, sans-serif;
+  --font-hand: var(--font-hand-src), "Segoe Print", "Bradley Hand", cursive;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -132,125 +139,119 @@
   --color-danger: var(--danger);
   --color-info: var(--info);
   --color-violet: var(--violet);
-  --color-code-fn: var(--fh-code-fn);
-  --color-code-str: var(--fh-code-str);
   --color-code-kw: var(--fh-code-kw);
   --color-code-num: var(--fh-code-num);
 
-  /* 8px buttons/inputs, 12px panels, 16px/24px large cards - as on the landing page. */
+  /* The landing page's palette, for sticker and onboarding surfaces. */
+  --color-paper: var(--fh-paper);
+  --color-paper-2: var(--fh-paper-2);
+  --color-ink: var(--fh-ink);
+  --color-edge: var(--fh-edge);
+  --color-blue: var(--fh-blue);
+  --color-blue-soft: var(--fh-blue-soft);
+  --color-live: var(--fh-live);
+  --color-live-ink: var(--fh-live-ink);
+  --color-live-soft: var(--fh-live-soft);
+  --color-sun: var(--fh-sun);
+  --color-sun-soft: var(--fh-sun-soft);
+  --color-coral: var(--fh-coral);
+  --color-coral-soft: var(--fh-coral-soft);
+  --color-island: var(--fh-island);
+  --color-island-deep: var(--fh-island-deep);
+  --color-island-fg: var(--fh-island-fg);
+  --color-island-mute: var(--fh-island-mute);
+  --color-island-line: var(--fh-island-line);
+  --color-island-code: var(--fh-island-code);
+
+  /* 6/8/10/14/18px steps, the landing page's radii (base radius is 10px). */
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 16px);
-  --radius-4xl: calc(var(--radius) + 24px);
+  --radius-4xl: 99px;
+
+  --shadow-hard: var(--fh-hard);
+  --shadow-hard-lg: var(--fh-hard-lg);
+  --shadow-press: var(--fh-press);
+  --shadow-press-hover: var(--fh-press-hover);
+  --shadow-press-down: var(--fh-press-down);
 
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
     scrollbar-color: var(--border-strong) transparent;
   }
 
   html {
     @apply font-sans;
+    -webkit-text-size-adjust: 100%;
   }
 
   body {
     @apply bg-background text-foreground antialiased;
     font-size: 15px;
-    line-height: 1.6;
+    line-height: 1.55;
   }
 
   h1,
   h2,
   h3 {
+    font-family: var(--font-heading);
     text-wrap: balance;
   }
 
   ::selection {
-    background: rgb(107 140 255 / 0.4);
-    color: #fff;
+    background: var(--fh-sun);
+    color: var(--fh-on-sun);
   }
-
-  :focus-visible {
-    outline: 2px solid var(--ring);
-    outline-offset: 2px;
-  }
-}
-
-/* Film grain, same as the landing page. */
-body::before {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  pointer-events: none;
-  content: "";
-  opacity: 0.03;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 /* React Flow canvas (workflow editor) on the same palette. */
 .react-flow {
-  --xy-background-color: var(--fh-panel);
-  --xy-background-pattern-dots-color: var(--fh-line-strong);
-  --xy-edge-stroke: var(--fh-line-strong);
-  --xy-edge-stroke-selected: var(--fh-accent);
+  --xy-background-color: var(--fh-card);
+  --xy-background-pattern-dots-color: var(--fh-line);
+  --xy-edge-stroke: var(--fh-input-line);
+  --xy-edge-stroke-selected: var(--fh-blue);
   --xy-handle-background-color: var(--fh-subtle);
-  --xy-handle-border-color: var(--fh-panel);
-  --xy-controls-button-background-color: var(--fh-panel-2);
-  --xy-controls-button-background-color-hover: var(--fh-raise);
-  --xy-controls-button-color: var(--fh-soft);
-  --xy-controls-button-color-hover: var(--fh-fg);
+  --xy-handle-border-color: var(--fh-card);
+  --xy-controls-button-background-color: var(--fh-card);
+  --xy-controls-button-background-color-hover: var(--fh-paper-2);
+  --xy-controls-button-color: var(--fh-ink-2);
+  --xy-controls-button-color-hover: var(--fh-ink);
   --xy-controls-button-border-color: var(--fh-line);
   --xy-controls-box-shadow: 0 0 0 1px var(--fh-line);
 }
 
-/* The landing hero's stage: a deep-blue bloom behind the centre of the screen. */
-@utility hero-stage {
-  background:
-    radial-gradient(ellipse 45% 45% at 50% 50%, rgb(34 70 255 / 0.5), transparent 70%),
-    radial-gradient(ellipse 90% 80% at 50% 52%, #06123f 0%, #02061a 45%, #000 80%);
-}
-
-/* The landing hero's glowing glass card - darker inside so form fields stay
-   readable, with the same electric-blue rim, bloom and specular edge. */
-@utility neon-card {
-  position: relative;
-  background: linear-gradient(180deg, rgb(20 30 80 / 0.55), rgb(6 10 30 / 0.7));
-  border: 1.5px solid rgb(150 180 255 / 0.85);
-  box-shadow:
-    0 0 0 1px rgb(60 100 255 / 0.45),
-    0 0 22px 2px rgb(60 110 255 / 0.7),
-    0 0 90px 10px rgb(30 70 255 / 0.4),
-    inset 0 0 30px rgb(90 130 255 / 0.22);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  &::after {
-    content: "";
-    position: absolute;
-    inset: -1.5px;
-    border-radius: inherit;
-    padding: 1.5px;
-    background: linear-gradient(100deg, transparent 20%, rgb(255 255 255 / 0.9) 45%, transparent 60%);
-    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
-    opacity: 0.55;
-    pointer-events: none;
-  }
-}
-
-/* Shared type styles, matching the landing page's headings and eyebrows. */
+/* Shared type styles, matching the landing page. */
 @utility display {
-  font-weight: 500;
-  letter-spacing: -0.04em;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  letter-spacing: -0.035em;
   line-height: 1.05;
 }
 
+/* A small label above a heading: sentence case, not shouty mono caps. */
 @utility eyebrow {
-  @apply font-mono text-[11px] font-medium tracking-[0.16em] text-subtle uppercase;
+  @apply text-[13px] font-semibold text-subtle;
+}
+
+/* Sticker surfaces: 2px edge + hard offset shadow. For moments (onboarding,
+   empty states, dialogs, live status), not for rows of data. */
+@utility sticker {
+  border: 2px solid var(--fh-edge);
+  box-shadow: var(--fh-hard);
+}
+
+/* Code, logs and terminals stay dark in both themes. */
+@utility ink-island {
+  background: var(--fh-island);
+  color: var(--fh-island-fg);
+  border: 1px solid var(--fh-island-line);
 }
 
 @keyframes fh-packet {
@@ -302,6 +303,20 @@ body::before {
   }
 }
 
+@keyframes fh-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  70% {
+    transform: scale(1.12);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 .fh-reveal {
   animation: fh-reveal 260ms var(--ease-out-expo) both;
 }
@@ -314,8 +329,8 @@ body::before {
 .live-dot {
   position: relative;
   display: inline-block;
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   flex-shrink: 0;
   border-radius: 999px;
   background: currentColor;
@@ -329,6 +344,46 @@ body::before {
   animation: fh-ping 1.8s var(--ease-out-expo) infinite;
 }
 
+/*
+ * Unlayered rules below beat Tailwind's layered utilities, so they restyle the
+ * shadcn components without editing every call site.
+ */
+
+/* One visible focus ring everywhere: the landing's 3px blue outline. */
+:where(a, button, input, select, textarea, summary, [role="button"], [role="tab"], [role="menuitem"], [tabindex]):focus-visible {
+  outline: 3px solid var(--fh-focus);
+  outline-offset: 2px;
+}
+
+/* Overlays take the sticker treatment: card surface, 2px edge, hard shadow. */
+[data-slot="dialog-content"],
+[data-slot="alert-dialog-content"],
+[data-slot="sheet-content"] {
+  background: var(--fh-card);
+  color: var(--fh-ink);
+  border: 2px solid var(--fh-edge);
+  box-shadow: var(--fh-hard-lg);
+}
+
+[data-slot="dialog-overlay"],
+[data-slot="alert-dialog-overlay"],
+[data-slot="sheet-overlay"] {
+  background: var(--fh-overlay);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+[data-slot="dropdown-menu-content"],
+[data-slot="dropdown-menu-sub-content"] {
+  border: 2px solid var(--fh-edge);
+  box-shadow: var(--fh-hard);
+}
+
+[data-slot="card"] {
+  box-shadow: none;
+  border: 1px solid var(--fh-line);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -339,3 +394,11 @@ body::before {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* Mini-product thumbnails (solution picker, empty states). */
+.t-f { fill: var(--fh-card); stroke: var(--fh-edge); stroke-width: 2; }
+.t-s { fill: none; stroke: var(--fh-edge); stroke-width: 2; }
+.t-i { fill: var(--fh-edge); }
+.t-b { fill: var(--fh-blue); }
+.t-g { fill: var(--fh-paper-2); }
+.t-y { fill: var(--fh-sun); }

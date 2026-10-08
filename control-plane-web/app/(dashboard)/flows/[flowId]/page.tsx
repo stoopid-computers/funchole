@@ -25,6 +25,8 @@ import type {
 import { friendlyError } from "@/lib/errors";
 import { PageLoading } from "@/components/PageLoading";
 import { gatewayHost, liveUrl } from "@/lib/urls";
+import { useMode } from "@/lib/mode";
+import { SimplePageDetail } from "@/components/app/SimplePageDetail";
 
 const HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"];
 
@@ -38,7 +40,13 @@ interface EditFormState {
 }
 
 export default function FlowDetailPage() {
+  const { mode } = useMode();
+  return mode === "simple" ? <SimplePageDetail /> : <AdvancedFlowDetail />;
+}
+
+function AdvancedFlowDetail() {
   const params = useParams<{ flowId: string }>();
+  const { title: termTitle, noun } = useMode();
   const router = useRouter();
   const flowId = params.flowId;
 
@@ -147,7 +155,7 @@ export default function FlowDetailPage() {
   }
 
   async function handleDeleteFlow() {
-    if (!flow || !await confirmAction({ title: `Delete flow "${flow.name}"?`, description: `This cannot be undone.`, confirmLabel: "Delete" })) return;
+    if (!flow || !await confirmAction({ title: `Delete ${noun("flow")} "${flow.name}"?`, description: `This cannot be undone.`, confirmLabel: "Delete" })) return;
     setError(null);
     try {
       await api.deleteFlow(flowId);
@@ -256,7 +264,7 @@ export default function FlowDetailPage() {
     <div className="flex flex-col gap-6">
       <nav className="flex items-center gap-1.5 text-sm text-muted-foreground">
         <Link href="/flows" className="hover:text-foreground">
-          Flows
+          {termTitle("flow", true)}
         </Link>
         <ChevronRightIcon className="h-3.5 w-3.5" />
         <span className="text-foreground">{flow.name}</span>
@@ -266,6 +274,7 @@ export default function FlowDetailPage() {
         <div className="flex min-w-0 items-start gap-3">
           <Link
             href="/flows"
+            aria-label="Back to workflows"
             className="mt-1 flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-surface-hover hover:text-foreground"
           >
             <ArrowLeftIcon className="h-4 w-4" />

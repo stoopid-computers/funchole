@@ -17,8 +17,15 @@ import { confirmAction } from "@/components/ConfirmDialog";
 import { friendlyError } from "@/lib/errors";
 import { PageLoading } from "@/components/PageLoading";
 import { gatewayHost, liveUrl } from "@/lib/urls";
+import { useMode } from "@/lib/mode";
+import { SimpleGatewayDetail } from "@/components/app/SimpleGatewayDetail";
 
 export default function GatewayDetailPage() {
+  const { mode } = useMode();
+  return mode === "simple" ? <SimpleGatewayDetail /> : <AdvancedGatewayDetail />;
+}
+
+function AdvancedGatewayDetail() {
   const params = useParams<{ gatewayId: string }>();
   const gatewayId = params.gatewayId;
 
@@ -57,6 +64,7 @@ export default function GatewayDetailPage() {
       <div className="flex items-start gap-3">
         <Link
           href="/gateways"
+          aria-label="Back to entry points"
           className="mt-1 flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-surface-hover hover:text-foreground"
         >
           <ArrowLeftIcon className="h-4 w-4" />
@@ -219,7 +227,7 @@ function CustomDomainsPanel({ gatewayId, gatewayHostname, onError }: CustomDomai
                     <p className="text-xs text-muted-foreground">
                       Add a DNS TXT record at{" "}
                       <code className="font-mono text-muted-strong">
-                        funchole-{domain.id}.{domain.hostname}
+                        {domain.verificationRecordName}
                       </code>{" "}
                       with this value, then verify:
                     </p>

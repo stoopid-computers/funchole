@@ -65,6 +65,11 @@ public class CustomDomainService {
         packageLimitService.enforce(appUser.getId(), PackageLimitKey.MAX_CUSTOM_DOMAINS,
                 customDomainRepository.countByAppUser_Id(appUser.getId()));
 
+        // The unique index would reject this too, but as an unhandled 500.
+        if (customDomainRepository.existsByHostname(hostname.toLowerCase())) {
+            throw new IllegalStateException("That domain is already connected to a FuncHole account.");
+        }
+
         CustomDomain customDomain = CustomDomain.create(
                 gateway, appUser, hostname.toLowerCase(), generateVerificationCode());
         return customDomainRepository.save(customDomain);

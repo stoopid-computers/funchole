@@ -1,47 +1,110 @@
 /*
- * FuncHole design tokens - the shared palette, radius and type scale.
- *
- * Source of truth: the `@theme` block in landing/src/input.css. These values
- * are copied from it verbatim so the console and the landing page stay one
- * product; change them there first, then mirror the change here. (Both apps
- * build in separate Docker contexts, so they can't import one shared file.)
- *
- * globals.css maps these onto shadcn/ui's semantic variables.
+ * FuncHole design tokens: the landing page's "paper + ink sticker" system
+ * (landing/styles.css) ported to the workspace. Light is the default;
+ * [data-theme="dark"] is "ink mode". Every colour used by the app comes from
+ * here, and lib/contrast.test.ts checks the text and control pairs for both
+ * themes (>= 4.5:1 text, >= 3:1 control borders).
  */
 :root {
-  /* Surfaces, darkest to lightest */
-  --fh-ink: #000000;
-  --fh-panel: #0a0a0a;
-  --fh-panel-2: #121212;
-  --fh-raise: #1a1a1a;
-
-  /* Lines */
-  --fh-line: #1d1d1d;
-  --fh-line-strong: #2b2b2b;
-
-  /* Text, brightest to faintest */
-  --fh-fg: #fafafa;
-  --fh-soft: #d4d4d4;
-  --fh-muted: #a1a1a1;
-  --fh-subtle: #7a7a7a;
-  --fh-faint: #525252;
-
-  /* Electric blue: focus, live and active states - never decoration. */
-  --fh-accent: #6b8cff;
-  --fh-accent-strong: #2f5bff;
-  --fh-accent-soft: rgb(107 140 255 / 0.14);
-
+  /* Surfaces */
+  --fh-paper: #ecebe4;
+  --fh-paper-2: #e0ded3;
+  --fh-card: #fbfaf6;
+  /* Text and strokes */
+  --fh-ink: #17181c;
+  --fh-ink-2: #2b2d33;
+  --fh-mute: #555861;
+  --fh-subtle: #666973;
+  --fh-faint: #9a9a93; /* decorative only, never text */
+  /* Quiet lines (data screens) and control borders */
+  --fh-line: #cbc9bc;
+  --fh-input-line: #6f727c;
+  /* Brand */
+  --fh-blue: #2f5bff;
+  --fh-blue-d: #1b3bc2; /* blue text and links */
+  --fh-blue-soft: #e1e7ff;
+  --fh-on-blue: #ffffff;
   /* Status */
-  --fh-ok: #4ade80;
-  --fh-warn: #fbbf24;
-  --fh-bad: #f87171;
+  --fh-live: #14a35a;
+  --fh-live-ink: #0a7439;
+  --fh-live-soft: #d3f1e0;
+  --fh-sun: #ffd23f;
+  --fh-sun-soft: #fff1b8;
+  --fh-on-sun: #17181c;
+  --fh-coral: #ff7a59;
+  --fh-coral-soft: #ffe1d8;
+  --fh-danger-ink: #a82d17;
+  --fh-warn-ink: #7a5700;
+  --fh-violet: #5b3fd0;
+  /* UI accents for step types (readable on paper) */
+  --fh-code-kw: #8a35a8;
+  --fh-code-num: #8a4b00;
+  /* Sticker geometry */
+  --fh-edge: #17181c; /* sticker stroke and hard shadow */
+  --fh-hard: 4px 4px 0 var(--fh-edge);
+  --fh-hard-lg: 6px 6px 0 var(--fh-edge);
+  --fh-press: 0 4px 0 var(--fh-edge);
+  --fh-press-hover: 0 5px 0 var(--fh-edge);
+  --fh-press-down: 0 1px 0 var(--fh-edge);
+  --fh-wash: rgb(23 24 28 / 0.05); /* hover wash on paper */
+  --fh-overlay: rgb(23 24 28 / 0.55);
+  --fh-focus: #2f5bff;
+  /* Ink islands: code, logs and terminals are dark in both themes */
+  --fh-island: #17181c;
+  --fh-island-deep: #0d0e11;
+  --fh-island-fg: #f4f3ec;
+  --fh-island-mute: #b9b8b0;
+  --fh-island-line: #3a3c44;
+  --fh-island-code: #c5d0ff;
+  --fh-island-ok: #6ee7a0;
+  --fh-island-bad: #ff9b87;
+  --fh-island-fn: #7b9bff;
+  --fh-island-str: #86efac;
+  --fh-island-kw: #f0abfc;
+  --fh-island-num: #fdba74;
 
-  /* Code highlighting */
-  --fh-code-fn: #7b9bff;
-  --fh-code-str: #86efac;
+  --fh-radius: 0.625rem;
+  --fh-gutter: 20px;
+}
+
+@media (min-width: 640px) {
+  :root {
+    --fh-gutter: 28px;
+  }
+}
+
+[data-theme="dark"] {
+  --fh-paper: #131418;
+  --fh-paper-2: #23252c;
+  --fh-card: #1b1d23;
+  --fh-ink: #f1f0ea;
+  --fh-ink-2: #d9d8d1;
+  --fh-mute: #a6a8b0;
+  --fh-subtle: #8c8f98;
+  --fh-faint: #5a5d66;
+  --fh-line: #3a3c44;
+  --fh-input-line: #7a7d87;
+  --fh-blue: #6c8cff;
+  --fh-blue-d: #9db3ff;
+  --fh-blue-soft: #1f2a52;
+  --fh-on-blue: #0f1014;
+  --fh-live: #3dd68c;
+  --fh-live-ink: #5fe0a1;
+  --fh-live-soft: #12301f;
+  --fh-sun: #ffd23f;
+  --fh-sun-soft: #3a3210;
+  --fh-on-sun: #17181c;
+  --fh-coral: #ff8a6b;
+  --fh-coral-soft: #3a1f18;
+  --fh-danger-ink: #ff9b87;
+  --fh-warn-ink: #f5c84c;
+  --fh-violet: #a99bff;
   --fh-code-kw: #f0abfc;
   --fh-code-num: #fdba74;
-
-  /* Base radius: 8px buttons/inputs; panels are +4px, large cards +8/+16px. */
-  --fh-radius: 0.5rem;
+  --fh-edge: #e9e8e0;
+  --fh-wash: rgb(241 240 234 / 0.06);
+  --fh-overlay: rgb(0 0 0 / 0.7);
+  --fh-focus: #8fa8ff;
+  --fh-island: #0d0e11;
+  --fh-island-deep: #08090b;
 }

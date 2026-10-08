@@ -6,6 +6,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -23,6 +25,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  * the same diagnostic shape.
  */
 @RestControllerAdvice
+@Order(Ordered.HIGHEST_PRECEDENCE)
 public class BuildExceptionHandler {
 
     @ExceptionHandler(BuildFailureException.class)
@@ -47,7 +50,8 @@ public class BuildExceptionHandler {
                 HttpStatus.UNPROCESSABLE_CONTENT.getReasonPhrase(),
                 exception.getMessage(),
                 request.getRequestURI(),
-                details
+                details,
+                "BUILD_FAILED"
         );
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT).body(body);
     }
