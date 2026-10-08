@@ -4,4 +4,4 @@ plugins {
 
 rootProject.name = "funchole-backend"
 
-include("certificate", "core", "controlplane", "gateway", "invocation", "invocation-contract", "dispatcher", "artifact", "runtime", "runtime-registry")
+include("certificate", "core", "controlplane", "gateway", "invocation", "invocation-contract", "dispatcher", "artifact", "runtime", "runtime-registry", "sandbox-protocol", "sandbox-manager")

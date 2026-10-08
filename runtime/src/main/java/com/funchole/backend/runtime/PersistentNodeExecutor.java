@@ -50,6 +50,11 @@ public final class PersistentNodeExecutor implements NodeExecutor, AutoCloseable
         logger.info("Node executor started: pid={}", process.pid());
     }
 
+    /** Wraps an already-started process that speaks the executor protocol (e.g. a sandbox launcher). */
+    static PersistentNodeExecutor fromProcess(Process process) {
+        return new PersistentNodeExecutor(process);
+    }
+
     public static PersistentNodeExecutor start(String nodeCommand, Path scriptPath) throws IOException {
         ProcessBuilder builder = new ProcessBuilder(nodeCommand, scriptPath.toString());
         Process process = builder.start();

@@ -32,12 +32,33 @@ public record RuntimeExecutionRequest(
         String runtimeType,
         String input,
         Map<String, String> environment,
-        List<DatabaseConnectionInfo> databases
+        List<DatabaseConnectionInfo> databases,
+        UUID tenantId
 ) {
 
     public RuntimeExecutionRequest {
         environment = environment == null ? Map.of() : Map.copyOf(environment);
         databases = databases == null ? List.of() : List.copyOf(databases);
+    }
+
+    /** Before the tenant id existed: kept so every earlier caller compiles unchanged. */
+    public RuntimeExecutionRequest(
+            UUID executionId,
+            UUID invocationId,
+            UUID flowId,
+            UUID flowVersionId,
+            UUID stepId,
+            int attempt,
+            String componentType,
+            UUID componentId,
+            UUID componentVersionId,
+            String runtimeType,
+            String input,
+            Map<String, String> environment,
+            List<DatabaseConnectionInfo> databases
+    ) {
+        this(executionId, invocationId, flowId, flowVersionId, stepId, attempt, componentType, componentId,
+                componentVersionId, runtimeType, input, environment, databases, null);
     }
 
     public RuntimeExecutionRequest(
@@ -66,7 +87,8 @@ public record RuntimeExecutionRequest(
                 runtimeType,
                 input,
                 Map.of(),
-                List.of()
+                List.of(),
+                null
         );
     }
 
@@ -88,6 +110,16 @@ public record RuntimeExecutionRequest(
             Map<String, String> environment,
             List<DatabaseConnectionInfo> databases
     ) {
+        return of(stepExecution, input, environment, databases, null);
+    }
+
+    public static RuntimeExecutionRequest of(
+            InvocationStepExecution stepExecution,
+            String input,
+            Map<String, String> environment,
+            List<DatabaseConnectionInfo> databases,
+            UUID tenantId
+    ) {
         return new RuntimeExecutionRequest(
                 stepExecution.id(),
                 stepExecution.invocationId(),
@@ -101,7 +133,8 @@ public record RuntimeExecutionRequest(
                 stepExecution.runtimeType(),
                 input,
                 environment,
-                databases
+                databases,
+                tenantId
         );
     }
 }

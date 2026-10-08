@@ -291,7 +291,8 @@ public final class RuntimeWorkerServer implements AutoCloseable {
                 artifact.get().handler(),
                 payload.input(),
                 payload.environment(),
-                payload.databases()
+                payload.databases(),
+                payload.tenantId()
         );
 
         nodeExecutor.execute(nodeRequest, nodeLogMessage -> distributeLog(state, nodeLogMessage))

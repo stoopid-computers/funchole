@@ -77,6 +77,12 @@ logging:
     org.springframework.security: INFO
 
 app:
+  # Where tenant builds (npm ci / npm run build) run: legacy = on this host as before, sandbox = in
+  # the sandbox manager's locked-down containers (see docs/SANDBOX_ISOLATION_PRD.md, E4).
+  build-isolation:
+    mode: ${BUILD_ISOLATION:legacy}
+    manager-url: ${SANDBOX_MANAGER_URL:http://sandbox-manager:7090}
+    manager-token: ${SANDBOX_MANAGER_TOKEN:}
   # Invocation history retention in days; 0 keeps everything (the default).
   invocation-retention:
     days: ${INVOCATION_RETENTION_DAYS:0}

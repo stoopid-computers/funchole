@@ -1,0 +1,34 @@
+plugins {
+    id 'application'
+}
+
+description = 'Runs untrusted build commands in locked-down containers on behalf of the controlplane.'
+
+dependencies {
+    implementation project(':sandbox-protocol')
+
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+    implementation 'org.slf4j:slf4j-simple'
+
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+application {
+    mainClass = 'com.funchole.backend.sandbox.manager.SandboxManagerMain'
+}
+
+tasks.register('fatJar', Jar) {
+    group = 'build'
+    description = 'Assembles an executable fat jar for the sandbox manager.'
+    archiveFileName = 'funchole-sandbox-manager.jar'
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    manifest {
+        attributes 'Main-Class': application.mainClass.get()
+    }
+    from sourceSets.main.output
+    dependsOn configurations.runtimeClasspath
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    exclude 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA', 'META-INF/*.EC'
+}

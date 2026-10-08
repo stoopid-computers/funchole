@@ -1,5 +1,6 @@
 package com.funchole.backend.dispatcher;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.List;
 import java.util.UUID;
 import java.util.Map;
@@ -23,7 +24,8 @@ record IpcInvokePayload(
         String runtimeType,
         String input,
         Map<String, String> environment,
-        List<DatabaseConnectionInfo> databases
+        List<DatabaseConnectionInfo> databases,
+        @JsonInclude(JsonInclude.Include.NON_NULL) UUID tenantId
 ) {
 
     public IpcInvokePayload {
@@ -44,7 +46,8 @@ record IpcInvokePayload(
                 request.runtimeType(),
                 request.input(),
                 request.environment(),
-                request.databases()
+                request.databases(),
+                request.tenantId()
         );
     }
 }

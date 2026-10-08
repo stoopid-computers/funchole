@@ -1,5 +1,6 @@
 package com.funchole.backend.runtime;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;
 import java.util.UUID;
 import java.util.Map;
@@ -9,6 +10,7 @@ import java.util.Map;
  * This is the complete handoff contract - the worker never re-queries the
  * FuncHole database for any of this data.
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 record RuntimeInvokePayload(
         UUID invocationId,
         UUID flowId,
@@ -21,7 +23,8 @@ record RuntimeInvokePayload(
         String runtimeType,
         String input,
         Map<String, String> environment,
-        List<DatabaseConnectionInfo> databases
+        List<DatabaseConnectionInfo> databases,
+        UUID tenantId
 ) {
     public RuntimeInvokePayload {
         environment = environment == null ? Map.of() : Map.copyOf(environment);

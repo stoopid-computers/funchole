@@ -13,9 +13,11 @@ COPY artifact/build.gradle /workspace/artifact/build.gradle
 COPY runtime-registry/build.gradle /workspace/runtime-registry/build.gradle
 COPY dispatcher/build.gradle /workspace/dispatcher/build.gradle
 COPY runtime/build.gradle /workspace/runtime/build.gradle
+COPY sandbox-protocol/build.gradle /workspace/sandbox-protocol/build.gradle
+COPY sandbox-manager/build.gradle /workspace/sandbox-manager/build.gradle
 RUN chmod +x gradlew
 RUN --mount=type=cache,target=/root/.gradle,id=gradle,sharing=locked \
-    ./gradlew :controlplane:dependencies :gateway:dependencies :dispatcher:dependencies :runtime:dependencies --no-daemon >/dev/null 2>&1 || true
+    ./gradlew :controlplane:dependencies :gateway:dependencies :dispatcher:dependencies :runtime:dependencies :sandbox-manager:dependencies --no-daemon >/dev/null 2>&1 || true
 
 COPY certificate/src /workspace/certificate/src
 COPY core/src /workspace/core/src
@@ -27,6 +29,8 @@ COPY artifact/src /workspace/artifact/src
 COPY runtime-registry/src /workspace/runtime-registry/src
 COPY dispatcher/src /workspace/dispatcher/src
 COPY runtime/src /workspace/runtime/src
+COPY sandbox-protocol/src /workspace/sandbox-protocol/src
+COPY sandbox-manager/src /workspace/sandbox-manager/src
 COPY docker /workspace/docker
 
 FROM build-base AS build-controlplane
@@ -53,6 +57,10 @@ RUN --mount=type=cache,target=/root/.gradle,id=gradle,sharing=locked \
 FROM build-base AS build-runtime
 RUN --mount=type=cache,target=/root/.gradle,id=gradle,sharing=locked \
     ./gradlew :runtime:fatJar --no-daemon
+
+FROM build-base AS build-sandbox-manager
+RUN --mount=type=cache,target=/root/.gradle,id=gradle,sharing=locked \
+    ./gradlew :sandbox-manager:fatJar --no-daemon
 
 FROM eclipse-temurin:25-jre AS runtime-base
 WORKDIR /app
@@ -95,6 +103,24 @@ COPY runtime/artifacts /app/artifacts
 ENV NODE_EXECUTOR_SCRIPT_PATH=/app/node/executor.mjs
 ENV ARTIFACT_DIR=/app/artifacts/dev
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+
+# Sandbox manager (docs/SANDBOX_ISOLATION_PRD.md, E4): runs tenant BUILDS in locked-down containers for the
+# controlplane. It talks to the Docker daemon, so it holds NO platform credentials, only its own shared
+# token; the controlplane reaches it over HTTP and never gets Docker access itself.
+FROM runtime-base AS sandbox-manager
+COPY --from=build-sandbox-manager /workspace/sandbox-manager/build/libs/funchole-sandbox-manager.jar app.jar
+COPY --from=docker:27-cli /usr/local/bin/docker /usr/local/bin/docker
+COPY docker/sandbox/build-launch.sh /opt/funchole/sandbox/build-launch.sh
+RUN chmod +x /opt/funchole/sandbox/build-launch.sh
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+
+# Sandbox mode (docs/SANDBOX_ISOLATION_PRD.md, E2): the runtime worker no longer executes tenant
+# code itself; it starts a locked-down container per tenant through the Docker CLI and launch.sh.
+# Use with docker-compose.sandbox.yml. Never run tenant code in this image in legacy mode.
+FROM runtime-worker AS runtime-worker-sandbox
+COPY --from=docker:27-cli /usr/local/bin/docker /usr/local/bin/docker
+COPY docker/sandbox/launch.sh /opt/funchole/sandbox/launch.sh
+RUN chmod +x /opt/funchole/sandbox/launch.sh
 
 FROM debian:13-slim AS rustfs-init
 RUN apt-get update \

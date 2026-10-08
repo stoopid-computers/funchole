@@ -7,6 +7,7 @@ import com.funchole.backend.controlplane.functionbuild.PreparedArtifact;
 import com.funchole.backend.controlplane.functionbuild.RuntimeBuilder;
 import com.funchole.backend.controlplane.functionbuild.process.ProcessExecutor;
 import com.funchole.backend.controlplane.functionbuild.process.ProcessResult;
+import com.funchole.backend.controlplane.functionbuild.process.WorkspaceSync;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -112,18 +113,19 @@ public class StaticRuntimeBuilder implements RuntimeBuilder {
         }
         boolean hasLockfile = Files.isRegularFile(buildDirectory.resolve(PACKAGE_LOCK_JSON));
         List<String> command = hasLockfile ? List.of("npm", "ci") : List.of("npm", "install");
-        runCommand(functionVersionId, STAGE_DEPENDENCY_INSTALL, command, buildDirectory, INSTALL_TIMEOUT, logRecorder);
+        runCommand(functionVersionId, STAGE_DEPENDENCY_INSTALL, command, buildDirectory, INSTALL_TIMEOUT, WorkspaceSync.NONE, logRecorder);
     }
 
     private void runBuildScript(UUID functionVersionId, Path buildDirectory, BuildLogRecorder logRecorder) {
         List<String> command = List.of("npm", "run", "build");
-        runCommand(functionVersionId, STAGE_BUILD, command, buildDirectory, BUILD_TIMEOUT, logRecorder);
+        runCommand(functionVersionId, STAGE_BUILD, command, buildDirectory, BUILD_TIMEOUT, WorkspaceSync.ALL_BUT_DEPENDENCIES, logRecorder);
     }
 
     private void runCommand(
-            UUID functionVersionId, String stage, List<String> command, Path workingDirectory, Duration timeout, BuildLogRecorder logRecorder
+            UUID functionVersionId, String stage, List<String> command, Path workingDirectory, Duration timeout,
+            WorkspaceSync sync, BuildLogRecorder logRecorder
     ) {
-        ProcessResult result = processExecutor.execute(command, workingDirectory, timeout);
+        ProcessResult result = processExecutor.execute(command, workingDirectory, timeout, sync);
         logRecorder.record(stage, command, result);
         if (result.timedOut()) {
             throw new StaticBuildException(functionVersionId, stage, command, null, result.stdout(), result.stderr(), true);

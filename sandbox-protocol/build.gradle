@@ -1,0 +1,9 @@
+description = 'Wire protocol, hardened archive handling and HTTP client shared by the controlplane and the sandbox manager.'
+
+dependencies {
+    implementation "org.apache.commons:commons-compress:${commonsCompressVersion}"
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+    implementation 'org.slf4j:slf4j-api'
+
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}

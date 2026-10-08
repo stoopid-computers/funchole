@@ -14,10 +14,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import org.springframework.stereotype.Component;
 
 /**
- * Real {@link ProcessExecutor}: wraps {@link ProcessBuilder}. Stdout/stderr
+ * Real {@link ProcessExecutor}: wraps {@link ProcessBuilder}. Registered as a bean by
+ * {@code BuildIsolationConfig}, which decides between this and the sandbox executor. Stdout/stderr
  * are drained on separate threads concurrently with the process running, to
  * avoid the classic deadlock where a process blocks writing to a full pipe
  * while nothing is reading the other one.
@@ -27,7 +27,6 @@ import org.springframework.stereotype.Component;
  * considers execution complete - {@link #execute} never returns (or
  * propagates an exception) while the child is still running.
  */
-@Component
 public class DefaultProcessExecutor implements ProcessExecutor {
 
     private static final Duration STREAM_DRAIN_GRACE_PERIOD = Duration.ofSeconds(5);
